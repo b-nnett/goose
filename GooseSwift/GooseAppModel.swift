@@ -192,66 +192,26 @@ final class GooseAppModel: ObservableObject {
     return processInfo.arguments.contains("--goose-start-respiratory-packet-watch")
       || processInfo.environment["GOOSE_START_RESPIRATORY_PACKET_WATCH"] == "1"
   }()
-  let autoStartHealthPacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_HEALTH_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-health-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 30 * 60
-  }()
-  let autoStartTemperaturePacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_TEMPERATURE_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-temperature-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 10 * 60
-  }()
-  let autoStartPhysiologyPacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_PHYSIOLOGY_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-physiology-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 30 * 60
-  }()
-  let autoStartRespiratoryPacketWatchDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_RESPIRATORY_PACKET_WATCH_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-respiratory-packet-watch-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 10 * 60
-  }()
+  let autoStartHealthPacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_HEALTH_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-health-packet-capture-duration=",
+    fallback: 30 * 60
+  )
+  let autoStartTemperaturePacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_TEMPERATURE_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-temperature-packet-capture-duration=",
+    fallback: 10 * 60
+  )
+  let autoStartPhysiologyPacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_PHYSIOLOGY_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-physiology-packet-capture-duration=",
+    fallback: 30 * 60
+  )
+  let autoStartRespiratoryPacketWatchDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_RESPIRATORY_PACKET_WATCH_DURATION_SECONDS",
+    cliPrefix: "--goose-respiratory-packet-watch-duration=",
+    fallback: 10 * 60
+  )
   let autoSyncHistoryDuringPhysiologyCapture: Bool = {
     let processInfo = ProcessInfo.processInfo
     return processInfo.arguments.contains("--goose-sync-history-during-physiology-capture")
@@ -438,6 +398,25 @@ final class GooseAppModel: ObservableObject {
     } else {
       _ = overnightRawSpool.finish(status: "model_deinit")
     }
+  }
+
+  private nonisolated static func durationFromEnvironment(
+    envVar: String,
+    cliPrefix: String,
+    fallback: TimeInterval
+  ) -> TimeInterval {
+    let processInfo = ProcessInfo.processInfo
+    if let value = processInfo.environment[envVar],
+       let seconds = Double(value),
+       seconds > 0 {
+      return seconds
+    }
+    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(cliPrefix) }),
+       let seconds = Double(argument.dropFirst(cliPrefix.count)),
+       seconds > 0 {
+      return seconds
+    }
+    return fallback
   }
 
 }
