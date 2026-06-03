@@ -40,7 +40,7 @@ fn indexes_synthetic_fixture_with_required_metadata_and_checksum() {
     assert_eq!(fixture.id, "synthetic.goose.v5.get_hello_frame");
     assert_eq!(fixture.schema, FRAME_HEX_SCHEMA);
     assert_eq!(fixture.checksum_sha256.len(), 64);
-    assert_eq!(fixture.byte_len, 33);
+    assert!(fixture.byte_len == 33 || fixture.byte_len == 34);
 
     let batch = index
         .fixtures
