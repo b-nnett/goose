@@ -63,8 +63,25 @@ extension GooseAppModel {
       return true
     }
 
+    let normalizedCommandID = commandID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard let command = ble.debugResearchCommands.first(where: { $0.id == normalizedCommandID }) else {
+      ble.setDebugCommandStatus("Unknown debug command: \(commandID)")
+      ble.record(level: .warn, source: "ble.debug_command", title: "deep_link.unknown", body: commandID)
+      return true
+    }
+    guard command.allowsRemoteInvocation else {
+      ble.setDebugCommandStatus("\(command.title) blocked from external deep link")
+      ble.record(
+        level: .warn,
+        source: "ble.debug_command",
+        title: "deep_link.blocked",
+        body: "\(command.id) risk=\(command.risk)"
+      )
+      return true
+    }
+
     ble.record(source: "ui", title: "debug_command.deep_link", body: "\(commandID) payload=\(payloadHex ?? "nil")")
-    _ = ble.sendDebugResearchCommand(id: commandID, payloadHex: payloadHex, source: "deep_link")
+    _ = ble.sendDebugResearchCommand(id: command.id, payloadHex: payloadHex, source: "deep_link")
     return true
   }
 

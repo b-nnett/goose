@@ -118,7 +118,14 @@ struct GooseDebugCommandDefinition: Identifiable, Equatable {
     defaultPayloadHex != nil || !requiresPayloadHex
   }
 
+  var allowsRemoteInvocation: Bool {
+    risk == "read" || risk == "keyed read"
+  }
+
   var remoteURLExample: String {
+    guard allowsRemoteInvocation else {
+      return "Remote invocation disabled"
+    }
     if requiresPayloadHex {
       return "gooseswift://debug-command/\(id)?payload=<hex>"
     }
@@ -148,4 +155,3 @@ struct GooseDebugCommandResponse: Identifiable, Equatable {
     return "\(status) | \(result) | seq \(sequence) | \(body) | \(time.formatted(date: .omitted, time: .standard))"
   }
 }
-
