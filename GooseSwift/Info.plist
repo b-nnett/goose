@@ -38,7 +38,7 @@
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Goose uses Bluetooth to connect to your owned WHOOP strap and read a local hello response.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Goose reads Apple Health body mass only to prefill your local profile weight.</string>
+	<string>Goose reads Apple Health to prefill your profile weight and import sleep, heart rate, and recovery data when your WHOOP is not connected.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Goose uses background location to keep tracking outdoor workout routes, pace, and distance when you minimize the app.</string>
 	<key>NSLocationAlwaysUsageDescription</key>

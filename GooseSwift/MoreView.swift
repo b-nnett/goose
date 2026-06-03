@@ -16,6 +16,7 @@ struct MoreView: View {
   @AppStorage(OnboardingStorage.unitSystem) private var profileUnitSystemRaw = "imperial"
   @AppStorage(OnboardingStorage.heightMm) private var profileHeightMm = 0
   @AppStorage(OnboardingStorage.weightGrams) private var profileWeightGrams = 0
+  @State private var isImportingSleep = false
 
   @MainActor
   init(healthStore: HealthDataStore) {
@@ -47,6 +48,31 @@ struct MoreView: View {
 
       Section("App") {
         routeRows(MoreRoute.appRoutes)
+      }
+
+      Section("Apple Health") {
+        Button {
+          guard !isImportingSleep else { return }
+          isImportingSleep = true
+          Task {
+            await healthStore.importAllFromHealthKit()
+            isImportingSleep = false
+          }
+        } label: {
+          HStack {
+            Label("Import from Apple Health", systemImage: "heart.fill")
+            Spacer()
+            if isImportingSleep {
+              ProgressView()
+            }
+          }
+        }
+        .disabled(isImportingSleep)
+        if healthStore.hkImportStatus != "Not imported" {
+          Text(healthStore.hkImportStatus)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
       }
 
       Section("Settings") {

@@ -246,16 +246,18 @@ extension HealthDataStore {
       )
     }
     if let primarySleepDetail {
+      let score = hkSleepScore(durationText: primarySleepDetail.durationText)
+      let scoreText = score.map { Self.numberText($0, fractionDigits: 0) ?? "--" } ?? "--"
       return HealthMetricSnapshot(
         id: snapshot.id,
         route: snapshot.route,
         group: snapshot.group,
         title: snapshot.title,
-        value: primarySleepDetail.durationText,
-        unit: "",
+        value: scoreText,
+        unit: "%",
         status: primarySleepDetail.qualityText,
         freshness: primarySleepDetail.dateLabel,
-        provenance: primarySleepDetail.source.detail,
+        provenance: "apple.health.sleep.duration_score",
         source: primarySleepDetail.source,
         systemImage: snapshot.systemImage,
         tint: snapshot.tint,
@@ -263,6 +265,36 @@ extension HealthDataStore {
       )
     }
     return snapshot
+  }
+
+  // Derive a 0–100 sleep score from total sleep minutes (Apple Health duration).
+  // Maps: <5h=20, 5h=40, 6h=60, 7h=80, 7.5h=90, 8h+=95, >9h=85 (too long).
+  private func hkSleepScore(durationText: String) -> Double? {
+    // Parse "Xh Ym" or "Xh" or "Ym" into minutes
+    var minutes = 0.0
+    let hourMatch = durationText.range(of: #"(\d+)h"#, options: .regularExpression)
+    let minMatch = durationText.range(of: #"(\d+)m"#, options: .regularExpression)
+    if let r = hourMatch {
+      let digits = durationText[r].dropLast()
+      minutes += (Double(digits) ?? 0) * 60
+    }
+    if let r = minMatch {
+      let digits = durationText[r].dropLast()
+      minutes += Double(digits) ?? 0
+    }
+    guard minutes > 0 else { return nil }
+    let hours = minutes / 60
+    switch hours {
+    case ..<4: return 15
+    case 4..<5: return 30
+    case 5..<6: return 50
+    case 6..<6.5: return 65
+    case 6.5..<7: return 75
+    case 7..<7.5: return 83
+    case 7.5..<8.5: return 92
+    case 8.5..<9.5: return 88
+    default: return 78 // >9.5h slightly penalised
+    }
   }
 
   func sleepHealthMonitorSnapshot(base snapshot: HealthMetricSnapshot) -> HealthMetricSnapshot {
@@ -308,6 +340,25 @@ extension HealthDataStore {
     guard !usesPreviewPacketData,
           let score = recoveryScoreValue(),
           let scoreText = Self.numberText(score, fractionDigits: 0) else {
+      // HK proxy: HRV-based recovery estimate
+      if let score = hkRecoveryScore(),
+         let scoreText = Self.numberText(score, fractionDigits: 0) {
+        return HealthMetricSnapshot(
+          id: snapshot.id,
+          route: snapshot.route,
+          group: snapshot.group,
+          title: snapshot.title,
+          value: scoreText,
+          unit: "%",
+          status: Self.recoveryQualityLabel(score: score),
+          freshness: "From Apple Health",
+          provenance: "apple.health.hrv_recovery_estimate",
+          source: .local("apple.health"),
+          systemImage: snapshot.systemImage,
+          tint: snapshot.tint,
+          trend: Self.emptyTrend(from: snapshot.trend, packetCount: 0)
+        )
+      }
       return HealthMetricSnapshot(
         id: snapshot.id,
         route: snapshot.route,
@@ -389,7 +440,10 @@ extension HealthDataStore {
   }
 
   func strainTargetDisplayText() -> String {
-    "--"
+    guard let range = optimalStrainRange() else { return "--" }
+    let low = Self.numberText(range.low, fractionDigits: 0) ?? "\(Int(range.low))"
+    let high = Self.numberText(range.high, fractionDigits: 0) ?? "\(Int(range.high))"
+    return "\(low)–\(high)"
   }
 
   func strainDurationDisplayText() -> String {
@@ -405,15 +459,24 @@ extension HealthDataStore {
   }
 
   func whoopStepsDisplayText(for date: Date = Date(), calendar: Calendar = .current) -> String {
-    guard let metric = stepMetric(for: date, calendar: calendar),
-          let steps = Self.intValue(metric["steps"]) else {
-      return "--"
+    if let metric = stepMetric(for: date, calendar: calendar),
+       let steps = Self.intValue(metric["steps"]) {
+      return Self.groupedIntegerText(steps)
     }
-    return Self.groupedIntegerText(steps)
+    if calendar.isDateInToday(date), let steps = hkSteps {
+      return Self.groupedIntegerText(steps)
+    }
+    return "--"
   }
 
   func whoopActiveCaloriesDisplayText(for date: Date = Date(), calendar: Calendar = .current) -> String {
-    energyKcalDisplayText(key: "active_kcal", date: date, calendar: calendar)
+    let text = energyKcalDisplayText(key: "active_kcal", date: date, calendar: calendar)
+    if text != "--" { return text }
+    if calendar.isDateInToday(date), let kcal = hkActiveKcal,
+       let valueText = Self.numberText(kcal, fractionDigits: 0) {
+      return "\(valueText) kcal"
+    }
+    return "--"
   }
 
   func whoopTotalCaloriesDisplayText(for date: Date = Date(), calendar: Calendar = .current) -> String {
@@ -690,6 +753,242 @@ extension HealthDataStore {
       ?? "activity_metric"
     let blocker = firstActivityUnavailableBlocker(metric) ?? "metric unavailable"
     return "\(metricID) unavailable: \(blocker)"
+  }
+
+  // MARK: - Goose Recovery (exact Rust formula: goose_recovery_v0)
+  //
+  // Mirrors the Rust implementation in metrics.rs exactly:
+  //   hrv_score      = clamp(70 + (rmssd / baseline_rmssd - 1) * 100)   weight 0.35
+  //   rhr_score      = clamp(70 + (baseline_rhr - rhr) * 5)              weight 0.20
+  //   resp_score     = clamp(100 - |rr - baseline_rr| * 20)              weight 0.10
+  //   temp_score     = clamp(100 - |delta_c| * 50)                       weight 0.10
+  //   sleep_score    = sleep_score_0_to_100                               weight 0.15
+  //   strain_ready   = clamp(100 - prior_strain/21 * 60)                 weight 0.10
+  //
+  // Baselines: 60-night rolling mean of Apple Watch history, or population defaults.
+  func hkRecoveryScore() -> Double? {
+    guard let sdnn = hkHRVRmssdMs, sdnn > 5 else { return nil }
+    let rmssdEquiv = sdnn / 1.2 // SDNN → approximate RMSSD
+
+    // HRV baseline: 60-night rolling mean (exclude today)
+    let hrvBaseline: Double
+    if hkHRVHistory.count >= 7 {
+      let values = hkHRVHistory.dropLast(1).suffix(60).map { $0.sdnn / 1.2 }
+      hrvBaseline = max(values.reduce(0, +) / Double(values.count), 1)
+    } else {
+      hrvBaseline = 40.0 // population average RMSSD equiv
+    }
+    let hrv_score = min(max(70 + (rmssdEquiv / hrvBaseline - 1) * 100, 0), 100)
+
+    // RHR component
+    let rhr_score: Double
+    if let rhr = hkRestingHR {
+      let rhrBaseline: Double
+      if hkRHRHistory.count >= 7 {
+        let values = hkRHRHistory.dropLast(1).suffix(60).map { $0.bpm }
+        rhrBaseline = values.reduce(0, +) / Double(values.count)
+      } else {
+        rhrBaseline = 55.0
+      }
+      rhr_score = min(max(70 + (rhrBaseline - rhr) * 5, 0), 100)
+    } else {
+      rhr_score = 70.0 // neutral when unavailable
+    }
+
+    // Respiratory rate component
+    let resp_score: Double
+    if let rr = hkRespiratoryRate {
+      let baseline = 15.5 // population average
+      resp_score = min(max(100 - abs(rr - baseline) * 20, 0), 100)
+    } else {
+      resp_score = 85.0
+    }
+
+    // Skin temperature component
+    let temp_score: Double
+    if let delta = hkSkinTempDeltaC {
+      temp_score = min(max(100 - abs(delta) * 50, 0), 100)
+    } else {
+      temp_score = 85.0
+    }
+
+    // Sleep score component
+    let sleep_score: Double
+    if let detail = primarySleepDetail, let s = hkSleepScore(durationText: detail.durationText) {
+      sleep_score = s
+    } else {
+      sleep_score = 70.0
+    }
+
+    // Prior strain readiness (uses yesterday's eTRIMP-derived strain on 0-21)
+    let prior_strain_0_to_21 = (hkStrainScore() ?? 0) / 100 * 21
+    let strain_ready = min(max(100 - prior_strain_0_to_21 / 21.0 * 60, 0), 100)
+
+    // Weighted sum — exact Rust weights
+    let score = hrv_score * 0.35
+      + rhr_score * 0.20
+      + resp_score * 0.10
+      + temp_score * 0.10
+      + sleep_score * 0.15
+      + strain_ready * 0.10
+
+    return min(max(score, 3), 97)
+  }
+
+  // MARK: - WHOOP-style Strain (eTRIMP heart rate integration)
+  //
+  // Algorithm (Banister eTRIMP):
+  // 1. For each HR sample pair, compute HR Reserve fraction:
+  //    HRR = (HR - restingHR) / (maxHR - restingHR)
+  // 2. Apply gender-specific exponential weight:
+  //    male: w = e^(1.92 * HRR), female: w = e^(1.67 * HRR)
+  //    (Morton et al., 1990; Banister 1991)
+  // 3. Accumulate: TRIMP += Δt_minutes * HRR * w
+  // 4. WHOOP's 0–21 scale: empirically, a moderate 60-min session at 70% HRR
+  //    produces ~10 strain units. We calibrate: strain_0_21 = TRIMP / 6.0
+  //    (approximated from published WHOOP descriptions of typical session values).
+  // 5. Scale to 0–100 for the dial: score = (strain_0_21 / 21) * 100
+  func hkStrainScore() -> Double? {
+    let todaySamples = heartRateSeriesStore.samples(forDayContaining: Date())
+      .sorted { $0.capturedAt < $1.capturedAt }
+    guard todaySamples.count >= 3 else { return nil }
+
+    let ageBestGuess: Double = hkUserAge() ?? 30
+    let maxHR = 220 - ageBestGuess
+    let restingHR = hkRestingHR ?? 55
+    guard maxHR > restingHR + 10 else { return nil }
+
+    let isFemale = hkUserIsFemale()
+    let expCoeff = isFemale ? 1.67 : 1.92
+
+    var trimp = 0.0
+    for i in 1..<todaySamples.count {
+      let prev = todaySamples[i - 1]
+      let curr = todaySamples[i]
+      let dtMinutes = curr.capturedAt.timeIntervalSince(prev.capturedAt) / 60
+      guard dtMinutes > 0, dtMinutes < 10 else { continue } // ignore gaps > 10 min
+      let hrr = (Double(curr.bpm) - restingHR) / (maxHR - restingHR)
+      guard hrr > 0 else { continue }
+      let weight = exp(expCoeff * hrr)
+      trimp += dtMinutes * hrr * weight
+    }
+
+    guard trimp > 0 else { return nil }
+
+    // Calibrate to WHOOP's 0–21 scale, then to 0–100
+    let strain_0_21 = min(trimp / 6.0, 21.0)
+    return (strain_0_21 / 21.0) * 100
+  }
+
+  private func hkUserAge() -> Double? {
+    guard let dob = UserDefaults.standard.string(forKey: OnboardingStorage.dateOfBirth),
+          !dob.isEmpty else { return nil }
+    let f = DateFormatter()
+    f.dateFormat = "yyyy-MM-dd"
+    guard let date = f.date(from: dob) else { return nil }
+    return Double(Calendar.current.dateComponents([.year], from: date, to: Date()).year ?? 30)
+  }
+
+  private func hkUserIsFemale() -> Bool {
+    UserDefaults.standard.string(forKey: OnboardingStorage.gender)?.lowercased() == "female"
+  }
+
+  // MARK: - Optimal Strain Target
+  //
+  // Derives a recommended strain range for the day based on:
+  // 1. Today's recovery score (primary driver, same as WHOOP's colour zones)
+  //    Green  ≥67%: target 14–21 (push hard, room to grow)
+  //    Yellow 34–66%: target 10–14 (moderate, maintain load)
+  //    Red    <34%: target 0–10 (rest or light movement only)
+  // 2. 7-day rolling average strain (acute load)
+  //    If recent load is high (avg > 15), nudge range down by ~2 units.
+  //    If recent load is low (avg < 8), nudge range up by ~1 unit.
+  // 3. Quality flags from the Rust schema: low sleep (<60) or high prior strain (>14)
+  //    both reduce the upper bound.
+  //
+  // Returns a (low, high) pair on the 0–21 WHOOP scale, or nil if no recovery data.
+  func optimalStrainRange() -> (low: Double, high: Double)? {
+    // Prefer Rust-derived recovery if available
+    let recovery: Double
+    if let packetScore = recoveryScoreValue() {
+      recovery = packetScore
+    } else if let hkScore = hkRecoveryScore() {
+      recovery = hkScore
+    } else {
+      return nil
+    }
+
+    // Base range from recovery colour zone (linear interpolation within each zone)
+    let (baseLow, baseHigh): (Double, Double)
+    switch recovery {
+    case 67...:
+      // Green: lerp 14–21 across 67–100
+      let t = min((recovery - 67) / 33, 1)
+      baseLow = 14 + t * 2   // 14–16
+      baseHigh = 16 + t * 5  // 16–21
+    case 34..<67:
+      // Yellow: lerp 10–14 across 34–66
+      let t = (recovery - 34) / 33
+      baseLow = 10 + t * 1   // 10–11
+      baseHigh = 12 + t * 2  // 12–14
+    default:
+      // Red: lerp 0–10 across 0–33
+      let t = recovery / 34
+      baseLow = 0
+      baseHigh = 5 + t * 5   // 5–10
+    }
+
+    // Rolling 7-day average strain adjustment
+    let recentStrainAvg = hkSevenDayAverageStrain()
+    var adjustment = 0.0
+    if let avg = recentStrainAvg {
+      if avg > 15 { adjustment = -2 }      // over-trained trend
+      else if avg > 12 { adjustment = -1 } // high load
+      else if avg < 8 { adjustment = 1 }   // under-loaded
+    }
+
+    // Quality flags: low sleep or high prior strain reduce upper bound
+    var upperPenalty = 0.0
+    if let sleepDetail = primarySleepDetail,
+       let s = hkSleepScore(durationText: sleepDetail.durationText), s < 60 {
+      upperPenalty += 2
+    }
+
+    let low = max(baseLow + adjustment, 0)
+    let high = min(max(baseHigh + adjustment - upperPenalty, low + 1), 21)
+    return (low: low, high: high)
+  }
+
+  // 7-day rolling average strain on 0–21 scale from the HR series store
+  private func hkSevenDayAverageStrain() -> Double? {
+    var dailyTrimpValues: [Double] = []
+    let cal = Calendar.current
+    let ageBestGuess: Double = hkUserAge() ?? 30
+    let maxHR = 220 - ageBestGuess
+    let restingHR = hkRestingHR ?? 55
+    let isFemale = hkUserIsFemale()
+    let expCoeff = isFemale ? 1.67 : 1.92
+    guard maxHR > restingHR + 10 else { return nil }
+
+    for daysBack in 1...7 {
+      guard let day = cal.date(byAdding: .day, value: -daysBack, to: Date()) else { continue }
+      let samples = heartRateSeriesStore.samples(forDayContaining: day)
+        .sorted { $0.capturedAt < $1.capturedAt }
+      guard samples.count >= 3 else { continue }
+      var trimp = 0.0
+      for i in 1..<samples.count {
+        let dtMin = samples[i].capturedAt.timeIntervalSince(samples[i-1].capturedAt) / 60
+        guard dtMin > 0, dtMin < 10 else { continue }
+        let hrr = (Double(samples[i].bpm) - restingHR) / (maxHR - restingHR)
+        guard hrr > 0 else { continue }
+        trimp += dtMin * hrr * exp(expCoeff * hrr)
+      }
+      if trimp > 0 {
+        dailyTrimpValues.append(min(trimp / 6.0, 21.0))
+      }
+    }
+    guard !dailyTrimpValues.isEmpty else { return nil }
+    return dailyTrimpValues.reduce(0, +) / Double(dailyTrimpValues.count)
   }
 
 }

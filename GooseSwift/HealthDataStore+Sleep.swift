@@ -151,4 +151,76 @@ extension HealthDataStore {
     return "Low"
   }
 
+  @MainActor
+  func importSleepFromHealthKit() async {
+    externalSleepImportStatus = "Importing from Apple Health…"
+    let result = await HealthKitSleepImporter.importMostRecentSleep()
+    switch result {
+    case .success(let detail):
+      if primarySleepDetail == nil {
+        primarySleepDetail = detail
+      }
+      externalSleepImportStatus = "Imported: \(detail.durationText) on \(detail.dateLabel)"
+    case .noData(let reason):
+      externalSleepImportStatus = "No data: \(reason)"
+    case .denied(let reason):
+      externalSleepImportStatus = "Access denied: \(reason)"
+    case .unavailable:
+      externalSleepImportStatus = "HealthKit unavailable on this device"
+    }
+  }
+
+  @MainActor
+  func importAllFromHealthKit() async {
+    hkImportStatus = "Importing from Apple Health…"
+    let result = await HealthKitFullImporter.importAll()
+
+    // Sleep — only fill if band hasn't provided it
+    if let detail = result.sleepDetail, primarySleepDetail == nil {
+      primarySleepDetail = detail
+      externalSleepImportStatus = "Imported: \(detail.durationText) on \(detail.dateLabel)"
+    }
+
+    // Vitals
+    if let v = result.restingHR { hkRestingHR = v }
+    if let v = result.hrvRmssdMs { hkHRVRmssdMs = v }
+    if !result.hrvHistory.isEmpty { hkHRVHistory = result.hrvHistory }
+    if !result.rhrHistory.isEmpty { hkRHRHistory = result.rhrHistory }
+    if let v = result.respiratoryRate { hkRespiratoryRate = v }
+    if let v = result.spO2Percent { hkSpO2Percent = v }
+    if let v = result.skinTempDeltaC { hkSkinTempDeltaC = v }
+    if let v = result.steps { hkSteps = v }
+    if let v = result.activeKcal { hkActiveKcal = v }
+
+    // Heart rate samples into the series store (feeds stress + HRV timeline)
+    let pipeline = HeartRateSamplePipeline()
+    for sample in result.hrSamples {
+      pipeline.recordHeartRateSample(bpm: sample.bpm, source: "apple.health", capturedAt: sample.date)
+    }
+
+    // Workouts
+    if !result.workouts.isEmpty {
+      hkWorkouts = result.workouts
+    }
+
+    let imported = buildImportSummary(result)
+    hkImportStatus = imported
+  }
+
+  private func buildImportSummary(_ r: HealthKitFullImportResult) -> String {
+    var parts: [String] = []
+    if r.sleepDetail != nil { parts.append("sleep") }
+    if r.restingHR != nil { parts.append("resting HR") }
+    if r.hrvRmssdMs != nil { parts.append("HRV") }
+    if r.respiratoryRate != nil { parts.append("resp rate") }
+    if r.spO2Percent != nil { parts.append("SpO2") }
+    if r.skinTempDeltaC != nil { parts.append("skin temp") }
+    if r.steps != nil { parts.append("steps") }
+    if r.activeKcal != nil { parts.append("calories") }
+    if !r.hrSamples.isEmpty { parts.append("\(r.hrSamples.count) HR samples") }
+    if !r.workouts.isEmpty { parts.append("\(r.workouts.count) workouts") }
+    if parts.isEmpty { return "No data found" }
+    return "Imported: \(parts.joined(separator: ", "))"
+  }
+
 }

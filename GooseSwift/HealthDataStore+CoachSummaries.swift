@@ -422,7 +422,7 @@ extension HealthDataStore {
   }
 
   func recoveryScoreDisplayValue() -> Int {
-    Int((recoveryScoreValue() ?? 0).rounded())
+    Int((recoveryScoreValue() ?? hkRecoveryScore() ?? 0).rounded())
   }
 
   func recoveryScoreDisplayText() -> String {
@@ -448,9 +448,15 @@ extension HealthDataStore {
       return "--"
     }
     guard let report = packetInputReports["hrv"] else {
+      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+        return "\(text) ms"
+      }
       return "--"
     }
     guard Self.boolValue(report["pass"]) == true else {
+      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+        return "\(text) ms"
+      }
       return "--"
     }
     let output = Self.map(report, "score_result", "output")
@@ -458,6 +464,9 @@ extension HealthDataStore {
       ?? Self.array(report["daily"]).last.flatMap { Self.doubleValue($0["rmssd_ms"]) }
     guard let value,
           let text = Self.numberText(value, fractionDigits: 0) else {
+      if let v = hkHRVRmssdMs, let text = Self.numberText(v, fractionDigits: 0) {
+        return "\(text) ms"
+      }
       return "--"
     }
     return "\(text) ms"
@@ -499,6 +508,9 @@ extension HealthDataStore {
     guard let report = packetInputReports["resting_hr"] else {
       if let sample = Self.liveHRDerivedRestingHeartRateSample(),
          let text = Self.numberText(sample.bpm, fractionDigits: 0) {
+        return "\(text) bpm"
+      }
+      if let v = hkRestingHR, let text = Self.numberText(v, fractionDigits: 0) {
         return "\(text) bpm"
       }
       return "--"
@@ -572,11 +584,13 @@ extension HealthDataStore {
       return "--"
     }
     let value = currentRecoveryRespiratoryRateRPM() ?? 0
-    guard value > 0,
-          let text = Self.numberText(value, fractionDigits: 1) else {
-      return "--"
+    if value > 0, let text = Self.numberText(value, fractionDigits: 1) {
+      return "\(text) rpm"
     }
-    return "\(text) rpm"
+    if let v = hkRespiratoryRate, let text = Self.numberText(v, fractionDigits: 1) {
+      return "\(text) rpm"
+    }
+    return "--"
   }
 
   func recoveryRespiratoryRateSource(for date: Date = Date(), calendar: Calendar = .current) -> HealthDataSource {
@@ -615,11 +629,13 @@ extension HealthDataStore {
       return "--"
     }
     let value = recoveryProvidedVitalsValue("skin_temp_delta_c") ?? 0
-    guard value != 0,
-          let text = Self.signedNumberText(value, fractionDigits: 1) else {
-      return "--"
+    if value != 0, let text = Self.signedNumberText(value, fractionDigits: 1) {
+      return "\(text) C"
     }
-    return "\(text) C"
+    if let v = hkSkinTempDeltaC, v != 0, let text = Self.signedNumberText(v, fractionDigits: 1) {
+      return "\(text) C"
+    }
+    return "--"
   }
 
   func recoveryOxygenSaturationDisplayText(
@@ -629,11 +645,15 @@ extension HealthDataStore {
     guard !usesPreviewPacketData else {
       return "--"
     }
-    guard let metric = preferredDailyRecoveryMetric(valueKey: "oxygen_saturation_percent", for: date, calendar: calendar),
-          let text = Self.numberText(metric["oxygen_saturation_percent"], fractionDigits: 0) else {
-      return "--"
+    if let metric = preferredDailyRecoveryMetric(valueKey: "oxygen_saturation_percent", for: date, calendar: calendar),
+       let text = Self.numberText(metric["oxygen_saturation_percent"], fractionDigits: 0) {
+      return "\(text)%"
     }
-    return "\(text)%"
+    if calendar.isDate(calendar.startOfDay(for: date), inSameDayAs: calendar.startOfDay(for: Date())),
+       let v = hkSpO2Percent, let text = Self.numberText(v, fractionDigits: 0) {
+      return "\(text)%"
+    }
+    return "--"
   }
 
   func recoveryHasAnyData() -> Bool {

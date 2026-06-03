@@ -16,6 +16,21 @@ final class HealthDataStore: ObservableObject {
   @Published var externalSleepImportStatus = "External sleep imports disabled"
   @Published var referenceRunStatusByFamily: [String: String] = [:]
   @Published var primarySleepDetail: PrimarySleepDetail?
+
+  // Apple Health fallback values — used when WHOOP packet data is unavailable
+  @Published var hkRestingHR: Double?
+  @Published var hkHRVRmssdMs: Double?
+  @Published var hkRespiratoryRate: Double?
+  @Published var hkSpO2Percent: Double?
+  @Published var hkSkinTempDeltaC: Double?
+  @Published var hkSteps: Int?
+  @Published var hkActiveKcal: Double?
+  @Published var hkWorkouts: [ActivityTimelineItem] = []
+  @Published var hkImportStatus = "Not imported"
+  // 90-day history for WHOOP-style baseline recovery scoring
+  var hkHRVHistory: [(sdnn: Double, date: Date)] = []
+  var hkRHRHistory: [(bpm: Double, date: Date)] = []
+
   @Published var calibrationTargetFamily = "recovery"
   @Published var calibrationLabelsImported = false
   @Published var calibrationRunComplete = false

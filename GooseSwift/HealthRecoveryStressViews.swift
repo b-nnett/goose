@@ -90,6 +90,14 @@ struct RecoveryV2OverviewPage: View {
               )
               .frame(height: 96)
 
+              SleepV2StatCard(
+                palette: palette,
+                systemImage: "target",
+                label: "Target Strain Today",
+                value: store.strainTargetDisplayText()
+              )
+              .frame(height: 96)
+
               SleepV2CoachingCard(palette: palette, tip: coachTip) {
                 openCoachTip()
               }

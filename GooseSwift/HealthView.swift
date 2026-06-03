@@ -6,6 +6,8 @@ import UIKit
 struct HealthView: View {
   @EnvironmentObject private var model: GooseAppModel
   @ObservedObject var store: HealthDataStore
+  @State private var cachedLandingSnapshots: [HealthMetricSnapshot] = []
+  @State private var cachedVitalSnapshots: [HealthMetricSnapshot] = []
 
   var body: some View {
     ScrollView {
@@ -27,7 +29,7 @@ struct HealthView: View {
           heartRateSource: liveHeartRateSource
         )
 
-        HealthVitalsPreviewSection(snapshots: vitalSnapshots)
+        HealthVitalsPreviewSection(snapshots: cachedVitalSnapshots)
 
         HealthRouteShortcutSection(
           title: "Explore Health",
@@ -63,20 +65,23 @@ struct HealthView: View {
       model.recordUIAction("page.opened", detail: "Health")
       store.loadBridgeCatalogsIfNeeded()
       store.refreshHeartRateTimeline()
+      refreshSnapshots()
+    }
+    .onChange(of: model.ble.liveHeartRateBPM) { _, _ in
+      refreshSnapshots()
+    }
+    .onChange(of: store.catalogStatus) { _, _ in
+      refreshSnapshots()
     }
   }
 
-  private var landingSnapshots: [HealthMetricSnapshot] {
-    store
-      .landingSnapshots(
-        liveHeartRateBPM: model.ble.liveHeartRateBPM,
-        liveHeartRateSource: model.ble.liveHeartRateSource,
-        liveHeartRateUpdatedAt: model.ble.liveHeartRateUpdatedAt
-      )
-  }
-
-  private var vitalSnapshots: [HealthMetricSnapshot] {
-    Array(store.healthMonitorSnapshots().prefix(4))
+  private func refreshSnapshots() {
+    cachedLandingSnapshots = store.landingSnapshots(
+      liveHeartRateBPM: model.ble.liveHeartRateBPM,
+      liveHeartRateSource: model.ble.liveHeartRateSource,
+      liveHeartRateUpdatedAt: model.ble.liveHeartRateUpdatedAt
+    )
+    cachedVitalSnapshots = Array(store.healthMonitorSnapshots().prefix(4))
   }
 
   private var liveHeartRateValue: String {
@@ -101,7 +106,7 @@ struct HealthView: View {
 
   private func snapshots(for routes: [HealthRoute]) -> [HealthMetricSnapshot] {
     routes.compactMap { route in
-      landingSnapshots.first { $0.route == route } ?? store.snapshot(for: route)
+      cachedLandingSnapshots.first { $0.route == route } ?? store.snapshot(for: route)
     }
   }
 

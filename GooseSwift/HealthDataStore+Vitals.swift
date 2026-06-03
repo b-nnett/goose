@@ -181,6 +181,9 @@ extension HealthDataStore {
          let fallback = liveHRDerivedRestingHeartRateHealthMonitorSnapshot(base: snapshot) {
         return fallback
       }
+      if let fallback = hkRestingHRHealthMonitorSnapshot(base: snapshot) {
+        return fallback
+      }
       let packetCount = packetEvidenceFrameCount()
       return unavailablePacketSnapshot(
         base: snapshot,
@@ -239,6 +242,21 @@ extension HealthDataStore {
       return nil
     }
     return liveHRDerivedRestingHeartRateHealthMonitorSnapshot(base: snapshot, sample: sample)
+  }
+
+  func hkRestingHRHealthMonitorSnapshot(base snapshot: HealthMetricSnapshot) -> HealthMetricSnapshot? {
+    guard let bpm = hkRestingHR,
+          let valueText = Self.numberText(bpm, fractionDigits: 0) else { return nil }
+    return replacingHealthMonitorSnapshot(
+      snapshot,
+      value: valueText,
+      unit: "bpm",
+      status: "Apple Health",
+      freshness: "From Health app",
+      provenance: "apple.health.resting_heart_rate",
+      source: .local("apple.health"),
+      trend: snapshot.trend
+    )
   }
 
   func storedHRDerivedRestingHeartRateHealthMonitorSnapshot(base snapshot: HealthMetricSnapshot) -> HealthMetricSnapshot? {
@@ -344,6 +362,13 @@ extension HealthDataStore {
           freshness: unavailable["date_key"] as? String ?? "Stored blocker",
           provenance: Self.recoveryUnavailableProvenanceSummary(unavailable),
           sourceDetail: Self.recoveryUnavailableSourceDetail(unavailable)
+        )
+      }
+      if let ms = hkHRVRmssdMs, let valueText = Self.numberText(ms, fractionDigits: 0) {
+        return replacingHealthMonitorSnapshot(
+          snapshot, value: valueText, unit: "ms", status: "Apple Health",
+          freshness: "From Health app", provenance: "apple.health.hrv_sdnn",
+          source: .local("apple.health"), trend: snapshot.trend
         )
       }
       let packetCount = packetEvidenceFrameCount()
