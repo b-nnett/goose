@@ -94,7 +94,7 @@ final class GooseBLEClient: NSObject, ObservableObject {
   var notificationContextConnectionState = "disconnected"
   static let displayedMessageFlushInterval: TimeInterval = 0.5
   static let maximumDisplayedMessages = 300
-  static let bleUIStatePublishInterval: TimeInterval = 0.2
+  static let bleUIStatePublishInterval: TimeInterval = 1.0
   static let diagnosticLogProtection: FileProtectionType = .completeUntilFirstUserAuthentication
   static let diagnosticLogSetupWarningLock = NSLock()
   static var diagnosticLogSetupWarnings: [String] = []
