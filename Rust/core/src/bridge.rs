@@ -210,6 +210,8 @@ struct ParseFrameBatchArgs {
     frames: Vec<String>,
     #[serde(default = "default_device_type")]
     device_type: String,
+    #[serde(default = "default_true")]
+    include_result: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -2546,12 +2548,19 @@ fn parse_frame_hex_batch_bridge(args: ParseFrameBatchArgs) -> GooseResult<serde_
     let mut results = Vec::with_capacity(args.frames.len());
     for (index, frame_hex) in args.frames.iter().enumerate() {
         match parse_frame_hex(device_type, frame_hex) {
-            Ok(parsed) => results.push(json!({
-                "index": index,
-                "ok": true,
-                "compact": compact_parsed_frame_summary(&parsed),
-                "result": parsed,
-            })),
+            Ok(parsed) => {
+                let mut item = json!({
+                    "index": index,
+                    "ok": true,
+                    "compact": compact_parsed_frame_summary(&parsed),
+                });
+                if args.include_result {
+                    if let Some(obj) = item.as_object_mut() {
+                        obj.insert("result".to_string(), json!(parsed));
+                    }
+                }
+                results.push(item);
+            }
             Err(error) => results.push(json!({
                 "index": index,
                 "ok": false,

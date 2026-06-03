@@ -162,38 +162,49 @@ final class HealthDataStore: ObservableObject {
   }
 
   func refreshBridgeCatalogs() {
-    do {
-      let algorithmsValue = try bridge.requestValue(method: "metrics.built_in_definitions")
-      let referencesValue = try bridge.requestValue(method: "metrics.reference_definitions")
-      let preferencesValue = try bridge.requestValue(method: "metrics.default_preferences")
+    catalogStatus = "Loading bridge catalog..."
+    let bridge = self.bridge
+    packetInputQueue.async { [weak self] in
+      do {
+        let algorithmsValue = try bridge.requestValue(method: "metrics.built_in_definitions")
+        let referencesValue = try bridge.requestValue(method: "metrics.reference_definitions")
+        let preferencesValue = try bridge.requestValue(method: "metrics.default_preferences")
 
-      let parsedAlgorithms = Self.algorithmRows(from: algorithmsValue)
-        .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.built_in_definitions")) }
-      let parsedReferences = Self.algorithmRows(from: referencesValue)
-        .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.reference_definitions")) }
-      let parsedPreferences = Self.preferenceRows(from: preferencesValue)
+        let parsedAlgorithms = Self.algorithmRows(from: algorithmsValue)
+          .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.built_in_definitions")) }
+        let parsedReferences = Self.algorithmRows(from: referencesValue)
+          .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.reference_definitions")) }
+        let parsedPreferences = Self.preferenceRows(from: preferencesValue)
 
-      if !parsedAlgorithms.isEmpty {
-        algorithmDefinitions = parsedAlgorithms
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
+          if !parsedAlgorithms.isEmpty {
+            self.algorithmDefinitions = parsedAlgorithms
+          }
+          if !parsedReferences.isEmpty {
+            self.referenceDefinitions = parsedReferences
+          }
+          if !parsedPreferences.isEmpty {
+            self.selectedAlgorithmByFamily = parsedPreferences
+          } else {
+            self.selectedAlgorithmByFamily = Dictionary(
+              uniqueKeysWithValues: self.algorithmDefinitions.map { ($0.family, $0.id) }
+            )
+          }
+          self.catalogSource = .bridge("Rust metric registry")
+          self.catalogStatus = "Bridge catalog loaded"
+        }
+      } catch {
+        let shortErr = Self.shortError(error)
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
+          self.algorithmDefinitions = []
+          self.referenceDefinitions = []
+          self.selectedAlgorithmByFamily = [:]
+          self.catalogSource = .unavailable("Rust catalog unavailable")
+          self.catalogStatus = "Metric catalog unavailable: \(shortErr)"
+        }
       }
-      if !parsedReferences.isEmpty {
-        referenceDefinitions = parsedReferences
-      }
-      if !parsedPreferences.isEmpty {
-        selectedAlgorithmByFamily = parsedPreferences
-      } else {
-        selectedAlgorithmByFamily = Dictionary(
-          uniqueKeysWithValues: algorithmDefinitions.map { ($0.family, $0.id) }
-        )
-      }
-      catalogSource = .bridge("Rust metric registry")
-      catalogStatus = "Bridge catalog loaded"
-    } catch {
-      algorithmDefinitions = []
-      referenceDefinitions = []
-      selectedAlgorithmByFamily = [:]
-      catalogSource = .unavailable("Rust catalog unavailable")
-      catalogStatus = "Metric catalog unavailable: \(Self.shortError(error))"
     }
   }
 
