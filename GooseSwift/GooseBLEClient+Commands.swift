@@ -589,6 +589,7 @@ extension GooseBLEClient {
     rememberedDeviceValidated = false
     autoReconnectTargetID = nil
     autoReconnectInFlight = false
+    resetReconnectBackoff()
     if activePeripheral == nil {
       activeDeviceIdentifier = nil
       updateActiveDeviceName("WHOOP")
@@ -943,6 +944,65 @@ extension GooseBLEClient {
     readySyncWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8, execute: workItem)
     record(source: "ble.sync", title: "historical_sync.scheduled", body: reason)
+  }
+
+  /// Schedules a reconnection attempt with exponential backoff.
+  /// Delay doubles each attempt: 1s → 2s → 4s → 8s → 16s → 32s → 60s (capped).
+  /// Gives up after `reconnectMaxAttempts` consecutive failures.
+  func scheduleReconnectWithBackoff(_ peripheral: CBPeripheral, reason: String) {
+    reconnectBackoffWorkItem?.cancel()
+
+    reconnectAttemptCount += 1
+    guard reconnectAttemptCount <= Self.reconnectMaxAttempts else {
+      updateReconnectState("gave up after \(Self.reconnectMaxAttempts) attempts")
+      record(
+        level: .warn,
+        source: "ble",
+        title: "reconnect.gave_up",
+        body: "attempts=\(reconnectAttemptCount) reason=\(reason)"
+      )
+      return
+    }
+
+    let exponent = Double(reconnectAttemptCount - 1)
+    let delay = min(
+      Self.reconnectBaseDelay * pow(Self.reconnectBackoffMultiplier, exponent),
+      Self.reconnectMaxDelay
+    )
+    let retryAt = Date().addingTimeInterval(delay)
+    reconnectNextRetryAt = retryAt
+
+    updateReconnectState("retry \(reconnectAttemptCount)/\(Self.reconnectMaxAttempts) in \(Int(delay))s")
+    record(
+      source: "ble",
+      title: "reconnect.backoff.scheduled",
+      body: "attempt=\(reconnectAttemptCount)/\(Self.reconnectMaxAttempts) delay=\(String(format: "%.1f", delay))s reason=\(reason)"
+    )
+
+    let workItem = DispatchWorkItem { [weak self, weak peripheral] in
+      guard let self, let peripheral else { return }
+      self.reconnectNextRetryAt = nil
+      self.updateReconnectState("reconnecting (attempt \(self.reconnectAttemptCount))")
+      self.connect(peripheral, reason: reason)
+    }
+    reconnectBackoffWorkItem = workItem
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+  }
+
+  /// Resets the backoff counter after a successful connection or manual forget.
+  func resetReconnectBackoff() {
+    reconnectBackoffWorkItem?.cancel()
+    reconnectBackoffWorkItem = nil
+    let previousAttempts = reconnectAttemptCount
+    reconnectAttemptCount = 0
+    reconnectNextRetryAt = nil
+    if previousAttempts > 0 {
+      record(
+        source: "ble",
+        title: "reconnect.backoff.reset",
+        body: "after \(previousAttempts) attempt(s)"
+      )
+    }
   }
 
 }

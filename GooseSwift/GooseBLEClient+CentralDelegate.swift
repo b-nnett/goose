@@ -173,6 +173,7 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     clientHelloSentForCurrentConnection = false
     autoReconnectInFlight = false
     autoReconnectTargetID = nil
+    resetReconnectBackoff()
     let reason = pendingConnectionReason ?? "unknown"
     pendingConnectionReason = nil
     if !prioritizeLiveCaptureOnReady,
@@ -218,8 +219,12 @@ extension GooseBLEClient: CBCentralManagerDelegate {
     autoConnectForPhysiologyCapture = false
     pendingConnectionReason = nil
     updateConnectionState("connect failed")
-    updateReconnectState("connect failed")
     record(level: .error, source: "ble", title: "connect.failed", body: error?.localizedDescription ?? "unknown")
+    if rememberedDeviceID == peripheral.identifier {
+      scheduleReconnectWithBackoff(peripheral, reason: "auto.connect_failed")
+    } else {
+      updateReconnectState("connect failed")
+    }
   }
 
   func centralManager(
@@ -275,8 +280,7 @@ extension GooseBLEClient: CBCentralManagerDelegate {
           body: "reason=\(reconnectReason) autoHistoricalSync=\(autoHistoricalSyncOnReady) prioritizeLive=\(prioritizeLiveCaptureOnReady)"
         )
       }
-      updateReconnectState("reconnecting after disconnect")
-      connect(peripheral, reason: reconnectReason)
+      scheduleReconnectWithBackoff(peripheral, reason: reconnectReason)
     }
   }
 }

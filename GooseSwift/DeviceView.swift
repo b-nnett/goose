@@ -322,6 +322,7 @@ private struct DeviceAdvancedPanel: View {
       }
 
       DeviceActionGrid(model: model, ble: ble)
+      ReconnectBackoffBanner(ble: ble)
       DiscoveredDeviceList(ble: ble)
       EventLogPreview(messages: Array(messageStore.messages.prefix(5)))
     }
@@ -469,6 +470,7 @@ private struct DeviceActionGrid: View {
       .disabled(!ble.canConnect)
 
       DeviceActionButton(title: "Reconnect", systemName: "arrow.clockwise") {
+        ble.resetReconnectBackoff()
         ble.reconnectRemembered()
       }
       .disabled(!ble.canReconnectRemembered)
@@ -647,6 +649,73 @@ private struct EventLogPreview: View {
   }
 }
 
+private struct ReconnectBackoffBanner: View {
+  @ObservedObject var ble: GooseBLEClient
+
+  var body: some View {
+    if ble.reconnectAttemptCount > 0 {
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 8) {
+          Image(systemName: "antenna.radiowaves.left.and.right.slash")
+            .font(.system(size: 16, weight: .bold))
+            .foregroundStyle(reconnectAmber)
+          Text(reconnectHeadline)
+            .font(.system(size: 15, weight: .black, design: .default))
+            .foregroundStyle(devicePrimaryText)
+            .lineLimit(2)
+            .minimumScaleFactor(0.78)
+        }
+
+        if let retryAt = ble.reconnectNextRetryAt {
+          Text("Next retry \(retryAt, style: .relative)")
+            .font(.system(size: 13, weight: .semibold, design: .default))
+            .foregroundStyle(secondaryText)
+        }
+
+        HStack(spacing: 10) {
+          Button {
+            ble.resetReconnectBackoff()
+            ble.reconnectRemembered()
+          } label: {
+            Text("Retry Now")
+              .font(.system(size: 14, weight: .black, design: .default))
+              .foregroundStyle(devicePrimaryText)
+              .padding(.horizontal, 14)
+              .padding(.vertical, 8)
+              .background(controlBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+          }
+          .buttonStyle(.plain)
+
+          Button {
+            ble.resetReconnectBackoff()
+          } label: {
+            Text("Stop Retrying")
+              .font(.system(size: 14, weight: .black, design: .default))
+              .foregroundStyle(disconnectedRed)
+              .padding(.horizontal, 14)
+              .padding(.vertical, 8)
+              .background(controlBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+          }
+          .buttonStyle(.plain)
+        }
+      }
+      .padding(14)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+          .fill(reconnectBannerBackground)
+      )
+    }
+  }
+
+  private var reconnectHeadline: String {
+    if ble.reconnectAttemptCount > GooseBLEClient.reconnectMaxAttempts {
+      return "Reconnection failed after \(GooseBLEClient.reconnectMaxAttempts) attempts"
+    }
+    return "Reconnecting \(ble.reconnectAttemptCount)/\(GooseBLEClient.reconnectMaxAttempts)"
+  }
+}
+
 private func relativeSummary(for date: Date?) -> String? {
   guard let date else {
     return nil
@@ -692,3 +761,9 @@ private let batteryYellow = Color(red: 1.0, green: 0.89, blue: 0.36)
 private let deviceLabelFont = Font.system(size: 15, weight: .black, design: .default)
 private let deviceBodyFont = Font.system(size: 17, weight: .bold, design: .default)
 private let advancedBodyFont = Font.system(size: 17, weight: .regular, design: .default)
+private let reconnectAmber = Color(red: 1.0, green: 0.72, blue: 0.18)
+private let reconnectBannerBackground = Color(uiColor: UIColor { traits in
+  traits.userInterfaceStyle == .dark
+    ? UIColor(red: 0.14, green: 0.12, blue: 0.08, alpha: 1)
+    : UIColor(red: 1.0, green: 0.96, blue: 0.88, alpha: 1)
+})
