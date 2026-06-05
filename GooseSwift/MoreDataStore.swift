@@ -43,8 +43,11 @@ final class MoreDataStore: ObservableObject {
   @Published var rawMetricFamilies = "heart_rate,hrv,activity"
   @Published var rawAlgorithmIDs = ""
   @Published var rawAlgorithmVersions = ""
-  @Published var includeRawBytes = true
-  @Published var selectedRawFamilies: Set<String> = ["raw_evidence", "decoded_frames", "packet_timeline", "sensor_samples", "metric_features", "metric_outputs", "algorithm_runs", "local_health_metrics", "sqlite"]
+  // Default export is lightweight to avoid OOM crashes: raw notification bytes and the
+  // very large sensor_samples table (hundreds of MB after motion capture) are excluded.
+  // The "Full Raw Export" path re-enables them explicitly.
+  @Published var includeRawBytes = false
+  @Published var selectedRawFamilies: Set<String> = ["decoded_frames", "packet_timeline", "metric_features", "metric_outputs", "algorithm_runs", "local_health_metrics", "sqlite"]
   @Published var rawExportStatus = "No export yet"
   @Published var rawExportInProgress = false
   @Published var rawBundlePath = "No bundle"

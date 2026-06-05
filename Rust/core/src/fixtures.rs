@@ -476,7 +476,7 @@ fn compare_expected_batch(
 fn expected_device_type(expected: &serde_json::Value) -> Option<DeviceType> {
     let value = expected.get("device_type")?.as_str()?;
     match value {
-        "GEN_4" => Some(DeviceType::Gen4),
+        "GEN_4" | "GEN4" => Some(DeviceType::Gen4),
         "MAVERICK" => Some(DeviceType::Maverick),
         "PUFFIN" => Some(DeviceType::Puffin),
         "GOOSE" => Some(DeviceType::Goose),

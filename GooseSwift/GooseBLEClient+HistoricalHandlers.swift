@@ -8,13 +8,13 @@ extension GooseBLEClient {
     guard isHistoricalSyncing else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
+    for frame in strapFrames(in: value) {
       handleHistoricalSyncFrame(frame, characteristic: characteristic)
     }
   }
 
   func handleHistoricalSyncFrame(_ frame: Data, characteristic: CBCharacteristic) {
-    guard let payload = Self.v5Payload(in: frame),
+    guard let payload = strapPayload(in: frame),
           let packetType = payload.first else {
       return
     }
@@ -24,6 +24,20 @@ extension GooseBLEClient {
       handleHistoricalCommandResponse(payload)
     case V5PacketType.historicalData, V5PacketType.historicalIMUDataStream:
       historicalPacketsReceivedThisSync += 1
+      // Bound a single sync: a never-synced WHOOP can stream its entire multi-week
+      // backlog (oldest-first), which never reaches HistoryComplete in one pass and
+      // would balloon storage. Stop after a sane cap; the ACK'd read pointer persists,
+      // so a later Sync continues from where this one left off.
+      if historicalPacketsReceivedThisSync >= Self.historicalSyncPacketCap {
+        record(
+          level: .warn,
+          source: "ble.sync",
+          title: "historical_sync.packet_cap",
+          body: "reached \(Self.historicalSyncPacketCap) packets; completing this pass to bound storage"
+        )
+        completeHistoricalSync(reason: "historical_sync_packet_cap")
+        return
+      }
       publishHistoricalPacketCountIfNeeded()
       scheduleHistoricalIdleCompletion(reason: "historical_data_idle")
       notifyHistoricalSyncProgress(
@@ -59,8 +73,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in strapFrames(in: value) {
+      guard let payload = strapPayload(in: frame),
             let packetType = payload.first else {
         continue
       }
@@ -79,8 +93,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in strapFrames(in: value) {
+      guard let payload = strapPayload(in: frame),
             payload.count >= 5,
             let packetType = payload.first,
             packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
@@ -140,8 +154,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in strapFrames(in: value) {
+      guard let payload = strapPayload(in: frame),
             payload.count >= 5,
             let packetType = payload.first,
             packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
@@ -571,6 +585,14 @@ extension GooseBLEClient {
       }
     case .historyComplete:
       historyCompleteReceived = true
+      // The band signalled that the full history has been transferred. If we already
+      // pulled packet bodies this run, the sync succeeded — complete it now. Otherwise
+      // the post-completion idle/retry path treats the trailing empty pages as "no
+      // bodies" and marks a successful 13k-packet transfer as failed.
+      if historicalPacketsReceivedThisSync > 0 {
+        completeHistoricalSync(reason: "history_complete_after_data")
+        return
+      }
       guard !historyEndAckSentThisBurst else {
         return
       }

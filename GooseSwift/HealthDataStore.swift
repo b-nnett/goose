@@ -32,9 +32,12 @@ final class HealthDataStore: ObservableObject {
   var packetInputRefreshWorkItem: DispatchWorkItem?
   var packetInputRunID: UUID?
   var packetInputIsRunning = false
+  var packetScoreRunID: UUID?
+  var packetScoreIsRunning = false
   var heartRateTimelineRefreshID: UUID?
   var heartRateSeriesUpdateObserver: NSObjectProtocol?
   let packetInputQueue = DispatchQueue(label: "com.goose.swift.health.packet-inputs", qos: .utility)
+  let packetScoreQueue = DispatchQueue(label: "com.goose.swift.health.packet-scores", qos: .utility)
   let heartRateTimelineQueue = DispatchQueue(label: "com.goose.swift.health.heart-rate-timeline", qos: .utility)
   lazy var databasePath = HealthDataStore.defaultDatabasePath()
 

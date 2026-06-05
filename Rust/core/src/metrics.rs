@@ -1904,6 +1904,52 @@ fn rmssd(values: &[f64]) -> f64 {
     mean_square.sqrt()
 }
 
+/// Physiological RR plausibility band (ms) used by the artifact filter.
+pub const HRV_RR_MIN_MS: f64 = 300.0;
+pub const HRV_RR_MAX_MS: f64 = 2000.0;
+/// Malik adjacent-difference rule: reject a successive pair whose relative
+/// change exceeds this fraction (ectopic / missed / double-counted beats).
+pub const HRV_RR_MAX_RELATIVE_CHANGE: f64 = 0.20;
+
+/// Compute RMSSD (ms) from RR intervals grouped into `segments` of genuinely
+/// consecutive beats — typically one WHOOP history capture window per segment.
+///
+/// Successive differences are taken ONLY within a segment, never across segment
+/// boundaries: beats from two different capture windows (seconds or minutes
+/// apart) are not adjacent heartbeats, so differencing them would inject huge
+/// spurious variability and inflate RMSSD. An adjacent-difference artifact
+/// filter (Malik rule) additionally drops pairs whose relative change exceeds
+/// [`HRV_RR_MAX_RELATIVE_CHANGE`] or whose either interval falls outside
+/// `[HRV_RR_MIN_MS, HRV_RR_MAX_MS]`. Returns `None` if fewer than `min_pairs`
+/// valid successive pairs survive.
+pub fn rmssd_segment_aware(segments: &[Vec<f64>], min_pairs: usize) -> Option<f64> {
+    let mut sum_sq = 0.0_f64;
+    let mut pairs = 0usize;
+    for segment in segments {
+        for pair in segment.windows(2) {
+            let (a, b) = (pair[0], pair[1]);
+            if !(a.is_finite() && b.is_finite()) {
+                continue;
+            }
+            if !(HRV_RR_MIN_MS..=HRV_RR_MAX_MS).contains(&a)
+                || !(HRV_RR_MIN_MS..=HRV_RR_MAX_MS).contains(&b)
+            {
+                continue;
+            }
+            let diff = b - a;
+            if a > 0.0 && (diff.abs() / a) > HRV_RR_MAX_RELATIVE_CHANGE {
+                continue;
+            }
+            sum_sq += diff * diff;
+            pairs += 1;
+        }
+    }
+    if pairs < min_pairs.max(1) {
+        return None;
+    }
+    Some((sum_sq / pairs as f64).sqrt())
+}
+
 fn sample_sd(values: &[f64], mean_value: f64) -> f64 {
     if values.len() < 2 {
         return 0.0;

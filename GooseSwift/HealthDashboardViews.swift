@@ -542,6 +542,7 @@ struct HealthMonitorView: View {
     .task {
       store.refreshHeartRateTimeline()
       store.refreshPacketInputsIfNeeded()
+      store.runPacketScoresIfNeeded()
     }
     .sheet(item: $selectedTrend) { snapshot in
       if snapshot.id == "resting-hr" || snapshot.id == "resting-hrv" {

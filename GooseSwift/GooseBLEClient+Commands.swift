@@ -144,24 +144,57 @@ extension GooseBLEClient {
     }
   }
 
-  var supportsV5HistoricalSync: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  // Generation of the active strap command channel. Gen4 (WHOOP 4.0) uses the
+  // 61080002 command-to-strap characteristic and a 4-byte framed packet; Gen5
+  // (WHOOP 5.0) uses fd4b0002 and the 8-byte frame. Outbound framing and a few
+  // command payloads differ per generation; the inbound parser is already
+  // generation-aware via GooseNotificationEvent.rustDeviceType.
+  enum CommandGeneration: Equatable {
+    case gen4
+    case gen5
   }
 
-  var supportsV5AlarmCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var activeCommandGeneration: CommandGeneration? {
+    guard let commandCharacteristic else {
+      return nil
+    }
+    if isGen4CommandCharacteristic(commandCharacteristic) {
+      return .gen4
+    }
+    if isV5CommandCharacteristic(commandCharacteristic) {
+      return .gen5
+    }
+    return nil
   }
 
-  var supportsV5ClockCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  // True when there is a usable WHOOP command characteristic (either generation)
+  // we know how to frame commands for. Replaces the former fd4b0002-only gate.
+  var supportsStrapCommands: Bool {
+    activeCommandGeneration != nil
   }
 
-  var supportsV5SensorCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsHistoricalSync: Bool {
+    supportsStrapCommands
+  }
+
+  var supportsAlarmCommands: Bool {
+    supportsStrapCommands
+  }
+
+  var supportsClockCommands: Bool {
+    supportsStrapCommands
+  }
+
+  var supportsSensorCommands: Bool {
+    supportsStrapCommands
   }
 
   func isV5CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
     characteristic.uuid.uuidString.lowercased().hasPrefix("fd4b0002")
+  }
+
+  func isGen4CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
+    characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
   }
 
   func shouldUseCommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
@@ -206,7 +239,7 @@ extension GooseBLEClient {
       failClockCommand("Clock command needs ready connection; current state \(connectionState).")
       return
     }
-    guard supportsV5ClockCommands else {
+    guard supportsClockCommands else {
       failClockCommand("Clock command needs fd4b0002 V5 command framing. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
       return
     }
@@ -216,7 +249,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextClockSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -299,7 +332,7 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: alarmCommandStatus)
       return
     }
-    guard supportsV5AlarmCommands else {
+    guard supportsAlarmCommands else {
       alarmCommandStatus = "Alarm writes need fd4b0002 V5 command framing"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
@@ -311,7 +344,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextAlarmSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -390,7 +423,7 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: "Needs ready connection; current state \(connectionState)")
       return
     }
-    guard supportsV5SensorCommands else {
+    guard supportsSensorCommands else {
       if updatePhysiologyStatus {
         physiologyCaptureStatus = "Needs fd4b0002 V5 command framing"
       }
@@ -438,7 +471,7 @@ extension GooseBLEClient {
   ) {
     let sequence = nextSensorCommandSequence
     nextSensorCommandSequence = nextSensorCommandSequence == UInt8.max ? 180 : nextSensorCommandSequence + 1
-    let frame = Self.buildV5CommandFrame(
+    let frame = buildCommandFrame(
       sequence: sequence,
       command: command.commandNumber,
       data: command.payload
@@ -903,7 +936,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5SensorCommands else {
+          supportsSensorCommands else {
       return
     }
 
@@ -924,7 +957,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5HistoricalSync,
+          supportsHistoricalSync,
           !isHistoricalSyncing else {
       return
     }

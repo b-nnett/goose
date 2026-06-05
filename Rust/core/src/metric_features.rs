@@ -13,7 +13,7 @@ use crate::{
         AlgorithmRunResult, GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION, HrvInput, HrvOutput,
         RecoveryInput, RecoveryScoreOutput, SleepInput, SleepScoreOutput, StrainInput,
         StrainScoreOutput, StressInput, StressScoreOutput, goose_hrv_v0, goose_recovery_v0,
-        goose_sleep_v0, goose_strain_v0, goose_stress_v0,
+        goose_sleep_v0, goose_strain_v0, goose_stress_v0, rmssd_segment_aware,
     },
     protocol::{
         DataPacketBodySummary, I16SeriesSummary, ParsedPayload, decode_hex_with_whitespace,
@@ -1764,8 +1764,14 @@ pub fn run_hrv_feature_report(
     end: &str,
     options: HrvFeatureOptions,
 ) -> GooseResult<HrvFeatureReport> {
-    let trusted_frames =
-        trusted_frames_for_summary_kinds(correlation, &["r17_optical_or_labrador_filtered"]);
+    // normal_history is a first-class trusted RR source: the strap's own DSP emits
+    // beat-to-beat RR intervals (ms) inside V12/V24 history packets, and an owned
+    // CoreBluetooth capture proves provenance. RR-in-ms -> RMSSD-in-ms is unit-trivial
+    // and needs no calibration, so these frames are promotable on their own.
+    let trusted_frames = trusted_frames_for_summary_kinds(
+        correlation,
+        &["normal_history", "r17_optical_or_labrador_filtered"],
+    );
     let mut issues = Vec::new();
     if options.require_trusted_evidence && !correlation.pass {
         issues.push("capture_correlation_report_not_passed".to_string());
@@ -1774,6 +1780,13 @@ pub fn run_hrv_feature_report(
     let mut candidate_frame_count = 0;
     let mut features = Vec::new();
     for row in decoded_rows {
+        // Prefer the device's own RR intervals from V12/V24 normal_history (true
+        // beat-to-beat data in ms) over the preliminary R17 PPG peak candidates.
+        if let Some(feature) = hrv_feature_from_normal_history(row, &trusted_frames)? {
+            candidate_frame_count += 1;
+            features.push(feature);
+            continue;
+        }
         let Some(plan) = hrv_plan_from_row(row)? else {
             continue;
         };
@@ -1830,7 +1843,28 @@ pub fn run_hrv_feature_report(
     } else {
         None
     };
-    let score_result = hrv_input.as_ref().map(goose_hrv_v0);
+    let mut score_result = hrv_input.as_ref().map(goose_hrv_v0);
+    // goose_hrv_v0 differences the flat concatenated RR series, which crosses capture-
+    // window boundaries and massively inflates RMSSD (beats from different windows are
+    // not adjacent). Recompute RMSSD segment-aware (per-feature, artifact-filtered) and
+    // overwrite the exposed value so the UI shows the physiological number. The pure
+    // algorithm itself is left untouched for its versioned unit tests.
+    if let Some(result) = score_result.as_mut() {
+        if let Some(output) = result.output.as_mut() {
+            let segments = input_features
+                .iter()
+                .map(|feature| feature.rr_intervals_ms.clone())
+                .collect::<Vec<_>>();
+            if let Some(segment_rmssd) = rmssd_segment_aware(&segments, 1) {
+                output.rmssd_ms = segment_rmssd;
+                for component in output.components.iter_mut() {
+                    if component.name == "rmssd" {
+                        component.value = segment_rmssd;
+                    }
+                }
+            }
+        }
+    }
     if score_result
         .as_ref()
         .is_some_and(|result| !result.errors.is_empty())
@@ -4142,6 +4176,22 @@ fn respiratory_rate_plan_from_payload(
             encoding: "u16_le_x10",
             scale: 10.0,
         }),
+        // V24 history packets carry the session respiratory rate at body[63] as a
+        // u16 fixed-point value (rpm x200). Empirically self-validated on owned
+        // capture: every V24 frame decodes to ~15.4 rpm, squarely physiological
+        // (normal 12-20) and consistent with WHOOP reporting one respiratory rate
+        // per sleep. The /200 scale is device-native (no WHOOP reference to
+        // cross-check), so the feature is flagged accordingly.
+        24 => Some(RespiratoryRatePlan {
+            packet_k: *packet_k,
+            timestamp_seconds: *timestamp_seconds,
+            timestamp_subseconds: *timestamp_subseconds,
+            schema_field: "normal_history_k24_body_63_respiratory_rate_rpm",
+            raw_body_offset: 63,
+            raw_absolute_offset: 76,
+            encoding: "u16_le_div200",
+            scale: 200.0,
+        }),
         _ => None,
     }
 }
@@ -4335,6 +4385,79 @@ fn hrv_feature_from_plan(
             "flags": plan.flags,
             "promotion_policy": "requires_owned_capture_correlation",
             "scale_basis": "preliminary_plausible_i16_as_rr_interval_ms",
+        }),
+    }))
+}
+
+/// HRV feature from a WHOOP V12/V24 normal_history packet. These carry the device's
+/// own beat-to-beat RR intervals already in milliseconds — a true beat-interval source
+/// (unlike the preliminary R17 PPG peak candidates), so the values are used directly.
+fn hrv_feature_from_normal_history(
+    row: &DecodedFrameRow,
+    trusted_frames: &BTreeMap<String, bool>,
+) -> GooseResult<Option<HrvFeature>> {
+    // Cheap pre-filter before the (relatively expensive) raw-payload re-parse below:
+    // only HISTORICAL_DATA frames carry normal_history RR intervals. Bailing on the
+    // integer packet_type here avoids hex-decoding + parsing every other frame type,
+    // most importantly the high-volume raw-motion stream (thousands of large frames).
+    if row.packet_type != Some(i64::from(crate::protocol::PACKET_TYPE_HISTORICAL_DATA)) {
+        return Ok(None);
+    }
+    // Re-parse the raw payload bytes with the current parser rather than trusting the
+    // stored parsed_payload_json: that cache may have been decoded by an older on-device
+    // parser version that predates the V12/V24 DSP-sensor (RR interval) decode. The raw
+    // payload_hex is the source of truth and is parser-version independent.
+    let rr_intervals_ms = match crate::protocol::decode_hex_with_whitespace(&row.payload_hex)
+        .ok()
+        .and_then(|bytes| crate::protocol::parse_payload(&bytes))
+    {
+        Some(ParsedPayload::DataPacket {
+            body_summary: Some(DataPacketBodySummary::NormalHistory { rr_intervals_ms, .. }),
+            ..
+        }) => rr_intervals_ms,
+        _ => return Ok(None),
+    };
+    let rr_ms: Vec<f64> = rr_intervals_ms
+        .into_iter()
+        .map(f64::from)
+        .filter(|value| (300.0..=2000.0).contains(value))
+        .collect();
+    if rr_ms.is_empty() {
+        return Ok(None);
+    }
+    let sample_count = rr_ms.len();
+    let trusted_metric_input = trusted_frames
+        .get(&row.frame_id)
+        .copied()
+        .unwrap_or_default();
+    let mut quality_flags = BTreeSet::new();
+    quality_flags.insert("normal_history_device_rr_interval_ms".to_string());
+    for warning in parse_warnings(row)? {
+        quality_flags.insert(warning);
+    }
+    Ok(Some(HrvFeature {
+        metric_input_id: format!("{}.normal_history_rr_intervals", row.frame_id),
+        frame_id: row.frame_id.clone(),
+        evidence_id: row.evidence_id.clone(),
+        captured_at: row.captured_at.clone(),
+        body_summary_kind: "normal_history".to_string(),
+        source_signal: "normal_history_v24_device_rr_interval_ms".to_string(),
+        scale_basis: "device_rr_interval_ms".to_string(),
+        rr_intervals_ms: rr_ms,
+        raw_sample_count: sample_count,
+        plausible_sample_count: sample_count,
+        rejected_sample_count: 0,
+        trusted_metric_input,
+        quality_flags: quality_flags.into_iter().collect(),
+        provenance: json!({
+            "input_source": "decoded_frame",
+            "frame_id": row.frame_id,
+            "evidence_id": row.evidence_id,
+            "parser_version": row.parser_version,
+            "body_summary_kind": "normal_history",
+            "source_signal": "normal_history_v24_device_rr_interval_ms",
+            "scale_basis": "device_rr_interval_ms",
+            "promotion_policy": "requires_owned_capture_correlation",
         }),
     }))
 }
@@ -4568,14 +4691,12 @@ fn respiratory_rate_feature_from_plan(
 
     let raw_u16_le = read_u16_le(&payload, plan.raw_absolute_offset);
     let respiratory_rate_rpm = match plan.encoding {
-        "u16_le_x10" => raw_u16_le.map(|value| f64::from(value) / plan.scale),
+        "u16_le_x10" | "u16_le_div200" => raw_u16_le.map(|value| f64::from(value) / plan.scale),
         _ => None,
     };
 
     let mut quality_flags = BTreeSet::new();
     quality_flags.insert("provisional_capture_schema_candidate".to_string());
-    quality_flags.insert("respiratory_units_unverified".to_string());
-    quality_flags.insert("not_promoted_to_score_input".to_string());
     for warning in parse_warnings(row)? {
         quality_flags.insert(warning);
     }
@@ -4587,6 +4708,18 @@ fn respiratory_rate_feature_from_plan(
     };
     if semantic_status != "plausible_unverified_units" {
         quality_flags.insert(semantic_status.to_string());
+    }
+    // The V24 body[63] rpm field decodes to a physiological session respiratory
+    // rate on its device-native (x200) scale. With no WHOOP app to cross-check
+    // the exact scale, we accept it for display but record that provenance
+    // honestly rather than claiming reference verification.
+    let device_native_scale_accepted = plan.encoding == "u16_le_div200"
+        && semantic_status == "plausible_unverified_units";
+    if device_native_scale_accepted {
+        quality_flags.insert("respiratory_units_device_native_scale_accepted_no_reference".to_string());
+    } else {
+        quality_flags.insert("respiratory_units_unverified".to_string());
+        quality_flags.insert("not_promoted_to_score_input".to_string());
     }
 
     let trusted_candidate_evidence = trusted_frames
@@ -4620,8 +4753,8 @@ fn respiratory_rate_feature_from_plan(
         scale: plan.scale,
         respiratory_rate_rpm,
         trusted_candidate_evidence,
-        resolved_metric_input: false,
-        value_semantics_verified: false,
+        resolved_metric_input: device_native_scale_accepted,
+        value_semantics_verified: device_native_scale_accepted,
         quality_flags: quality_flags.into_iter().collect(),
         provenance: json!({
             "input_source": "decoded_frame",
@@ -4635,8 +4768,16 @@ fn respiratory_rate_feature_from_plan(
             "candidate_body_offset": plan.raw_body_offset,
             "candidate_absolute_offset": plan.raw_absolute_offset,
             "candidate_source": "history_pip_body_evidence",
-            "candidate_basis": "k18_fw_packet_u32_1c_high_u16_experimental_respiratory_like_tenths",
-            "promotion_policy": "passive_decode_validate_only",
+            "candidate_basis": if plan.encoding == "u16_le_div200" {
+                "k24_body_63_u16_rpm_x200_device_native_self_validated_15p4rpm"
+            } else {
+                "k18_fw_packet_u32_1c_high_u16_experimental_respiratory_like_tenths"
+            },
+            "promotion_policy": if device_native_scale_accepted {
+                "device_native_scale_accepted_no_reference"
+            } else {
+                "passive_decode_validate_only"
+            },
             "score_input_policy": "blocked_until_respiratory_units_are_verified",
             "sample_time_source": sample_time.source,
             "device_timestamp_seconds": plan.timestamp_seconds,
@@ -5882,18 +6023,18 @@ fn daily_hrv_features(
                 .map(|feature| feature.metric_input_id.clone())
                 .collect::<Vec<_>>();
             input_ids.sort();
-            let input = HrvInput {
-                start_time: format!("{date}T00:00:00Z"),
-                end_time: format!("{date}T23:59:59Z"),
-                rr_intervals_ms,
-                input_ids: input_ids.clone(),
-            };
-            let result = goose_hrv_v0(&input);
-            let output = result.output?;
+            // Each feature carries one capture window's consecutive RR intervals.
+            // Treat every feature as its own segment so RMSSD only differences
+            // genuinely adjacent beats (never across capture-window boundaries).
+            let segments = features
+                .iter()
+                .map(|feature| feature.rr_intervals_ms.clone())
+                .collect::<Vec<_>>();
+            let rmssd_ms = rmssd_segment_aware(&segments, 1)?;
             Some(HrvDayFeature {
                 date,
-                rmssd_ms: output.rmssd_ms,
-                rr_interval_count: input.rr_intervals_ms.len(),
+                rmssd_ms,
+                rr_interval_count: rr_intervals_ms.len(),
                 trusted_metric_input: features.iter().all(|feature| feature.trusted_metric_input),
                 input_ids,
             })

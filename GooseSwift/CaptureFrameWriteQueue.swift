@@ -278,7 +278,10 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
             "database_path": databasePath,
             "parser_version": "goose-swift/live-notification",
             "include_timeline_rows": false,
-            "compact_raw_payloads": false,
+            // Compact old raw payloads on every live write so the on-device database
+            // stays bounded (see DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES)
+            // instead of growing without limit during a long history sync.
+            "compact_raw_payloads": true,
             "include_results": false,
             "frames": rows.map(\.bridgeObject),
           ]

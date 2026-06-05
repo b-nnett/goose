@@ -153,5 +153,7 @@ tempfile = "3.13"
 opt-level = 3
 lto = "thin"
 codegen-units = 1
-panic = "abort"
+# Unwind (not abort) so the FFI boundary's catch_unwind in bridge.rs can turn a panic
+# into a JSON error instead of crashing the whole app.
+panic = "unwind"
 strip = "debuginfo"

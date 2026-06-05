@@ -96,7 +96,12 @@ extension GooseAppModel {
       return
     }
     refreshOvernightReadiness(reason: "ble_ready")
-    schedulePassiveActivityCapture(reason: "ble_ready")
+    // Do NOT auto-start passive packet capture on connect. It began a 12-hour,
+    // full-rate capture that persisted every frame to SQLite via the Rust bridge —
+    // the dominant source of UI lag and unbounded database growth — with no user
+    // opt-in. It is also redundant on WHOOP 4.0, where live heart rate already comes
+    // from the standard 180D/2A37 service. Packet capture remains available on demand
+    // from the More tab (startHealthPacketCapture).
     scheduleAutoStartRespiratoryPacketWatchIfNeeded()
   }
 

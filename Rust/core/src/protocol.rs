@@ -132,6 +132,23 @@ pub enum DataPacketBodySummary {
         hr_present: Option<bool>,
         marker_offset: Option<usize>,
         marker_value: Option<u8>,
+        // V12/V24 DSP sensor fields (openwhoop layout), present when the body is long
+        // enough (>= 67 bytes). Offsets are into the packet body (payload after the
+        // 13-byte data-packet header). These carry the recovery metrics that WHOOP
+        // measures over a sleep: beat-to-beat RR intervals (ms) for HRV, SpO2 red/IR,
+        // raw skin temperature, raw respiratory rate, and signal quality.
+        #[serde(default)]
+        rr_intervals_ms: Vec<u16>,
+        #[serde(default)]
+        spo2_red: Option<u16>,
+        #[serde(default)]
+        spo2_ir: Option<u16>,
+        #[serde(default)]
+        skin_temp_raw: Option<u16>,
+        #[serde(default)]
+        respiratory_rate_raw: Option<u16>,
+        #[serde(default)]
+        signal_quality: Option<u16>,
     },
     R17OpticalOrLabradorFiltered {
         flags: Option<u16>,
@@ -393,7 +410,7 @@ pub fn decode_hex_with_whitespace(hex_value: &str) -> GooseResult<Vec<u8>> {
     Ok(hex::decode(stripped)?)
 }
 
-fn parse_payload(payload: &[u8]) -> Option<ParsedPayload> {
+pub fn parse_payload(payload: &[u8]) -> Option<ParsedPayload> {
     let packet_type = *payload.first()?;
     match packet_type {
         PACKET_TYPE_COMMAND | PACKET_TYPE_PUFFIN_COMMAND => Some(parse_command_payload(payload)),
@@ -520,14 +537,42 @@ fn parse_data_packet_body_summary(
     };
 
     match packet_k {
-        7 | 9 | 12 | 18 | 24 => (
-            Some(DataPacketBodySummary::NormalHistory {
-                hr_present: hr_present_marker.map(|marker| marker != 0),
-                marker_offset: hr_marker_offset,
-                marker_value: hr_present_marker,
-            }),
-            Vec::new(),
-        ),
+        7 | 9 | 12 | 18 | 24 => {
+            // Decode the V12/V24 DSP sensor fields from the body (payload after the
+            // 13-byte data-packet header), per the openwhoop layout, when present.
+            let body = &payload[13.min(payload.len())..];
+            let read_u16 = |offset: usize| -> Option<u16> {
+                body.get(offset)
+                    .zip(body.get(offset + 1))
+                    .map(|(low, high)| u16::from_le_bytes([*low, *high]))
+            };
+            let has_dsp_fields = body.len() >= 67;
+            let mut rr_intervals_ms = Vec::new();
+            if has_dsp_fields {
+                let rr_count = body[5] as usize;
+                for index in 0..rr_count.min(4) {
+                    if let Some(value) = read_u16(6 + index * 2) {
+                        if value != 0 {
+                            rr_intervals_ms.push(value);
+                        }
+                    }
+                }
+            }
+            (
+                Some(DataPacketBodySummary::NormalHistory {
+                    hr_present: hr_present_marker.map(|marker| marker != 0),
+                    marker_offset: hr_marker_offset,
+                    marker_value: hr_present_marker,
+                    rr_intervals_ms,
+                    spo2_red: if has_dsp_fields { read_u16(51) } else { None },
+                    spo2_ir: if has_dsp_fields { read_u16(53) } else { None },
+                    skin_temp_raw: if has_dsp_fields { read_u16(55) } else { None },
+                    respiratory_rate_raw: if has_dsp_fields { read_u16(63) } else { None },
+                    signal_quality: if has_dsp_fields { read_u16(65) } else { None },
+                }),
+                Vec::new(),
+            )
+        }
         17 => parse_r17_body_summary(payload),
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),

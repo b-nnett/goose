@@ -10,7 +10,7 @@ use goose_core::{
     },
     commands::{CommandEvidence, validate_commands},
     metrics::{built_in_algorithm_definitions, built_in_default_algorithm_preferences},
-    protocol::{DeviceType, parse_frame_hex},
+    protocol::{DeviceType, build_v5_payload_frame, parse_frame, parse_frame_hex},
     store::{
         ActivityIntervalInput, ActivityLabelInput, ActivityMetricInput, ActivitySessionInput,
         AlgorithmPreferenceRecord, CURRENT_SCHEMA_VERSION, CalibrationLabelInput,
@@ -28,6 +28,89 @@ const GET_HELLO_RESPONSE_FRAME: &str = "aa010c000001e7412409910100000000401adc66
 const COMMAND_SERVICE_UUID: &str = "61080001-0000-1000-8000-00805f9b34fb";
 const COMMAND_CHARACTERISTIC_UUID: &str = "61080002-0000-1000-8000-00805f9b34fb";
 const COMMAND_WRITE_TYPE: &str = "with_response";
+
+#[test]
+fn large_cached_body_hex_is_dropped_small_is_kept() {
+    // The cached parsed-payload `body_hex` duplicates `payload_hex`; for large bodies
+    // (the high-volume raw-motion stream) it is dropped at insert time to bound storage.
+    let store = GooseStore::open_in_memory().unwrap();
+    store
+        .start_capture_session(CaptureSessionInput {
+            session_id: "s",
+            source: "synthetic.fixture",
+            started_at_unix_ms: 1770000000000,
+            device_model: "WHOOP",
+            active_device_id: None,
+            provenance_json: "{}",
+        })
+        .unwrap();
+
+    // Large data packet (>128-byte body) -> body_hex cleared in the cached JSON.
+    let mut payload = vec![47u8, 0, 0];
+    payload.extend(std::iter::repeat(0xABu8).take(200));
+    let big_frame = build_v5_payload_frame(&payload);
+    let parsed_big = parse_frame(DeviceType::Goose, &big_frame).unwrap();
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "big",
+            source: "synthetic.fixture",
+            captured_at: "2026-05-27T00:00:00Z",
+            device_model: "WHOOP",
+            payload: &big_frame,
+            sensitivity: "public-test-fixture",
+            capture_session_id: Some("s"),
+        })
+        .unwrap();
+    store
+        .insert_decoded_frame(DecodedFrameInput {
+            frame_id: "big-1",
+            evidence_id: "big",
+            parsed: &parsed_big,
+            parser_version: "t",
+        })
+        .unwrap();
+
+    // Small data packet (real V24 history frame) keeps its body_hex.
+    let small_hex = "aa6400a12f18053ffead0148b1216af822805454015c0000000000000000000071ec05d080c5c53cf600b03ec31dd7beece9633f00009dc5f600b03ec31dd7beece9633f2702690206036e0255015002010c020c010000000046000186060000000000005fd78f0e";
+    let small = hex::decode(small_hex).unwrap();
+    let parsed_small = parse_frame_hex(DeviceType::Gen4, small_hex).unwrap();
+    store
+        .insert_raw_evidence(RawEvidenceInput {
+            evidence_id: "small",
+            source: "synthetic.fixture",
+            captured_at: "2026-05-27T00:01:00Z",
+            device_model: "WHOOP",
+            payload: &small,
+            sensitivity: "public-test-fixture",
+            capture_session_id: Some("s"),
+        })
+        .unwrap();
+    store
+        .insert_decoded_frame(DecodedFrameInput {
+            frame_id: "small-1",
+            evidence_id: "small",
+            parsed: &parsed_small,
+            parser_version: "t",
+        })
+        .unwrap();
+
+    let rows = store
+        .decoded_frames_between("2026-05-27T00:00:00Z", "2026-05-28T00:00:00Z")
+        .unwrap();
+    let big = rows.iter().find(|r| r.frame_id == "big-1").unwrap();
+    let small_row = rows.iter().find(|r| r.frame_id == "small-1").unwrap();
+    // Large frame: body_hex cleared in the cache, but payload_hex (source of truth) intact.
+    assert!(
+        big.parsed_payload_json.contains("\"body_hex\":\"\""),
+        "large body_hex must be cleared from the cached JSON"
+    );
+    assert!(!big.payload_hex.is_empty(), "payload_hex must be preserved");
+    // Small frame: body_hex kept (debug timeline still has it).
+    assert!(
+        !small_row.parsed_payload_json.contains("\"body_hex\":\"\""),
+        "small body_hex must be kept"
+    );
+}
 
 fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();

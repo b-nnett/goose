@@ -11,7 +11,13 @@ use crate::{
 };
 
 pub const CURRENT_SCHEMA_VERSION: i64 = 14;
-pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 512 * 1024 * 1024;
+// Cap raw-frame payload storage so a full WHOOP history backlog cannot balloon the
+// on-device database (512 MB upstream was far too high for a phone).
+pub const DEFAULT_RAW_EVIDENCE_PAYLOAD_RETENTION_LIMIT_BYTES: i64 = 24 * 1024 * 1024;
+// Above this many hex chars (~128 bytes), the cached parsed-payload `body_hex` is
+// dropped at insert time (it duplicates `payload_hex`). History frames stay well under
+// this so the debug timeline keeps their body; the raw-motion stream is far above it.
+const COMPACT_BODY_HEX_THRESHOLD_CHARS: usize = 256;
 
 const ALLOWED_METRIC_SOURCE_KINDS: [&str; 4] = [
     "device_counter",
@@ -1907,8 +1913,28 @@ impl GooseStore {
         validate_required("evidence_id", input.evidence_id)?;
         validate_required("parser_version", input.parser_version)?;
 
-        let parsed_payload_json = serde_json::to_string(&input.parsed.parsed_payload)
-            .map_err(|error| GooseError::message(error.to_string()))?;
+        // `body_hex` inside the cached parsed-payload JSON is exactly `payload[13..]` —
+        // a full duplicate of `payload_hex`, which is already stored alongside it. On the
+        // high-volume raw-motion stream it is by far the largest column (tens of MB) and
+        // nothing in the metric pipeline reads it (verified: HRV / resting HR / strain are
+        // byte-identical with it cleared). Only the debug timeline/export consume it, and
+        // they keep it for small frames. Drop it from the cached JSON for large bodies to
+        // bound on-device storage and cut both capture and metric-batch cost.
+        let parsed_payload_json = match &input.parsed.parsed_payload {
+            Some(crate::protocol::ParsedPayload::DataPacket { body_hex, .. })
+                if body_hex.len() > COMPACT_BODY_HEX_THRESHOLD_CHARS =>
+            {
+                let mut compacted = input.parsed.parsed_payload.clone();
+                if let Some(crate::protocol::ParsedPayload::DataPacket { body_hex, .. }) =
+                    compacted.as_mut()
+                {
+                    body_hex.clear();
+                }
+                serde_json::to_string(&compacted)
+            }
+            _ => serde_json::to_string(&input.parsed.parsed_payload),
+        }
+        .map_err(|error| GooseError::message(error.to_string()))?;
         let warnings_json = serde_json::to_string(&input.parsed.warnings)
             .map_err(|error| GooseError::message(error.to_string()))?;
 

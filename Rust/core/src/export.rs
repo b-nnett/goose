@@ -2317,6 +2317,7 @@ fn export_sensor_samples(
                 hr_present,
                 marker_offset,
                 marker_value,
+                ..
             } => {
                 if hr_present.unwrap_or(false) {
                     if let (Some(offset), Some(value)) = (

@@ -900,6 +900,69 @@ extension GooseBLEClient {
     return Array(bytes[8..<(bytes.count - 4)])
   }
 
+  // Gen4 (WHOOP 4.0) deframer: 4-byte header [0xaa, len_lo, len_hi, crc8] where
+  // len = payload.count + 4 (no header byte beyond the SOF/length/crc8). The
+  // inner payload (packet type + body) is generation-independent, so once
+  // deframed the existing payload handlers work unchanged.
+  static func gen4Frames(in data: Data) -> [Data] {
+    var bytes = Array(data)
+    var frames: [Data] = []
+    while let startIndex = bytes.firstIndex(of: 0xaa) {
+      if startIndex > 0 {
+        bytes.removeFirst(startIndex)
+      }
+      guard bytes.count >= 4 else {
+        break
+      }
+      let declaredLength = Int(UInt16(bytes[1]) | UInt16(bytes[2]) << 8)
+      guard declaredLength >= 4 else {
+        bytes.removeFirst()
+        continue
+      }
+      let expectedLength = declaredLength + 4
+      guard bytes.count >= expectedLength else {
+        break
+      }
+      frames.append(Data(bytes[0..<expectedLength]))
+      bytes.removeFirst(expectedLength)
+    }
+    return frames
+  }
+
+  static func gen4Payload(in frame: Data) -> [UInt8]? {
+    let bytes = Array(frame)
+    guard bytes.count >= 8 else {
+      return nil
+    }
+    let declaredLength = Int(UInt16(bytes[1]) | UInt16(bytes[2]) << 8)
+    let expectedLength = declaredLength + 4
+    guard bytes.count == expectedLength, declaredLength >= 4 else {
+      return nil
+    }
+    return Array(bytes[4..<(bytes.count - 4)])
+  }
+
+  // Generation-aware deframing for the Swift-side command/response state
+  // machines (clock, alarm, sensor, historical, debug). Dispatches on the
+  // connected strap's command characteristic generation.
+  func strapFrames(in data: Data) -> [Data] {
+    switch activeCommandGeneration {
+    case .gen4:
+      return Self.gen4Frames(in: data)
+    case .gen5, .none:
+      return Self.v5Frames(in: data)
+    }
+  }
+
+  func strapPayload(in frame: Data) -> [UInt8]? {
+    switch activeCommandGeneration {
+    case .gen4:
+      return Self.gen4Payload(in: frame)
+    case .gen5, .none:
+      return Self.v5Payload(in: frame)
+    }
+  }
+
   static func buildV5CommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
     var payload = [V5PacketType.command, sequence, command]
     payload.append(contentsOf: data)
@@ -927,6 +990,60 @@ extension GooseBLEClient {
     frame.append(UInt8((payloadCRC >> 16) & 0xff))
     frame.append(UInt8((payloadCRC >> 24) & 0xff))
     return Data(frame)
+  }
+
+  // WHOOP 4.0 (Gen4) command frame: 4-byte header [0xaa, len_lo, len_hi,
+  // crc8(len bytes)] + payload + crc32(payload) little-endian, where
+  // len = payload.count + 4 and the payload is NOT zero-padded. Verified against
+  // the openwhoop reference: buildGen4CommandFrame(0, 35, [0x00]) ==
+  // aa0800a823002300ada86a2d.
+  static func buildGen4CommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
+    var payload = [V5PacketType.command, sequence, command]
+    payload.append(contentsOf: data)
+
+    let payloadCRC = crc32(payload)
+    let declaredLength = UInt16(payload.count + 4)
+    let lengthLow = UInt8(declaredLength & 0xff)
+    let lengthHigh = UInt8((declaredLength >> 8) & 0xff)
+    var frame: [UInt8] = [
+      0xaa,
+      lengthLow,
+      lengthHigh,
+      crc8([lengthLow, lengthHigh]),
+    ]
+    frame.append(contentsOf: payload)
+    frame.append(UInt8(payloadCRC & 0xff))
+    frame.append(UInt8((payloadCRC >> 8) & 0xff))
+    frame.append(UInt8((payloadCRC >> 16) & 0xff))
+    frame.append(UInt8((payloadCRC >> 24) & 0xff))
+    return Data(frame)
+  }
+
+  // Picks the correct command frame format for the connected strap generation.
+  func buildCommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
+    switch activeCommandGeneration {
+    case .gen4:
+      return Self.buildGen4CommandFrame(sequence: sequence, command: command, data: data)
+    case .gen5, .none:
+      return Self.buildV5CommandFrame(sequence: sequence, command: command, data: data)
+    }
+  }
+
+  // CRC-8 with polynomial 0x07, initial value 0, non-reflected (used for the
+  // Gen4 frame header over the two length bytes).
+  static func crc8(_ bytes: [UInt8]) -> UInt8 {
+    var crc: UInt8 = 0
+    for byte in bytes {
+      crc ^= byte
+      for _ in 0..<8 {
+        if crc & 0x80 != 0 {
+          crc = (crc << 1) ^ 0x07
+        } else {
+          crc <<= 1
+        }
+      }
+    }
+    return crc
   }
 
   static func crc16Modbus(_ bytes: [UInt8]) -> UInt16 {

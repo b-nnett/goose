@@ -194,6 +194,12 @@ fn parses_history_packet_stable_header_and_hr_marker() {
                 hr_present: Some(true),
                 marker_offset: Some(14),
                 marker_value: Some(0x4d),
+                rr_intervals_ms: Vec::new(),
+                spo2_red: None,
+                spo2_ir: None,
+                skin_temp_raw: None,
+                respiratory_rate_raw: None,
+                signal_quality: None,
             }),
             warnings: Vec::new(),
         })
@@ -223,6 +229,12 @@ fn normal_history_zero_hr_marker_is_not_treated_as_hr_present() {
                     hr_present: Some(false),
                     marker_offset: Some(17),
                     marker_value: Some(0),
+                    rr_intervals_ms: Vec::new(),
+                    spo2_red: None,
+                    spo2_ir: None,
+                    skin_temp_raw: None,
+                    respiratory_rate_raw: None,
+                    signal_quality: None,
                 })
             );
         }
@@ -504,6 +516,12 @@ fn short_data_packets_preserve_raw_body_and_warn() {
                 hr_present: None,
                 marker_offset: Some(14),
                 marker_value: None,
+                rr_intervals_ms: Vec::new(),
+                spo2_red: None,
+                spo2_ir: None,
+                skin_temp_raw: None,
+                respiratory_rate_raw: None,
+                signal_quality: None,
             }),
             warnings: vec![
                 "data_packet_header_too_short".to_string(),

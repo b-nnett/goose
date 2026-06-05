@@ -57,7 +57,7 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.debug_command", title: "command.blocked", body: debugCommandStatus)
       return false
     }
-    guard supportsV5SensorCommands else {
+    guard supportsSensorCommands else {
       setDebugCommandStatus("\(definition.title) needs fd4b0002 V5 command framing")
       record(level: .warn, source: "ble.debug_command", title: "command.blocked", body: commandCharacteristic.uuid.uuidString)
       return false
@@ -79,7 +79,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextDebugSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = buildCommandFrame(
       sequence: sequence,
       command: definition.commandNumber,
       data: payload
@@ -183,11 +183,26 @@ extension GooseBLEClient {
     }
     guard
       let activePeripheral,
-      let commandCharacteristic,
-      !GooseHello.clientHelloFrame.isEmpty
+      let commandCharacteristic
     else {
       updateConnectionState("hello blocked")
       record(level: .warn, source: "ble", title: "hello.blocked", body: "missing active peripheral or command characteristic")
+      return
+    }
+
+    // WHOOP 4.0 (Gen4) uses a different hello command than 5.0: the GetHelloHarvard
+    // command (35) with data [0x00], wrapped in the 4-byte Gen4 frame. WHOOP 5.0
+    // uses the prebuilt GetHello (145) frame.
+    let helloFrame: Data
+    switch activeCommandGeneration {
+    case .gen4:
+      helloFrame = Self.buildGen4CommandFrame(sequence: 0, command: 35, data: [0x00])
+    case .gen5, .none:
+      helloFrame = GooseHello.clientHelloFrame
+    }
+    guard !helloFrame.isEmpty else {
+      updateConnectionState("hello blocked")
+      record(level: .warn, source: "ble", title: "hello.blocked", body: "could not build hello frame")
       return
     }
 
@@ -203,7 +218,7 @@ extension GooseBLEClient {
     }
 
     activePeripheral.writeValue(
-      GooseHello.clientHelloFrame,
+      helloFrame,
       for: commandCharacteristic,
       type: writeType
     )
@@ -213,7 +228,7 @@ extension GooseBLEClient {
       commandNumber: nil,
       sequence: nil,
       payload: Data(),
-      frame: GooseHello.clientHelloFrame,
+      frame: helloFrame,
       peripheral: activePeripheral,
       characteristic: commandCharacteristic,
       writeType: writeType
@@ -222,7 +237,7 @@ extension GooseBLEClient {
     record(
       source: "ble",
       title: "hello.sent",
-      body: "reason=\(reason) \(commandCharacteristic.uuid.uuidString) \(writeTypeName(writeType)) \(GooseHello.clientHelloFrameHex)"
+      body: "reason=\(reason) \(commandCharacteristic.uuid.uuidString) \(writeTypeName(writeType)) \(helloFrame.hexString)"
     )
   }
 
@@ -262,32 +277,44 @@ extension GooseBLEClient {
 
   func startPhysiologySignalCapture() {
     record(source: "ui.debug", title: "physiology_capture.start.requested")
+    let commands = activeCommandGeneration == .gen4
+      ? SensorStreamCommandKind.startRealtimeHeartRateGen4
+      : SensorStreamCommandKind.startPhysiologyCapture
     writeSensorStreamCommands(
-      SensorStreamCommandKind.startPhysiologyCapture,
+      commands,
       requestedStatus: "Starting physiology capture"
     )
   }
 
   func startMovementHeartRateCapture() {
     record(source: "ui.debug", title: "movement_hr_capture.start.requested")
+    let commands = activeCommandGeneration == .gen4
+      ? SensorStreamCommandKind.startRealtimeHeartRateGen4
+      : SensorStreamCommandKind.startMovementHeartRateCapture
     writeSensorStreamCommands(
-      SensorStreamCommandKind.startMovementHeartRateCapture,
+      commands,
       requestedStatus: "Starting movement + HR capture"
     )
   }
 
   func stopMovementHeartRateCapture() {
     record(source: "ui.debug", title: "movement_hr_capture.stop.requested")
+    let commands = activeCommandGeneration == .gen4
+      ? SensorStreamCommandKind.stopRealtimeHeartRateGen4
+      : SensorStreamCommandKind.stopMovementHeartRateCapture
     writeSensorStreamCommands(
-      SensorStreamCommandKind.stopMovementHeartRateCapture,
+      commands,
       requestedStatus: "Stopping movement + HR capture"
     )
   }
 
   func stopPhysiologySignalCapture() {
     record(source: "ui.debug", title: "physiology_capture.stop.requested")
+    let commands = activeCommandGeneration == .gen4
+      ? SensorStreamCommandKind.stopRealtimeHeartRateGen4
+      : SensorStreamCommandKind.stopPhysiologyCapture
     writeSensorStreamCommands(
-      SensorStreamCommandKind.stopPhysiologyCapture,
+      commands,
       requestedStatus: "Stopping physiology capture"
     )
   }

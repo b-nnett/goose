@@ -184,7 +184,12 @@ extension HealthDataStore {
     let resolved = Self.intValue(report["resolved_metric_input_count"]) ?? 0
     let temp = Self.intValue(report["skin_temperature_input_count"]) ?? Self.array(report["skin_temperature_inputs"]).count
     let pip = Self.intValue(report["pulse_information_packet_count"]) ?? 0
-    return "\(Self.passStatus(report)) | \(trusted)/\(total) trusted events | \(resolved) resolved | temp \(temp) | PIP \(pip)"
+    let respRpm = Self.array(report["respiratory_rate_inputs"])
+      .compactMap { ($0 as? [String: Any]) }
+      .first { Self.boolValue($0["resolved_metric_input"]) == true }
+      .flatMap { Self.numberText($0["respiratory_rate_rpm"], fractionDigits: 1) }
+    let respText = respRpm.map { "\($0) rpm resp" } ?? "resp held"
+    return "\(Self.passStatus(report)) | \(respText) | \(trusted)/\(total) events | temp \(temp) | PIP \(pip)"
   }
 
   func vitalEventFeatureProvenanceSummary() -> String {

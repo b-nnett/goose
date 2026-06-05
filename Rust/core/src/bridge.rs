@@ -2522,7 +2522,25 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
             ));
         }
     };
-    string_to_c_string(handle_bridge_request_json(request))
+    // Never let a panic unwind across the C-FFI boundary (undefined behavior) or abort
+    // the whole app. Any panic in a handler becomes a structured JSON error instead.
+    let response = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        handle_bridge_request_json(request)
+    }))
+    .unwrap_or_else(|_| {
+        serialize_response(&BridgeResponse {
+            schema: BRIDGE_RESPONSE_SCHEMA.to_string(),
+            request_id: "unknown".to_string(),
+            ok: false,
+            result: None,
+            error: Some(BridgeError {
+                code: "panic".to_string(),
+                message: "internal panic caught at FFI boundary".to_string(),
+            }),
+            timing: None,
+        })
+    });
+    string_to_c_string(response)
 }
 
 #[unsafe(no_mangle)]
@@ -7556,7 +7574,7 @@ where
 
 fn parse_device_type(value: &str) -> GooseResult<DeviceType> {
     match value {
-        "GEN_4" | "Gen4" | "gen4" => Ok(DeviceType::Gen4),
+        "GEN_4" | "GEN4" | "Gen4" | "gen4" => Ok(DeviceType::Gen4),
         "MAVERICK" | "Maverick" | "maverick" => Ok(DeviceType::Maverick),
         "PUFFIN" | "Puffin" | "puffin" => Ok(DeviceType::Puffin),
         "GOOSE" | "Goose" | "goose" => Ok(DeviceType::Goose),
