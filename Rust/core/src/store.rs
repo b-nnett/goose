@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     GooseError, GooseResult,
     protocol::{DeviceType, ParsedFrame},
+    validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
 pub const CURRENT_SCHEMA_VERSION: i64 = 14;
@@ -6448,6 +6449,13 @@ fn value_contains_official_whoop_label_marker(value: &Value) -> bool {
 
 fn is_official_whoop_label_token(value: &str) -> bool {
     let normalized = normalized_marker(value);
+    // The official-label compliance policy declaration explicitly documents that
+    // official WHOOP values are validation labels, never metric inputs. It is
+    // compliance metadata, not a source-identity claim, so it must not trip the
+    // marker guard even though it shares the `official_whoop_` prefix.
+    if normalized == normalized_marker(OFFICIAL_WHOOP_LABEL_POLICY) {
+        return false;
+    }
     matches!(
         normalized.as_str(),
         "whoop"

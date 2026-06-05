@@ -1,0 +1,148 @@
+name: Security
+
+# Scans the repository for known security vulnerabilities and leaked secrets.
+#
+# Coverage:
+#   * cargo-audit  - Rust dependency advisories (RustSec) for the Goose Rust core.
+#   * trivy        - filesystem scan for vulnerable dependencies, leaked secrets,
+#                    and misconfigurations across the whole repo (Rust, Python,
+#                    workflows, config).
+#
+# Resilience: the advisory database and registry downloads these tools rely on
+# can fail transiently (e.g. rate limits), which would make the job red without
+# a real vulnerability. To avoid that, each job retries only the network-bound
+# fetch steps and then runs the actual scan once, offline and deterministically
+# (--no-fetch / --skip-db-update). A real finding therefore fails the job, while
+# a transient fetch blip is retried instead of reported as a vulnerability. A
+# failure summary distinguishes the two for whoever reads the run.
+#
+# Runs on pushes/PRs that touch dependency or build manifests, on a weekly
+# schedule (so newly disclosed advisories surface even without code changes),
+# and on demand via workflow_dispatch.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Rust/core/Cargo.toml"
+      - "Rust/core/Cargo.lock"
+      - ".github/workflows/security.yml"
+  pull_request:
+    paths:
+      - "Rust/core/Cargo.toml"
+      - "Rust/core/Cargo.lock"
+      - ".github/workflows/security.yml"
+  schedule:
+    - cron: "0 7 * * 1" # Mondays at 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_VERSION: "0.58.1"
+
+jobs:
+  cargo-audit:
+    name: Rust dependency audit (RustSec)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cargo --version
+
+      - name: Cache cargo-audit binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit
+
+      # Install is network-bound (crates.io); retry transient failures.
+      - name: Install cargo-audit
+        run: |
+          source "${GITHUB_WORKSPACE}/.github/scripts/retry.sh"
+          cargo-audit --version 2>/dev/null \
+            || retry cargo install cargo-audit --locked
+
+      # Pre-fetch the RustSec advisory DB in a retried, network-bound step so a
+      # rate-limited git fetch is retried rather than failing the scan.
+      - name: Fetch RustSec advisory database (with retry)
+        run: |
+          source "${GITHUB_WORKSPACE}/.github/scripts/retry.sh"
+          rm -rf "${HOME}/.cargo/advisory-db"
+          retry git clone --depth 1 \
+            https://github.com/RustSec/advisory-db "${HOME}/.cargo/advisory-db"
+
+      # The scan itself runs offline against the pre-fetched DB, so it is
+      # deterministic: it fails only when a known-vulnerable (or unmaintained,
+      # via --deny warnings) dependency is actually present.
+      - name: Audit Rust core dependencies
+        working-directory: Rust/core
+        run: cargo audit --no-fetch --deny warnings
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          {
+            echo "### Rust dependency audit failed"
+            echo ""
+            echo "- If the failing step is **Install cargo-audit** or **Fetch RustSec advisory database**, the failure is most likely a transient network/rate-limit issue — re-run the job."
+            echo "- If the failing step is **Audit Rust core dependencies**, a real RustSec advisory was matched against \`Rust/core/Cargo.lock\`. Review the log above and bump or replace the affected crate."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    env:
+      TRIVY_CACHE_DIR: ${{ github.workspace }}/.trivycache
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Install is network-bound; retry transient failures.
+      - name: Install Trivy (with retry)
+        run: |
+          source "${GITHUB_WORKSPACE}/.github/scripts/retry.sh"
+          retry bash -c 'curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin "v${TRIVY_VERSION}"'
+          trivy --version
+
+      # Pre-fetch the vulnerability DB and the misconfiguration checks bundle in
+      # retried, network-bound steps so registry rate limits are retried rather
+      # than surfaced as a failed scan.
+      - name: Warm Trivy databases (with retry)
+        run: |
+          source "${GITHUB_WORKSPACE}/.github/scripts/retry.sh"
+          retry trivy --cache-dir "${TRIVY_CACHE_DIR}" image --download-db-only
+          retry trivy --cache-dir "${TRIVY_CACHE_DIR}" fs --scanners misconfig \
+            --exit-code 0 --quiet . > /dev/null
+
+      # The scan runs against the warmed caches with updates disabled, so it is
+      # deterministic: it fails only on actual HIGH/CRITICAL findings or leaked
+      # secrets, not on a transient database download.
+      - name: Run Trivy scan
+        run: |
+          trivy --cache-dir "${TRIVY_CACHE_DIR}" fs \
+            --scanners vuln,secret,misconfig \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --skip-db-update \
+            --skip-check-update \
+            --exit-code 1 \
+            --format table \
+            .
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          {
+            echo "### Trivy filesystem scan failed"
+            echo ""
+            echo "- If the failing step is **Install Trivy** or **Warm Trivy databases**, the failure is most likely a transient registry/rate-limit issue — re-run the job."
+            echo "- If the failing step is **Run Trivy scan**, Trivy found a HIGH/CRITICAL vulnerability, an insecure configuration, or a leaked secret. Review the table above and remediate."
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -1,0 +1,85 @@
+name: Rust Core CI
+
+# Builds and tests the Goose Rust core. The Swift/iOS app needs macOS + Xcode
+# and is not built here; the Rust core is the portable, Linux-buildable part of
+# the project, so it is the natural target for fast pull-request feedback.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Rust/core/**"
+      - ".github/workflows/rust-core-ci.yml"
+  pull_request:
+    paths:
+      - "Rust/core/**"
+      - ".github/workflows/rust-core-ci.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: Rust/core
+
+jobs:
+  build-test:
+    # Run against both stable and the crate's declared MSRV so CI proves the
+    # core compiles and tests pass under the minimum supported toolchain
+    # (rust-version in Rust/core/Cargo.toml), not just a newer stable compiler.
+    name: Build & test (Rust ${{ matrix.toolchain }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, "1.94"] # keep "1.94" in sync with Cargo.toml rust-version
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install ${{ matrix.toolchain }} --profile minimal
+          rustup default ${{ matrix.toolchain }}
+          rustup component add clippy
+          rustc --version
+          cargo --version
+
+      # Several integration tests shell out to python3 for the external
+      # reference adapters under tools/reference (NeuroKit2, pyHRV,
+      # pyActigraphy). python3 ships on ubuntu-latest; the adapters fall back to
+      # hand-derived values when the optional science packages are absent.
+      - name: Confirm python3 is available
+        run: python3 --version
+
+      - name: Cache cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            Rust/core/target
+          key: ${{ runner.os }}-cargo-${{ matrix.toolchain }}-${{ hashFiles('Rust/core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.toolchain }}-
+
+      - name: Build
+        run: cargo build --all-targets --locked
+
+      - name: Test
+        run: cargo test --locked --no-fail-fast
+
+      # Clippy runs for visibility but does not gate the build: the crate
+      # currently carries pre-existing style warnings that are out of scope for
+      # this workflow. Real defects are caught by the test suite above. It runs
+      # only on stable since clippy lints vary by toolchain version.
+      #
+      # `-D warnings` makes clippy exit non-zero on any warning (plain clippy
+      # exits 0 even with warnings), so the `||` branch surfaces them as a
+      # GitHub annotation while the full clippy output stays in the log. The
+      # job is not failed. Once the pre-existing warning backlog is cleared,
+      # drop the `|| echo ...` so this becomes a hard gate that blocks
+      # regressions.
+      - name: Clippy (non-blocking, surfaces warnings as annotations)
+        if: matrix.toolchain == 'stable'
+        run: |
+          cargo clippy --all-targets --locked -- -D warnings \
+            || echo "::warning::Clippy reported warnings (non-blocking; see clippy output above)"

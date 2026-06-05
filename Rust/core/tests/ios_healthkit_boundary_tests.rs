@@ -173,12 +173,14 @@ fn ios_health_metric_display_filters_forbidden_metric_sources() {
 }
 
 fn swift_source_root() -> PathBuf {
+    // The Swift app lives at `<repo-root>/GooseSwift`. `CARGO_MANIFEST_DIR`
+    // points at `<repo-root>/Rust/core`, so two `parent()` hops reach the repo
+    // root and the Swift sources sit directly under it.
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .expect("core crate has parent")
         .parent()
         .expect("goose project has parent")
-        .join("goose-swift")
         .join("GooseSwift")
 }
 
