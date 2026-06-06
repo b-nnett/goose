@@ -466,6 +466,7 @@ extension GooseBLEClient {
     strapClockStatus = "Not read"
     lastClockCommandFrameHex = ""
     lastClockResponsePayloadHex = ""
+    activeDeviceGeneration = .gen5
   }
 
   func resetRealtimeHeartRatePublishState() {
@@ -885,6 +886,58 @@ extension GooseBLEClient {
       bytes.removeFirst(expectedLength)
     }
     return frames
+  }
+
+  static func gen4Frames(in data: Data) -> [Data] {
+    var bytes = Array(data)
+    var frames: [Data] = []
+    while let startIndex = bytes.firstIndex(of: 0xaa) {
+      if startIndex > 0 {
+        bytes.removeFirst(startIndex)
+      }
+      guard bytes.count >= 4 else {
+        break
+      }
+      let declaredLength = Int(bytes[1]) | Int(bytes[2]) << 8
+      guard declaredLength >= 4 else {
+        bytes.removeFirst()
+        continue
+      }
+      let expectedLength = declaredLength + 4
+      guard bytes.count >= expectedLength else {
+        break
+      }
+      frames.append(Data(bytes[0..<expectedLength]))
+      bytes.removeFirst(expectedLength)
+    }
+    return frames
+  }
+
+  static func gen4Payload(in frame: Data) -> [UInt8]? {
+    let bytes = Array(frame)
+    guard bytes.count >= 8 else {
+      return nil
+    }
+    let declaredLength = Int(bytes[1]) | Int(bytes[2]) << 8
+    let expectedLength = declaredLength + 4
+    guard bytes.count == expectedLength, declaredLength >= 4 else {
+      return nil
+    }
+    return Array(bytes[4..<(bytes.count - 4)])
+  }
+
+  func frames(in data: Data) -> [Data] {
+    switch activeDeviceGeneration {
+    case .gen4: return Self.gen4Frames(in: data)
+    case .gen5: return Self.v5Frames(in: data)
+    }
+  }
+
+  func payload(in frame: Data) -> [UInt8]? {
+    switch activeDeviceGeneration {
+    case .gen4: return Self.gen4Payload(in: frame)
+    case .gen5: return Self.v5Payload(in: frame)
+    }
   }
 
   static func v5Payload(in frame: Data) -> [UInt8]? {

@@ -37,9 +37,12 @@ extension GooseAppModel {
     )
 
     let event = result.event
+    // Gen4 data-stream notifications interleave small (4-8 byte) non-frame
+    // chunks between real frames; those produce harmless drops. Only larger
+    // drops indicate genuine framing corruption worth a warn.
     if result.droppedBytes > 0 {
       ble.record(
-        level: .warn,
+        level: result.droppedBytes >= 32 ? .warn : .debug,
         source: "rust",
         title: "notification.frame.reassembly.dropped",
         body: "\(event.characteristicUUID) dropped=\(result.droppedBytes) buffered=\(result.bufferedBytes)"
@@ -98,7 +101,7 @@ extension GooseAppModel {
     let event = result.event
     if result.droppedBytes > 0 {
       ble.record(
-        level: .warn,
+        level: result.droppedBytes >= 32 ? .warn : .debug,
         source: "rust",
         title: "notification.frame.reassembly.dropped",
         body: "\(event.characteristicUUID) dropped=\(result.droppedBytes) buffered=\(result.bufferedBytes)"
@@ -128,7 +131,7 @@ extension GooseAppModel {
     let event = result.event
     if result.droppedBytes > 0 {
       ble.record(
-        level: .warn,
+        level: result.droppedBytes >= 32 ? .warn : .debug,
         source: "rust",
         title: "notification.frame.reassembly.dropped",
         body: "\(event.characteristicUUID) dropped=\(result.droppedBytes) buffered=\(result.bufferedBytes)"

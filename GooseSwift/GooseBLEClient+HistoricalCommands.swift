@@ -25,7 +25,7 @@ extension GooseBLEClient {
     }
     guard supportsV5HistoricalSync else {
       let characteristic = commandCharacteristic?.uuid.uuidString ?? "missing"
-      failHistoricalSync("Historical sync currently supports the Goose V5 fd4b command characteristic. Active command characteristic: \(characteristic).")
+      failHistoricalSync("Historical sync needs a supported WHOOP command characteristic. Active command characteristic: \(characteristic).")
       return
     }
 
@@ -44,6 +44,7 @@ extension GooseBLEClient {
     historyEndAckQueued = false
     historyEndAckSentThisBurst = false
     pendingHistoryEndAckPayload = nil
+    gen4HistoricalPageSeq = 0
     historyEndReceived = false
     historyCompleteReceived = false
     historyStartReceived = false
@@ -58,7 +59,19 @@ extension GooseBLEClient {
       ? "Polling historical range"
       : (automatic ? "Requesting missed packets" : "Requesting historical packets")
     publishSyncToast(phase: .syncing, detail: toastDetail)
-    let firstCommand = firstCommandOverride ?? (requestHistoricalRangeBeforeTransfer ? .getDataRange : .sendHistoricalData)
+    // Gen4 ignores firstCommandOverride: the strap requires the cmd 34 → 22 → 23
+    // sequence regardless of caller intent. See docs/gen4-historical-sync.md.
+    if activeDeviceGeneration == .gen4 {
+      record(
+        source: "ble.sync",
+        title: "historical_sync.started",
+        body: "trigger=\(trigger) first=gen4_get_data_range range_only=\(rangeOnly) override_ignored=\(firstCommandOverride?.name ?? "none")"
+      )
+      notifyHistoricalSyncProgress(status: "syncing", detail: "Querying Gen4 page range", terminal: false, failed: false)
+      writeHistoricalCommand(.getDataRange)
+      return
+    }
+    let firstCommand = firstCommandOverride ?? (requestHistoricalRangeBeforeTransfer && activeDeviceGeneration == .gen5 ? .getDataRange : .sendHistoricalData)
     if firstCommand == .getDataRange {
       updateHistoricalRangeDebugStatus("started trigger=\(trigger) first=GET_DATA_RANGE")
     }
@@ -69,6 +82,16 @@ extension GooseBLEClient {
     )
     notifyHistoricalSyncProgress(status: "syncing", detail: "Starting \(firstCommand.name)", terminal: false, failed: false)
     writeHistoricalCommand(firstCommand)
+  }
+
+  // Gen4 cmd 23 args: [flag=0x01][LE32 page_seq][LE32 page_count=16].
+  // Format observed in the official-app PacketLogger capture; the 16-page
+  // batch size matches the strap's per-burst response window.
+  func gen4PageRequestPayload(seq: UInt32) -> [UInt8] {
+    [0x01,
+     UInt8(seq & 0xff), UInt8((seq >> 8) & 0xff),
+     UInt8((seq >> 16) & 0xff), UInt8((seq >> 24) & 0xff),
+     0x10, 0x00, 0x00, 0x00]
   }
 
   func writeHistoricalCommand(_ kind: HistoricalCommandKind) {
@@ -84,11 +107,19 @@ extension GooseBLEClient {
       return
     }
 
-    let commandPayload = kind == .historicalDataResult
-      ? pendingHistoryEndAckPayload ?? kind.payload
-      : kind.payload
+    // Gen5 sends cmd 34 / 22 with an empty body; Gen4 requires a single 0x00
+    // byte (silently dropped otherwise). cmd 23 always uses the queued page
+    // request payload, identical across generations.
+    let commandPayload: [UInt8]
+    if kind == .historicalDataResult {
+      commandPayload = pendingHistoryEndAckPayload ?? kind.payload
+    } else if activeDeviceGeneration == .gen4 && (kind == .getDataRange || kind == .sendHistoricalData) {
+      commandPayload = [0x00]
+    } else {
+      commandPayload = kind.payload
+    }
     let sequence = nextHistoricalSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: commandPayload
@@ -126,9 +157,10 @@ extension GooseBLEClient {
     )
     if kind == .historicalDataResult {
       record(
+        level: .debug,
         source: "ble.sync",
         title: "historical_sync.result_ack.sent",
-        body: "seq=\(sequence) payload=\(Data(commandPayload).hexString) fire_and_forget=true"
+        body: "seq=\(sequence) fire_and_forget=true"
       )
       if historyCompleteReceived {
         completeHistoricalSync(reason: "history_result_ack_sent_after_complete")

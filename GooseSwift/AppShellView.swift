@@ -17,6 +17,19 @@ struct AppShellView: View {
         .tag(tab)
       }
     }
+    // Weak capture and onDisappear clear avoid a lifetime inversion: model
+    // (lives the whole app) would otherwise pin the view-owned HealthDataStore.
+    // Fire site (GooseAppModel.handleHistoricalSyncProgress) hops to @MainActor,
+    // which is where runPacketInputs() on the @MainActor HealthDataStore expects
+    // to be called.
+    .onAppear {
+      model.onHistoricalSyncCompleted = { [weak healthStore] in
+        healthStore?.runPacketInputs()
+      }
+    }
+    .onDisappear {
+      model.onHistoricalSyncCompleted = nil
+    }
   }
 
   private var tabSelection: Binding<GooseAppTab> {

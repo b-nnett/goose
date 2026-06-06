@@ -145,23 +145,31 @@ extension GooseBLEClient {
   }
 
   var supportsV5HistoricalSync: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+    commandCharacteristic.map(isKnownCommandCharacteristic) == true
   }
 
   var supportsV5AlarmCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+    commandCharacteristic.map(isKnownCommandCharacteristic) == true
   }
 
   var supportsV5ClockCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+    commandCharacteristic.map(isKnownCommandCharacteristic) == true
   }
 
   var supportsV5SensorCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+    commandCharacteristic.map(isKnownCommandCharacteristic) == true
   }
 
   func isV5CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
     characteristic.uuid.uuidString.lowercased().hasPrefix("fd4b0002")
+  }
+
+  func isGen4CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
+    characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
+  }
+
+  func isKnownCommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
+    isV5CommandCharacteristic(characteristic) || isGen4CommandCharacteristic(characteristic)
   }
 
   func shouldUseCommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
@@ -207,7 +215,7 @@ extension GooseBLEClient {
       return
     }
     guard supportsV5ClockCommands else {
-      failClockCommand("Clock command needs fd4b0002 V5 command framing. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
+      failClockCommand("Clock command needs a supported WHOOP command characteristic. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
       return
     }
     guard let writeType = writeType(for: commandCharacteristic) else {
@@ -216,7 +224,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextClockSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -300,7 +308,7 @@ extension GooseBLEClient {
       return
     }
     guard supportsV5AlarmCommands else {
-      alarmCommandStatus = "Alarm writes need fd4b0002 V5 command framing"
+      alarmCommandStatus = "Alarm writes need a supported WHOOP command characteristic"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
     }
@@ -311,7 +319,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextAlarmSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: kind.commandNumber,
       data: kind.payload
@@ -392,7 +400,7 @@ extension GooseBLEClient {
     }
     guard supportsV5SensorCommands else {
       if updatePhysiologyStatus {
-        physiologyCaptureStatus = "Needs fd4b0002 V5 command framing"
+        physiologyCaptureStatus = "Needs a supported WHOOP command characteristic"
       }
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
@@ -438,7 +446,7 @@ extension GooseBLEClient {
   ) {
     let sequence = nextSensorCommandSequence
     nextSensorCommandSequence = nextSensorCommandSequence == UInt8.max ? 180 : nextSensorCommandSequence + 1
-    let frame = Self.buildV5CommandFrame(
+    let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: command.commandNumber,
       data: command.payload
@@ -844,6 +852,7 @@ extension GooseBLEClient {
     for characteristic in characteristics {
       if shouldUseCommandCharacteristic(characteristic) {
         commandCharacteristic = characteristic
+        activeDeviceGeneration = WhoopGeneration.detect(from: characteristic)
         record(
           source: "ble",
           title: cached ? "command_characteristic.cached" : "command_characteristic.discovered",

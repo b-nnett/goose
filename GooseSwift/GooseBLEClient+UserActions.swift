@@ -58,7 +58,7 @@ extension GooseBLEClient {
       return false
     }
     guard supportsV5SensorCommands else {
-      setDebugCommandStatus("\(definition.title) needs fd4b0002 V5 command framing")
+      setDebugCommandStatus("\(definition.title) needs a supported WHOOP command characteristic")
       record(level: .warn, source: "ble.debug_command", title: "command.blocked", body: commandCharacteristic.uuid.uuidString)
       return false
     }
@@ -79,7 +79,7 @@ extension GooseBLEClient {
     }
 
     let sequence = nextDebugSequence()
-    let frame = Self.buildV5CommandFrame(
+    let frame = activeDeviceGeneration.buildCommandFrame(
       sequence: sequence,
       command: definition.commandNumber,
       data: payload
@@ -183,8 +183,7 @@ extension GooseBLEClient {
     }
     guard
       let activePeripheral,
-      let commandCharacteristic,
-      !GooseHello.clientHelloFrame.isEmpty
+      let commandCharacteristic
     else {
       updateConnectionState("hello blocked")
       record(level: .warn, source: "ble", title: "hello.blocked", body: "missing active peripheral or command characteristic")
@@ -202,8 +201,9 @@ extension GooseBLEClient {
       return
     }
 
+    let helloFrame = activeDeviceGeneration.helloFrame
     activePeripheral.writeValue(
-      GooseHello.clientHelloFrame,
+      helloFrame,
       for: commandCharacteristic,
       type: writeType
     )
@@ -213,7 +213,7 @@ extension GooseBLEClient {
       commandNumber: nil,
       sequence: nil,
       payload: Data(),
-      frame: GooseHello.clientHelloFrame,
+      frame: helloFrame,
       peripheral: activePeripheral,
       characteristic: commandCharacteristic,
       writeType: writeType
@@ -222,7 +222,7 @@ extension GooseBLEClient {
     record(
       source: "ble",
       title: "hello.sent",
-      body: "reason=\(reason) \(commandCharacteristic.uuid.uuidString) \(writeTypeName(writeType)) \(GooseHello.clientHelloFrameHex)"
+      body: "reason=\(reason) gen=\(activeDeviceGeneration) \(commandCharacteristic.uuid.uuidString) \(writeTypeName(writeType)) \(helloFrame.hexString)"
     )
   }
 
