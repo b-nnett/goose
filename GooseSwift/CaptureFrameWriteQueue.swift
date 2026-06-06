@@ -184,7 +184,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
   private let databasePath: String
   private let maxQueuedRows: Int
   private let maxBatchRows: Int
-  private let coalesceDelay: TimeInterval = 0.05
+  private let coalesceDelay: TimeInterval
   private let completionCoalesceDelay: TimeInterval = 1
   private var pendingRows: [CapturedFrameWriteRow] = []
   private var latestCompletion: (@MainActor (CaptureFrameWriteResult) -> Void)?
@@ -194,10 +194,11 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
   private var queuedRowCount = 0
   private var isWriting = false
 
-  init(databasePath: String, maxQueuedRows: Int, maxBatchRows: Int) {
+  init(databasePath: String, maxQueuedRows: Int, maxBatchRows: Int, coalesceDelay: TimeInterval) {
     self.databasePath = databasePath
     self.maxQueuedRows = maxQueuedRows
     self.maxBatchRows = max(1, maxBatchRows)
+    self.coalesceDelay = max(0, coalesceDelay)
   }
 
   func enqueue(

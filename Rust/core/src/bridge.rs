@@ -5291,7 +5291,7 @@ fn health_sync_dry_run_bridge(input: HealthSyncDryRunInput) -> GooseResult<serde
 fn capture_import_frame_batch_bridge(
     args: CaptureImportFrameBatchArgs,
 ) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = open_bridge_store_hot(&args.database_path)?;
     let report = import_captured_frame_batch_with_output_options(
         &store,
         &args.frames,
@@ -5454,7 +5454,7 @@ fn capture_observability_timeline_bridge(
 }
 
 fn capture_start_session_bridge(args: CaptureStartSessionArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = open_bridge_store_hot(&args.database_path)?;
     let provenance_json = if args.provenance.is_null() {
         "{}".to_string()
     } else {
@@ -5484,7 +5484,7 @@ fn capture_start_session_bridge(args: CaptureStartSessionArgs) -> GooseResult<se
 }
 
 fn capture_finish_session_bridge(args: CaptureFinishSessionArgs) -> GooseResult<serde_json::Value> {
-    let store = open_bridge_store(&args.database_path)?;
+    let store = open_bridge_store_hot(&args.database_path)?;
     let session =
         store.finish_capture_session(&args.session_id, args.ended_at_unix_ms, args.frame_count)?;
     serde_json::to_value(json!({
@@ -7527,6 +7527,14 @@ fn open_bridge_store(database_path: &str) -> GooseResult<GooseStore> {
         return Err(GooseError::message("database_path is required"));
     }
     GooseStore::open(Path::new(database_path))
+}
+
+fn open_bridge_store_hot(database_path: &str) -> GooseResult<GooseStore> {
+    if database_path.trim().is_empty() {
+        return Err(GooseError::message("database_path is required"));
+    }
+    let path = Path::new(database_path);
+    GooseStore::open_existing_current(path).or_else(|_| GooseStore::open(path))
 }
 
 fn json_object_string(field_name: &str, value: &serde_json::Value) -> GooseResult<String> {
