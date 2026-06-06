@@ -230,6 +230,11 @@ final class GooseBLEClient: NSObject, ObservableObject {
     messageStore.messages
   }
   var commandCharacteristic: CBCharacteristic?
+  /// Only mutated and read on the main thread. CoreBluetooth delegates land
+  /// on `coreBluetoothQueue` but every entry point bounces to main via
+  /// `dispatchCoreBluetoothDelegateToMainIfNeeded` before touching this
+  /// property; UI callers (SwiftUI buttons, @MainActor app model paths)
+  /// are already on main.
   var activeDeviceGeneration: WhoopGeneration = .gen5
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
