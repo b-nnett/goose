@@ -53,6 +53,10 @@ final class GooseAppModel: ObservableObject {
   @Published var overnightGuardCanExportLastSession = false
 
   let ble: GooseBLEClient
+  // Set by AppShellView to run the metric-extract pipeline on HealthDataStore
+  // after a sync completes. Kept as a callback because HealthDataStore is
+  // owned by the view layer, not GooseAppModel.
+  var onHistoricalSyncCompleted: (() -> Void)?
   let packetMonitor = PacketMonitorModel()
   let activitySession = ActivitySessionModel()
   let activityLocationTracker = ActivityLocationTracker()

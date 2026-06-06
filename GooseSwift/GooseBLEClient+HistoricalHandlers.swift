@@ -8,13 +8,13 @@ extension GooseBLEClient {
     guard isHistoricalSyncing else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
+    for frame in frames(in: value) {
       handleHistoricalSyncFrame(frame, characteristic: characteristic)
     }
   }
 
   func handleHistoricalSyncFrame(_ frame: Data, characteristic: CBCharacteristic) {
-    guard let payload = Self.v5Payload(in: frame),
+    guard let payload = payload(in: frame),
           let packetType = payload.first else {
       return
     }
@@ -59,8 +59,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
             let packetType = payload.first else {
         continue
       }
@@ -79,8 +79,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
             payload.count >= 5,
             let packetType = payload.first,
             packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
@@ -140,8 +140,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid) else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
             payload.count >= 5,
             let packetType = payload.first,
             packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
@@ -376,6 +376,28 @@ extension GooseBLEClient {
       return
     }
 
+    // Gen4 cmd 22 replies with body `<echoed_seq> 02 0b 00 00`. The 0x02 in
+    // the result-code slot is a Gen4 success ack, not Gen5 PENDING — so we
+    // bypass the Gen5 result-code logic and immediately advance to cmd 23.
+    // gen4HistoricalPageSeq was set by the preceding cmd 34 response.
+    if activeDeviceGeneration == .gen4 && pending.kind == .sendHistoricalData {
+      historicalCommandTimeoutWorkItem?.cancel()
+      pendingHistoricalCommand = nil
+      record(
+        source: "ble.sync",
+        title: "historical_sync.gen4.transfer_ack",
+        body: "seq=\(pending.sequence) payload=\(Data(payload).hexString)"
+      )
+      record(
+        source: "ble.sync",
+        title: "historical_sync.gen4.transfer_armed",
+        body: "next_seq=\(gen4HistoricalPageSeq)"
+      )
+      pendingHistoryEndAckPayload = gen4PageRequestPayload(seq: gen4HistoricalPageSeq)
+      writeHistoricalCommand(.historicalDataResult)
+      return
+    }
+
     let resultCode = payload[4]
     let result = commandResultName(resultCode)
     let detail = historicalResponseDetail(command: pending.kind, payload: payload)
@@ -463,7 +485,12 @@ extension GooseBLEClient {
         notes: "valid GET_DATA_RANGE response"
       )
     }
-    record(source: "ble.sync", title: "historical_sync.command.response", body: "\(pending.kind.name) seq=\(pending.sequence) \(result)\(detail)")
+    record(
+      level: .debug,
+      source: "ble.sync",
+      title: "historical_sync.command.response",
+      body: "\(pending.kind.name) seq=\(pending.sequence) \(result)"
+    )
 
     if pending.kind != .historicalDataResult,
        processQueuedHistoricalDataResultAck(reason: "after_\(pending.kind.name)") {
@@ -472,6 +499,35 @@ extension GooseBLEClient {
 
     switch pending.kind {
     case .getDataRange:
+      // Gen4 cmd 34 response layout (offsets relative to packet, which starts
+      // with [packet_type, device_seq, command_number, echoed_seq, status, ...]):
+      //   payload[6..10]  LE32 highest available page_seq
+      //   payload[10..14] LE32 LAST_SYNCED page_seq  ← we resume from +1
+      //   payload[14..18] LE32 next-write head
+      //   payload[18..22] LE32 last_synced echoed
+      // The official-app capture started cmd 23 at last_synced + 1; we mirror that.
+      if activeDeviceGeneration == .gen4 {
+        guard payload.count >= 14 else {
+          failHistoricalSync("Gen4 cmd 34 response too short: \(payload.count) bytes payload=\(Data(payload).hexString)")
+          return
+        }
+        let lastSynced = UInt32(payload[10])
+          | (UInt32(payload[11]) << 8)
+          | (UInt32(payload[12]) << 16)
+          | (UInt32(payload[13]) << 24)
+        gen4HistoricalPageSeq = lastSynced &+ 1
+        record(
+          source: "ble.sync",
+          title: "historical_sync.gen4.range",
+          body: "last_synced=\(lastSynced) next_seq=\(gen4HistoricalPageSeq)"
+        )
+        if historicalRangePollOnly {
+          completeHistoricalSync(reason: "gen4_range_poll_complete")
+          return
+        }
+        writeHistoricalCommand(.sendHistoricalData)
+        return
+      }
       if historicalRangePollOnly {
         completeHistoricalSync(reason: "historical_range_poll_complete")
         return
@@ -547,16 +603,32 @@ extension GooseBLEClient {
         )
         return
       }
-      guard let ackPayload = Self.historicalDataResultPayload(fromHistoryEndMetadataPayload: payload) else {
-        historyEndAckQueued = false
-        pendingHistoryEndAckPayload = nil
+      // Gen5 derives the next ack payload by echoing fields from the historyEnd
+      // metadata body. Gen4 doesn't — each page-end advances our own page_seq
+      // counter and queues the next cmd 23 request for page_seq + 1.
+      let ackPayload: [UInt8]
+      if activeDeviceGeneration == .gen4 {
+        gen4HistoricalPageSeq += 1
+        ackPayload = gen4PageRequestPayload(seq: gen4HistoricalPageSeq)
         record(
-          level: .warn,
+          level: .debug,
           source: "ble.sync",
-          title: "historical_sync.result_ack.unprepared",
-          body: "short_history_end payload=\(Data(payload).hexString)"
+          title: "historical_sync.gen4.page_end",
+          body: "next_seq=\(gen4HistoricalPageSeq) packets=\(historicalPacketsReceivedThisSync)"
         )
-        return
+      } else {
+        guard let v5Payload = Self.historicalDataResultPayload(fromHistoryEndMetadataPayload: payload) else {
+          historyEndAckQueued = false
+          pendingHistoryEndAckPayload = nil
+          record(
+            level: .warn,
+            source: "ble.sync",
+            title: "historical_sync.result_ack.unprepared",
+            body: "short_history_end payload=\(Data(payload).hexString)"
+          )
+          return
+        }
+        ackPayload = v5Payload
       }
       pendingHistoryEndAckPayload = ackPayload
       historyEndAckQueued = true

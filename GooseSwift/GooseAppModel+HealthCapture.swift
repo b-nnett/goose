@@ -308,6 +308,9 @@ extension GooseAppModel {
 
   func handleHistoricalSyncProgress(_ progress: GooseHistoricalSyncProgress) {
     handleOvernightHistoricalSyncProgress(progress)
+    if progress.isTerminal && !progress.failed {
+      onHistoricalSyncCompleted?()
+    }
     guard respiratoryPacketWatchActive else {
       return
     }

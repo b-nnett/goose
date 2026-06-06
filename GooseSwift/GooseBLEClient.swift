@@ -230,6 +230,7 @@ final class GooseBLEClient: NSObject, ObservableObject {
     messageStore.messages
   }
   var commandCharacteristic: CBCharacteristic?
+  var activeDeviceGeneration: WhoopGeneration = .gen5
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
   var batteryLevelStatusCharacteristic: CBCharacteristic?
@@ -258,6 +259,7 @@ final class GooseBLEClient: NSObject, ObservableObject {
   var historyEndAckQueued = false
   var historyEndAckSentThisBurst = false
   var pendingHistoryEndAckPayload: [UInt8]?
+  var gen4HistoricalPageSeq: UInt32 = 0
   var lastHeartRateLogAt: Date?
   var lastHeartRateLogBPM: Int?
   var lastHeartRateLogSource = ""
@@ -896,7 +898,7 @@ final class GooseBLEClient: NSObject, ObservableObject {
       return "Alarm command in flight"
     }
     if !supportsV5AlarmCommands {
-      return "Alarm writes need fd4b0002 V5 command framing; active \(commandCharacteristic.uuid.uuidString)"
+      return "Alarm writes need a supported WHOOP command characteristic; active \(commandCharacteristic.uuid.uuidString)"
     }
     if !canSendHello {
       return "WHOOP connection is not ready"

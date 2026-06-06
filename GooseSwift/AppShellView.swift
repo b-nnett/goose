@@ -17,6 +17,12 @@ struct AppShellView: View {
         .tag(tab)
       }
     }
+    .onAppear {
+      let store = healthStore
+      model.onHistoricalSyncCompleted = {
+        store.runPacketInputs()
+      }
+    }
   }
 
   private var tabSelection: Binding<GooseAppTab> {

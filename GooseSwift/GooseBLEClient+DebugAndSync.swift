@@ -34,8 +34,8 @@ extension GooseBLEClient {
     guard notificationCharacteristicIDs.contains(characteristic.uuid), !pendingDebugCommands.isEmpty else {
       return
     }
-    for frame in Self.v5Frames(in: value) {
-      guard let payload = Self.v5Payload(in: frame),
+    for frame in frames(in: value) {
+      guard let payload = payload(in: frame),
             payload.count >= 5,
             let packetType = payload.first,
             packetType == V5PacketType.commandResponse || packetType == V5PacketType.puffinCommandResponse,
@@ -391,6 +391,22 @@ extension GooseBLEClient {
           historicalPacketsReceivedThisSync == 0 else {
       return false
     }
+    // On Gen4, the BLE notification stream fragments K24 data frames across
+    // multiple ATT notifications. The Rust pipeline (used by health.packet_capture)
+    // reassembles them statefully and captures everything, but the Swift sync
+    // path uses a per-notification deframer that drops fragments. Result:
+    // historicalPacketsReceivedThisSync stays 0 even after a full successful
+    // burst. Trust the strap's HistoryComplete metadata as the success signal.
+    // See docs/gen4-historical-sync.md "Known limitations".
+    if activeDeviceGeneration == .gen4 && historyCompleteReceived {
+      record(
+        source: "ble.sync",
+        title: "historical_sync.gen4.retry_skipped",
+        body: "history_complete=true"
+      )
+      completeHistoricalSync(reason: "gen4_history_complete_metadata_only")
+      return true
+    }
     guard historicalTransferRequestAttemptCount < historicalTransferMaxRequestAttempts else {
       let metadataSummary = historyStartReceived || historyEndReceived || historyCompleteReceived
         ? "transfer metadata was received but no historical packet bodies arrived"
@@ -406,10 +422,11 @@ extension GooseBLEClient {
     let metadataSummary = historyStartReceived || historyEndReceived || historyCompleteReceived
       ? "metadata-only"
       : "no-start"
+    let retryLabel = activeDeviceGeneration == .gen4 ? "gen4 cmd34→22→23" : "GET_DATA_RANGE then SEND_HISTORICAL_DATA"
     publishSyncToast(phase: .syncing, detail: "Retrying historical transfer \(nextAttempt)/\(historicalTransferMaxRequestAttempts)")
     notifyHistoricalSyncProgress(
       status: "waiting",
-      detail: "Retrying GET_DATA_RANGE then SEND_HISTORICAL_DATA \(nextAttempt)/\(historicalTransferMaxRequestAttempts) after \(metadataSummary) transfer",
+      detail: "Retrying \(retryLabel) \(nextAttempt)/\(historicalTransferMaxRequestAttempts) after \(metadataSummary) transfer",
       terminal: false,
       failed: false
     )
@@ -417,7 +434,7 @@ extension GooseBLEClient {
       level: .warn,
       source: "ble.sync",
       title: "historical_sync.transfer.retry",
-      body: "attempt=\(nextAttempt)/\(historicalTransferMaxRequestAttempts) first=GET_DATA_RANGE reason=\(reason) previous=\(metadataSummary) history_start=\(historyStartReceived) history_end=\(historyEndReceived) history_complete=\(historyCompleteReceived)"
+      body: "attempt=\(nextAttempt)/\(historicalTransferMaxRequestAttempts) first=\(retryLabel) gen=\(activeDeviceGeneration) reason=\(reason) previous=\(metadataSummary) history_start=\(historyStartReceived) history_end=\(historyEndReceived) history_complete=\(historyCompleteReceived)"
     )
     historyStartReceived = false
     historyEndReceived = false
@@ -425,6 +442,9 @@ extension GooseBLEClient {
     historyEndAckQueued = false
     historyEndAckSentThisBurst = false
     pendingHistoryEndAckPayload = nil
+    if activeDeviceGeneration == .gen4 {
+      historicalTransferRequestAttemptCount += 1
+    }
     writeHistoricalCommand(.getDataRange)
     return true
   }
