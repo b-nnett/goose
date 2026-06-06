@@ -938,6 +938,7 @@ fn raw_export_sensor_samples_store_sample_time_separate_from_capture_time() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -1000,6 +1001,7 @@ fn raw_export_sensor_samples_reject_invalid_device_timestamp_subseconds() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -2946,6 +2948,7 @@ fn raw_export_filters_capture_session_rows() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -3050,6 +3053,7 @@ fn raw_export_filters_packet_type_and_sensor_source_rows() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -3147,6 +3151,7 @@ fn raw_export_can_omit_raw_bytes_but_keep_hashes_and_decoded_samples() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();

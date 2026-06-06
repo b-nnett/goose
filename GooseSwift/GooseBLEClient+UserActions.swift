@@ -57,8 +57,8 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.debug_command", title: "command.blocked", body: debugCommandStatus)
       return false
     }
-    guard supportsV5SensorCommands else {
-      setDebugCommandStatus("\(definition.title) needs fd4b0002 V5 command framing")
+    guard supportsSensorCommands else {
+      setDebugCommandStatus("\(definition.title) needs command characteristic")
       record(level: .warn, source: "ble.debug_command", title: "command.blocked", body: commandCharacteristic.uuid.uuidString)
       return false
     }
@@ -467,6 +467,11 @@ extension GooseBLEClient {
         missingCharacteristicIDs.append(batteryLevelStatusCharacteristicID)
       }
       if !missingCharacteristicIDs.isEmpty {
+        guard !batteryCharacteristicDiscoveryPending else {
+          record(source: "ble.metadata", title: "battery.discover_characteristic.skipped", body: "discovery_in_progress")
+          return
+        }
+        batteryCharacteristicDiscoveryPending = true
         record(source: "ble.metadata", title: "battery.discover_characteristic.requested", body: uuidList(missingCharacteristicIDs))
         activePeripheral.discoverCharacteristics(missingCharacteristicIDs, for: batteryService)
       }

@@ -325,6 +325,7 @@ fn import_raw_motion_step_frame(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/raw-motion-step-estimator-test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -355,6 +356,7 @@ fn import_partial_axis_raw_motion_step_frame(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/raw-motion-step-estimator-test",
+            active_device_id: None,
         },
     )
     .unwrap();

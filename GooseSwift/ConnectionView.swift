@@ -1,25 +1,27 @@
 import SwiftUI
 
 struct ConnectionView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     ConnectionContentView(ble: model.ble)
-      .environmentObject(model)
+      .environment(model)
   }
 }
 
 private struct ConnectionContentView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var messageStore: GooseMessageStore
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
 
   var body: some View {
     List {
       Section("Status") {
-        LabeledContent("Bluetooth", value: ble.bluetoothState)
-        LabeledContent("Connection", value: ble.connectionState)
-        LabeledContent("Reconnect", value: ble.reconnectState)
+        LabeledContent("Bluetooth", value: ble.bluetoothState.localizedBluetoothState)
+        LabeledContent("Connection", value: ble.connectionState.localizedConnectionState)
+        // Reconnect row shows "reconnecting (attempt N/10)" during backoff (Task 1).
+        LabeledContent("Reconnect", value: ble.reconnectState.localizedReconnectState)
+        LabeledContent("HR Reconnect", value: ble.hrReconnectState.localizedHRReconnectState)
         LabeledContent("Historical", value: historicalSyncValue)
         LabeledContent("Remembered", value: ble.rememberedDeviceDescription)
         LabeledContent("Live HR", value: liveHeartRateValue)
@@ -45,6 +47,36 @@ private struct ConnectionContentView: View {
           ble.reconnectRemembered()
         }
         .disabled(!ble.canReconnectRemembered)
+
+        if ble.isReconnecting {
+          Button("Stop Reconnecting") {
+            ble.stopReconnect()
+          }
+        }
+
+        if ble.reconnectFailed {
+          Button("Try Again") {
+            ble.retryReconnect()
+          }
+          Text("Reconnection failed after 10 attempts. Tap \"Try Again\" to restart.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+
+        if ble.hrIsReconnecting {
+          Button("Stop HR Reconnect") {
+            ble.stopHRReconnect()
+          }
+        }
+
+        if ble.hrReconnectFailed {
+          Button("Retry HR Reconnect") {
+            ble.retryHRReconnect()
+          }
+          Text("HR monitor reconnection failed after 10 attempts. Tap \"Retry HR Reconnect\" to restart.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
 
         Button("Send Client Hello") {
           ble.sendClientHello()
@@ -74,7 +106,7 @@ private struct ConnectionContentView: View {
               HStack {
                 VStack(alignment: .leading) {
                   Text(device.name)
-                  Text(device.id.uuidString)
+                  Text("Gen \(device.generation == "unknown" ? "?" : String(device.generation.prefix(1))) · \(device.rssi) dBm")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
@@ -135,11 +167,11 @@ private struct ConnectionContentView: View {
     let packetCount = ble.historicalPacketCount
     let packets = "\(packetCount) \(packetCount == 1 ? "packet" : "packets")"
     if ble.isHistoricalSyncing {
-      return "syncing | \(packets)"
+      return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets)"
     }
     if let completedAt = ble.lastHistoricalSyncCompletedAt {
-      return "\(ble.historicalSyncStatus) | \(packets) @ \(completedAt.formatted(date: .omitted, time: .standard))"
+      return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets) @ \(completedAt.formatted(date: .omitted, time: .standard))"
     }
-    return "\(ble.historicalSyncStatus) | \(packets)"
+    return "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packets)"
   }
 }

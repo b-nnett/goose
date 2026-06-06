@@ -236,7 +236,7 @@ actor CodexSelfContainedAuthClient {
         try await Task.sleep(for: .seconds(max(deviceCode.interval, 1)))
       }
     }
-    throw CodexSelfContainedAuthError.invalidResponse("Device code login timed out after 15 minutes.")
+    throw CodexSelfContainedAuthError.invalidResponse("Device code login timed out after \(maxDeviceCodeWaitSeconds / 60) minutes.")
   }
 
   private func exchangeCodeForTokens(_ code: CodexDeviceTokenPollResponse) async throws -> CodexTokenExchangeResponse {

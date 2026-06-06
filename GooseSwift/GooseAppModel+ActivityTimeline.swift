@@ -20,11 +20,11 @@ extension GooseAppModel {
     return nil
   }
 
-  static func intString(_ value: Any?) -> String {
+  nonisolated static func intString(_ value: Any?) -> String {
     intValue(value).map(String.init) ?? "?"
   }
 
-  static func intValue(_ value: Any?) -> Int? {
+  nonisolated static func intValue(_ value: Any?) -> Int? {
     if let value = value as? Int {
       return value
     }
@@ -670,7 +670,7 @@ extension GooseAppModel {
       .appendingPathComponent(sessionID, isDirectory: true)
   }
 
-  static func overnightGuardRootDirectoryURL() -> URL {
+  nonisolated static func overnightGuardRootDirectoryURL() -> URL {
     let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
       ?? FileManager.default.temporaryDirectory
     return documents

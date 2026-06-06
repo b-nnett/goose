@@ -16,3 +16,13 @@ Rust/iphoneos/
 Rust/iphonesimulator/
 Vendor/CodexRust/codex-rs/target/
 tmp/
+
+# Server secrets
+server/.env
+.env
+
+# Python virtual environments and cache
+server/**/.venv*/
+server/**/__pycache__/
+server/**/*.pyc
+server/**/*.pyo

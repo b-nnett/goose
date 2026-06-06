@@ -9,6 +9,24 @@ import HealthKit
 
 @MainActor
 final class MoreDataStore: ObservableObject {
+  @Published var routeStatus = MoreRouteStatus(
+    profile: .pending,
+    device: .pending,
+    hrMonitor: .pending,
+    connectionLab: .pending,
+    capture: .pending,
+    localStore: .pending,
+    healthSync: .pending,
+    rawExport: .pending,
+    algorithms: .ready,
+    debug: .pending,
+    privacy: .pending,
+    remoteServer: .pending,
+    support: .pending,
+    about: .ready,
+    developer: .pending
+  )
+
   @Published var databasePath: String
   @Published var storageStatus = "Not checked"
   @Published var storageNextAction = "Run Check after Goose has created the local database"
@@ -126,10 +144,11 @@ final class MoreDataStore: ObservableObject {
     rawExportEnd = end
   }
 
-  func routeStatus(ble: GooseBLEClient, model: GooseAppModel) -> MoreRouteStatus {
-    MoreRouteStatus(
+  func refreshRouteStatus(ble: GooseBLEClient, model: GooseAppModel) {
+    let newStatus = MoreRouteStatus(
       profile: OnboardingProfileSnapshot().hasRequiredDetails ? .ready : .pending,
       device: ble.connectionState == "ready" ? .ready : .pending,
+      hrMonitor: ble.hrConnectionState == "connected" ? .ready : .pending,
       connectionLab: model.helloSummary.hasPrefix("GET_HELLO") ? .ready : .pending,
       capture: captureSessionID == nil ? .pending : .ready,
       localStore: databaseExists ? .ready : .unavailable,
@@ -138,10 +157,12 @@ final class MoreDataStore: ObservableObject {
       algorithms: .ready,
       debug: coreVersionStatus.hasPrefix("Rust core") ? .ready : .pending,
       privacy: privacyLintStatus == "Not linted" ? .pending : .ready,
+      remoteServer: (UserDefaults.standard.string(forKey: RemoteServerStorage.serverURL)?.isEmpty ?? true) ? .pending : .ready,
       support: .pending,
       about: .ready,
       developer: .pending
     )
+    routeStatus = newStatus
   }
 
   func refreshBridgeStatus(model: GooseAppModel) {

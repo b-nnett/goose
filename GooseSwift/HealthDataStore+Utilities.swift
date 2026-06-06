@@ -4,6 +4,12 @@ import SwiftUI
 import UIKit
 
 extension HealthDataStore {
+  fileprivate static let relativeFormatter: RelativeDateTimeFormatter = {
+    let f = RelativeDateTimeFormatter()
+    f.unitsStyle = .short
+    return f
+  }()
+
   static func stressTrendStatus(score: Double) -> String {
     if score >= 55 {
       return "Above normal"
@@ -152,7 +158,7 @@ extension HealthDataStore {
     ]
   }
 
-  static func shortError(_ error: Error) -> String {
+  nonisolated static func shortError(_ error: Error) -> String {
     let text = String(describing: error)
     return text.count > 96 ? "\(text.prefix(96))..." : text
   }
@@ -592,11 +598,11 @@ extension HealthDataStore {
     return formatter.string(from: date)
   }
 
-  static func algorithmRows(from value: Any) -> [[String: Any]] {
+  nonisolated static func algorithmRows(from value: Any) -> [[String: Any]] {
     value as? [[String: Any]] ?? []
   }
 
-  static func preferenceRows(from value: Any) -> [String: String] {
+  nonisolated static func preferenceRows(from value: Any) -> [String: String] {
     guard let rows = value as? [[String: Any]] else {
       return [:]
     }
@@ -1027,8 +1033,6 @@ extension HealthDataStore {
     if abs(date.timeIntervalSinceNow) < 10 {
       return "Now"
     }
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .short
-    return formatter.localizedString(for: date, relativeTo: Date()).capitalized
+    return Self.relativeFormatter.localizedString(for: date, relativeTo: Date()).capitalized
   }
 }

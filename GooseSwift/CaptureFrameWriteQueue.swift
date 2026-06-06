@@ -74,7 +74,7 @@ struct CapturedFrameWriteRow {
   }
 }
 
-final class CaptureFrameEnqueueAggregator {
+final class CaptureFrameEnqueueAggregator: @unchecked Sendable {
   var onSnapshot: ((CaptureFrameEnqueueSnapshot) -> Void)?
 
   private let queue = DispatchQueue(label: "com.goose.swift.capture-frame-enqueue", qos: .utility)
@@ -193,6 +193,11 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
   private var completionFlushScheduled = false
   private var queuedRowCount = 0
   private var isWriting = false
+  private var _activeDeviceID: String?
+  var activeDeviceID: String? {
+    get { stateLock.withLock { _activeDeviceID } }
+    set { stateLock.withLock { _activeDeviceID = newValue } }
+  }
 
   init(databasePath: String, maxQueuedRows: Int, maxBatchRows: Int) {
     self.databasePath = databasePath
@@ -281,6 +286,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
             "compact_raw_payloads": false,
             "include_results": false,
             "frames": rows.map(\.bridgeObject),
+            "active_device_id": activeDeviceID ?? NSNull(),
           ]
         )
         result = CaptureFrameWriteResult(
@@ -317,6 +323,16 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       if let completion {
         recordCompletion(result, completion: completion)
       }
+      // FIX-05 (D-09b): trigger storage compaction after each successful batch write.
+      // Fast no-op when already under the 24 MB limit (handled Rust-side).
+      // No ble.record here — GooseAppModel launch-time compaction covers D-10 logging.
+      _ = try? rust.request(
+        method: "storage.compact_raw_evidence",
+        args: [
+          "database_path": databasePath,
+          "limit_bytes": 25_165_824,
+        ]
+      )
     }
   }
 
@@ -354,6 +370,7 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       return
     }
     pendingCompletionResult = nil
+    pendingCompletion = nil
     DispatchQueue.main.async {
       completion(result)
     }
@@ -458,6 +475,6 @@ final class CaptureFrameWriteQueue: @unchecked Sendable {
       return String(format: "%.1f", Double(microseconds) / 1_000)
     }
 
-    return "total \(milliseconds("total_us"))ms | hex \(milliseconds("hex_decode_us"))ms | rawHex \(milliseconds("raw_hex_encode_us"))ms | raw \(milliseconds("raw_insert_us"))ms | parse \(milliseconds("frame_parse_us"))ms | decoded \(milliseconds("decoded_insert_us"))ms | timeline \(milliseconds("timeline_us"))ms | compact \(milliseconds("raw_compaction_us"))ms"
+    return "total \(milliseconds("total_us"))ms | hex \(milliseconds("hex_decode_us"))ms | raw \(milliseconds("raw_insert_us"))ms | parse \(milliseconds("frame_parse_us"))ms | decoded \(milliseconds("decoded_insert_us"))ms | timeline \(milliseconds("timeline_us"))ms | compact \(milliseconds("raw_compaction_us"))ms"
   }
 }

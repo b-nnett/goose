@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHOOP·DECODE — datastore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css?v=24">
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◍</span>
+    <div>
+      <h1>WHOOP<span class="sep">·</span>DECODE</h1>
+      <p class="tag">stored telemetry · home datastore</p>
+    </div>
+  </div>
+  <div class="readouts">
+    <div class="stat"><label>Device</label><span id="st-dev" class="val">—</span></div>
+    <div class="stat"><label>Window</label><span id="st-range" class="val">—</span></div>
+    <div class="stat"><label>Samples</label><span id="st-nhr" class="val">—</span></div>
+    <div class="stat hrbox"><label>HR avg / min / max</label><span id="st-hr" class="val big">—</span></div>
+    <div class="stat" id="stat-nbatch"><label>Raw batches</label><span id="st-nbatch" class="val">—</span></div>
+  </div>
+</header>
+
+<nav class="deck">
+  <label class="ctl" aria-label="device">
+    <select id="device-sel"></select>
+  </label>
+  <span class="ranges" id="ranges">
+    <button class="btn" data-range="86400">24h</button>
+    <button class="btn" data-range="604800">7d</button>
+    <button class="btn" data-range="2592000">30d</button>
+    <button class="btn on" data-range="all">all</button>
+  </span>
+  <button id="reload" class="btn accent">⟳ reload</button>
+  <a class="btn" href="/architecture" style="margin-left:auto;text-decoration:none;display:inline-flex;align-items:center" title="How the app talks to the strap">◈ how it works</a>
+  <span class="status" id="status">—</span>
+</nav>
+
+<main>
+  <!-- Two columns: LEFT = derived daily + sleep history; RIGHT = raw signal charts.
+       Collapses to a single column on narrow viewports (see style.css). -->
+  <div class="col col-left">
+  <!-- Primary DAILY panel: latest sleep/recovery/strain summary + recovery trend.
+       Reads /v1/daily (date range) + /v1/sleep (latest day). Recovery/strain/staging
+       are APPROXIMATE (derived heuristics) — tagged accordingly. -->
+  <section class="panel daily" id="daily">
+    <div class="panel-head"><h2>DAILY</h2><span id="daily-meta" class="pkt-meta"></span></div>
+    <div id="daily-body" class="daily-body">
+      <div class="empty">loading daily summary…</div>
+    </div>
+  </section>
+
+  <!-- SLEEP HISTORY: per-night list over ~30d (most recent first) with click-to-expand
+       drill-down (hypnogram + stage minutes + that night's 1Hz traces). Reads /v1/daily
+       (range) for the list, /v1/sleep (date) + /v1/streams/* (night window) on drill-down. -->
+  <section class="panel sleephist" id="sleephist">
+    <div class="panel-head"><h2>SLEEP HISTORY</h2><span id="sleep-meta" class="pkt-meta"></span></div>
+    <div id="sleep-body" class="sleep-body">
+      <div class="empty">loading sleep history…</div>
+    </div>
+  </section>
+  </div>
+
+  <section class="panel signals col-right">
+    <div class="panel-head"><h2>SIGNALS</h2><span id="sig-meta" class="pkt-meta">24h window · scroll ←</span></div>
+    <!-- All signal charts share ONE horizontal scroll container so their time axes stay
+         aligned: 24h fills the visible width, a wider loaded range scrolls (see app.js
+         applySignalsWindow). Labels/sub-heads are sticky-left so they stay readable. -->
+    <div class="signals-scroll" id="signals-scroll">
+    <div class="chart-wrap">
+      <div class="chart-label"><span>HEART RATE</span><span class="chart-unit">bpm</span></div>
+      <canvas id="hr-chart" class="chart" height="150"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>BATTERY</span><span class="chart-unit">% soc · charging shaded</span></div>
+      <canvas id="batt-chart" class="chart" height="90"></canvas>
+    </div>
+
+    <div class="panel-head sub"><h2>BIOMETRICS · TYPE-47</h2><span id="bio-meta" class="pkt-meta"></span></div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>SpO₂</span><span class="chart-unit">% <span class="approx">≈ approx</span></span></div>
+      <canvas id="spo2-chart" class="chart" height="110"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>SKIN TEMP</span><span class="chart-unit">°C <span class="approx">≈ approx</span></span></div>
+      <canvas id="skin-chart" class="chart" height="90"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>RESPIRATION</span><span class="chart-unit">bpm <span class="approx">≈ approx</span></span></div>
+      <canvas id="resp-chart" class="chart" height="90"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-label"><span>GRAVITY · X / Y / Z</span><span class="chart-unit">g</span></div>
+      <canvas id="grav-chart" class="chart" height="110"></canvas>
+    </div>
+    </div>
+
+    <div class="panel-head sub"><h2>EVENTS</h2><span id="ev-meta" class="pkt-meta"></span></div>
+    <div id="events" class="events"></div>
+  </section>
+</main>
+
+<!-- Raw archive · research. Secondary, collapsible, auto-hidden when the device has 0 raw
+     batches. Raw frames only arrive when research-raw capture is enabled in the app. -->
+<section class="research" id="research" hidden>
+  <button class="research-head" id="research-toggle" aria-expanded="false" aria-controls="research-body">
+    <span class="research-caret">▸</span>
+    <span class="research-title">Raw archive<span class="sep"> · </span><span class="research-tag">research</span></span>
+    <span id="research-count" class="pkt-meta"></span>
+  </button>
+  <p class="research-note">Raw frames are captured only when research-raw mode is enabled in the app. Used to inspect undecoded bytes (e.g. the IMU tail / optical aux).</p>
+  <div class="research-body" id="research-body" hidden>
+    <div class="research-main">
+      <aside class="panel batches">
+        <div class="panel-head"><h2>BATCHES</h2><span id="batch-meta" class="pkt-meta"></span></div>
+        <div id="batch-list" class="batch-list"></div>
+        <div class="panel-head sub"><h2>FRAMES</h2><span id="frame-meta" class="pkt-meta"></span></div>
+        <div id="frame-list" class="frame-list"><div class="empty">select a batch to load its frames</div></div>
+      </aside>
+      <section class="inspector panel" id="inspector" hidden>
+        <div class="panel-head">
+          <h2>HEX INSPECTOR</h2>
+          <span id="pkt-meta" class="pkt-meta"></span>
+        </div>
+        <div class="inspector-grid">
+          <div class="inspector-body"><div id="hexgrid" class="hexgrid"></div>
+            <div id="legend" class="legend"></div></div>
+          <div class="readout">
+            <div class="panel-head sub"><h2>FIELD READOUT</h2></div>
+            <div id="fields" class="fields"></div>
+            <div class="panel-head sub"><h2>PARSED</h2></div>
+            <div id="parsed" class="parsed"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<div id="tooltip" class="tooltip"></div>
+<script src="/static/app.js?v=24"></script>
+</body>
+</html>

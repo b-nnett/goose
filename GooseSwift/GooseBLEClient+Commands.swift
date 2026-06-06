@@ -52,6 +52,10 @@ extension GooseBLEClient {
   }
 
   func updateBluetoothState() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateBluetoothState() }
+      return
+    }
     let previous = bluetoothState
     switch central?.state {
     case .poweredOn:
@@ -98,6 +102,10 @@ extension GooseBLEClient {
   }
 
   func updateConnectionState(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateConnectionState(value) }
+      return
+    }
     let previous = connectionState
     connectionState = value
     updateNotificationContext(connectionState: value)
@@ -108,6 +116,10 @@ extension GooseBLEClient {
   }
 
   func updateActiveDeviceName(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateActiveDeviceName(value) }
+      return
+    }
     activeDeviceName = value
     updateNotificationContext(activeDeviceName: value)
   }
@@ -137,6 +149,10 @@ extension GooseBLEClient {
   }
 
   func updateReconnectState(_ value: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateReconnectState(value) }
+      return
+    }
     let previous = reconnectState
     reconnectState = value
     if previous != value {
@@ -144,24 +160,39 @@ extension GooseBLEClient {
     }
   }
 
-  var supportsV5HistoricalSync: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  /// Returns true when the active command characteristic is confirmed for the connected wearable generation.
+  /// If activeDescriptor is nil (e.g. cached-restore path set commandCharacteristic before
+  /// processDiscoveredCharacteristics ran), falls back to UUID membership in commandCharacteristicIDs
+  /// and logs a warning so the race is visible in diagnostics.
+  private func commandCharacteristicIsValid(_ characteristic: CBCharacteristic) -> Bool {
+    if let desc = activeDescriptor {
+      return desc.isCommandCharacteristic(characteristic)
+    }
+    // activeDescriptor is unexpectedly nil while commandCharacteristic is set; allow the known
+    // command UUIDs to pass so commands are not silently blocked during the setup race window.
+    record(
+      level: .warn,
+      source: "ble",
+      title: "command_characteristic.descriptor_nil",
+      body: "commandCharacteristic=\(characteristic.uuid.uuidString) falling back to UUID membership check"
+    )
+    return commandCharacteristicIDs.contains(characteristic.uuid)
   }
 
-  var supportsV5AlarmCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsHistoricalSync: Bool {
+    commandCharacteristic.map { commandCharacteristicIsValid($0) } == true
   }
 
-  var supportsV5ClockCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsAlarmCommands: Bool {
+    commandCharacteristic.map { commandCharacteristicIsValid($0) } == true
   }
 
-  var supportsV5SensorCommands: Bool {
-    commandCharacteristic.map(isV5CommandCharacteristic) == true
+  var supportsClockCommands: Bool {
+    commandCharacteristic.map { commandCharacteristicIsValid($0) } == true
   }
 
-  func isV5CommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
-    characteristic.uuid.uuidString.lowercased().hasPrefix("fd4b0002")
+  var supportsSensorCommands: Bool {
+    commandCharacteristic.map { commandCharacteristicIsValid($0) } == true
   }
 
   func shouldUseCommandCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
@@ -171,10 +202,18 @@ extension GooseBLEClient {
     guard let current = commandCharacteristic else {
       return true
     }
-    return !isV5CommandCharacteristic(current) && isV5CommandCharacteristic(characteristic)
+    // Prefer command characteristic matching active descriptor; if no descriptor, accept first found
+    if let desc = activeDescriptor {
+      return desc.isCommandCharacteristic(characteristic) && !desc.isCommandCharacteristic(current)
+    }
+    return false
   }
 
   func validatedAlarmID(_ rawValue: Int) -> UInt8? {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in _ = self?.validatedAlarmID(rawValue) }
+      return nil
+    }
     guard (0...255).contains(rawValue) else {
       alarmCommandStatus = "Alarm ID must be 0-255"
       record(level: .warn, source: "ble.alarm", title: "alarm.id.invalid", body: "\(rawValue)")
@@ -184,6 +223,10 @@ extension GooseBLEClient {
   }
 
   func writeClockCommand(_ kind: ClockCommandKind, syncIfNeeded: Bool) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeClockCommand(kind, syncIfNeeded: syncIfNeeded) }
+      return
+    }
     guard !isHistoricalSyncing else {
       failClockCommand("Clock command blocked during historical sync.")
       return
@@ -206,8 +249,8 @@ extension GooseBLEClient {
       failClockCommand("Clock command needs ready connection; current state \(connectionState).")
       return
     }
-    guard supportsV5ClockCommands else {
-      failClockCommand("Clock command needs fd4b0002 V5 command framing. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
+    guard supportsClockCommands else {
+      failClockCommand("Clock command needs command characteristic. Active command characteristic: \(commandCharacteristic.uuid.uuidString).")
       return
     }
     guard let writeType = writeType(for: commandCharacteristic) else {
@@ -279,6 +322,10 @@ extension GooseBLEClient {
   }
 
   func writeAlarmCommand(_ kind: AlarmCommandKind) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeAlarmCommand(kind) }
+      return
+    }
     guard !isHistoricalSyncing else {
       alarmCommandStatus = "Alarm write blocked during historical sync"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: alarmCommandStatus)
@@ -299,8 +346,8 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: alarmCommandStatus)
       return
     }
-    guard supportsV5AlarmCommands else {
-      alarmCommandStatus = "Alarm writes need fd4b0002 V5 command framing"
+    guard supportsAlarmCommands else {
+      alarmCommandStatus = "Alarm writes need command characteristic"
       record(level: .warn, source: "ble.alarm", title: "alarm.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
     }
@@ -369,6 +416,10 @@ extension GooseBLEClient {
     requestedStatus: String,
     updatePhysiologyStatus: Bool = true
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeSensorStreamCommands(commands, requestedStatus: requestedStatus, updatePhysiologyStatus: updatePhysiologyStatus) }
+      return
+    }
     guard !isHistoricalSyncing else {
       if updatePhysiologyStatus {
         physiologyCaptureStatus = "Blocked during historical sync"
@@ -390,9 +441,9 @@ extension GooseBLEClient {
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: "Needs ready connection; current state \(connectionState)")
       return
     }
-    guard supportsV5SensorCommands else {
+    guard supportsSensorCommands else {
       if updatePhysiologyStatus {
-        physiologyCaptureStatus = "Needs fd4b0002 V5 command framing"
+        physiologyCaptureStatus = "Needs command characteristic"
       }
       record(level: .warn, source: "ble.sensor", title: "sensor.write.blocked", body: commandCharacteristic.uuid.uuidString)
       return
@@ -436,6 +487,10 @@ extension GooseBLEClient {
     writeType: CBCharacteristicWriteType,
     updatePhysiologyStatus: Bool = true
   ) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.writeSensorStreamCommand(command, peripheral: peripheral, characteristic: characteristic, writeType: writeType, updatePhysiologyStatus: updatePhysiologyStatus) }
+      return
+    }
     let sequence = nextSensorCommandSequence
     nextSensorCommandSequence = nextSensorCommandSequence == UInt8.max ? 180 : nextSensorCommandSequence + 1
     let frame = Self.buildV5CommandFrame(
@@ -468,6 +523,10 @@ extension GooseBLEClient {
   }
 
   func failClockCommand(_ message: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.failClockCommand(message) }
+      return
+    }
     clockCommandTimeoutWorkItem?.cancel()
     pendingClockCommand = nil
     strapClockStatus = message
@@ -475,6 +534,10 @@ extension GooseBLEClient {
   }
 
   func failAlarmCommand(_ message: String) {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.failAlarmCommand(message) }
+      return
+    }
     alarmCommandTimeoutWorkItem?.cancel()
     pendingAlarmCommand = nil
     alarmCommandStatus = message
@@ -492,6 +555,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedBatterySample() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedBatterySample() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.lastBatteryPercent) != nil else {
       return
     }
@@ -512,6 +579,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedHRVSample() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedHRVSample() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.liveHRVRMSSD) != nil else {
       return
     }
@@ -532,6 +603,10 @@ extension GooseBLEClient {
   }
 
   func loadPersistedRestingHeartRateEstimate() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.loadPersistedRestingHeartRateEstimate() }
+      return
+    }
     guard defaults.object(forKey: DefaultsKey.restingHeartRateEstimateBPM) != nil else {
       return
     }
@@ -577,6 +652,10 @@ extension GooseBLEClient {
   }
 
   func clearRememberedDevice(reason: String, source: String = "ble") {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.clearRememberedDevice(reason: reason, source: source) }
+      return
+    }
     let previous = rememberedDeviceDescription
     defaults.removeObject(forKey: DefaultsKey.rememberedDeviceID)
     defaults.removeObject(forKey: DefaultsKey.rememberedDeviceName)
@@ -588,7 +667,7 @@ extension GooseBLEClient {
     rememberedDeviceName = nil
     rememberedDeviceValidated = false
     autoReconnectTargetID = nil
-    autoReconnectInFlight = false
+    cancelReconnectCycle()
     if activePeripheral == nil {
       activeDeviceIdentifier = nil
       updateActiveDeviceName("WHOOP")
@@ -599,6 +678,10 @@ extension GooseBLEClient {
   }
 
   func updateRememberedDeviceDescription() {
+    if !Thread.isMainThread {
+      DispatchQueue.main.async { [weak self] in self?.updateRememberedDeviceDescription() }
+      return
+    }
     guard let rememberedDeviceID else {
       rememberedDeviceDescription = "none"
       return
@@ -671,6 +754,56 @@ extension GooseBLEClient {
     )
   }
 
+  // Cancels any pending scheduled retry and bumps the generation token so a stale
+  // closure already in-flight (via asyncAfter) is a no-op when it runs.
+  // Must be called on coreBluetoothQueue (or main thread via delegate dispatch).
+  func cancelReconnectCycle() {
+    reconnectWorkItem?.cancel()
+    reconnectWorkItem = nil
+    reconnectGeneration += 1
+  }
+
+  // Schedules the next reconnect attempt using the backoff state.
+  // On circuit breaker exhaustion (10 attempts) transitions to failed state.
+  // Must be called on coreBluetoothQueue (or main thread via delegate dispatch).
+  func scheduleNextReconnect(reason: String) {
+    guard let delay = reconnectBackoff.nextDelay() else {
+      // Circuit breaker: all attempts exhausted.
+      updateReconnectState("failed after 10 attempts")
+      reconnectBackoff.reset()
+      return
+    }
+    // Update status AFTER nextDelay() incremented attemptCount.
+    updateReconnectState(reconnectBackoff.statusString)
+    let generation = reconnectGeneration
+    let item = DispatchWorkItem { [weak self] in
+      guard let self, self.reconnectGeneration == generation else { return }
+      self.attemptAutomaticReconnect(reason: reason)
+    }
+    reconnectWorkItem = item
+    // first attempt fires after baseDelay (1s), not immediately
+    coreBluetoothQueue.asyncAfter(deadline: .now() + delay, execute: item)
+  }
+
+  func stopReconnect() {
+    coreBluetoothQueue.async { [weak self] in
+      guard let self else { return }
+      self.cancelReconnectCycle()
+      self.reconnectBackoff.reset()
+      self.updateReconnectState("idle")
+      // remembered device is NOT cleared (D-05)
+    }
+  }
+
+  func retryReconnect() {
+    coreBluetoothQueue.async { [weak self] in
+      guard let self else { return }
+      self.cancelReconnectCycle()
+      self.reconnectBackoff.reset()
+      self.scheduleNextReconnect(reason: "manual_retry")
+    }
+  }
+
   func attemptAutomaticReconnect(reason: String) {
     guard let central, central.state == .poweredOn else {
       updateReconnectState("waiting for bluetooth")
@@ -680,7 +813,7 @@ extension GooseBLEClient {
       updateReconnectState("already connected")
       return
     }
-    guard !autoReconnectInFlight else {
+    guard !isReconnecting || reason == "backoff_retry" || reason == "manual_retry" || reason == "startup" else {
       record(level: .debug, source: "ble", title: "reconnect.skipped", body: "already in flight")
       return
     }
@@ -694,7 +827,6 @@ extension GooseBLEClient {
         return
       }
       updateReconnectState("retrieving remembered")
-      autoReconnectInFlight = true
       let retrieved = central.retrievePeripherals(withIdentifiers: [rememberedDeviceID])
       if let peripheral = retrieved.first {
         peripherals[peripheral.identifier] = peripheral
@@ -705,7 +837,6 @@ extension GooseBLEClient {
             : "auto.\(reason).remembered"
           connect(peripheral, reason: connectReason)
         } else if let name = peripheral.name, !isWhoopName(name) {
-          autoReconnectInFlight = false
           updateReconnectState("remembered was not WHOOP")
           rejectNonWhoopPeripheral(peripheral, reason: "remembered_name_mismatch")
         } else {
@@ -788,12 +919,20 @@ extension GooseBLEClient {
       )
       return
     }
+    guard characteristic.value == nil else {
+      record(source: "ble", title: "metadata.read.skipped", body: "\(characteristic.uuid.uuidString) value_already_cached reason=\(reason)")
+      return
+    }
     peripheral.readValue(for: characteristic)
     record(source: "ble", title: "metadata.read.requested", body: "\(characteristic.uuid.uuidString) reason=\(reason)")
   }
 
   func subscribeIfPossible(_ peripheral: CBPeripheral, _ characteristic: CBCharacteristic) {
     guard notificationCandidate(characteristic) else {
+      return
+    }
+    guard !characteristic.isNotifying else {
+      record(source: "ble", title: "notify.skipped", body: "\(characteristic.uuid.uuidString) already_subscribed")
       return
     }
     guard characteristic.properties.contains(.notify) || characteristic.properties.contains(.indicate) else {
@@ -844,10 +983,17 @@ extension GooseBLEClient {
     for characteristic in characteristics {
       if shouldUseCommandCharacteristic(characteristic) {
         commandCharacteristic = characteristic
+        activeDescriptor = characteristic.uuid.uuidString.lowercased().hasPrefix("61080002")
+          ? .whoopGen4 : .whoopGen5
         record(
           source: "ble",
           title: cached ? "command_characteristic.cached" : "command_characteristic.discovered",
           body: "\(service.uuid.uuidString) \(characteristic.uuid.uuidString) properties=\(propertyNames(characteristic.properties))"
+        )
+        record(
+          source: "ble",
+          title: "wearable_descriptor.set",
+          body: characteristic.uuid.uuidString.lowercased().hasPrefix("61080002") ? "gen4" : "gen5"
         )
       } else if commandCharacteristicIDs.contains(characteristic.uuid) {
         record(
@@ -903,7 +1049,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5SensorCommands else {
+          supportsSensorCommands else {
       return
     }
 
@@ -924,7 +1070,7 @@ extension GooseBLEClient {
           connectionState == "ready",
           activePeripheral != nil,
           commandCharacteristic != nil,
-          supportsV5HistoricalSync,
+          supportsHistoricalSync,
           !isHistoricalSyncing else {
       return
     }

@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "enums": {
+    "PacketType": {"35": "COMMAND", "36": "COMMAND_RESPONSE", "37": "PUFFIN_COMMAND",
+      "38": "PUFFIN_COMMAND_RESPONSE", "40": "REALTIME_DATA",
+      "43": "REALTIME_RAW_DATA", "47": "HISTORICAL_DATA", "48": "EVENT", "49": "METADATA",
+      "50": "CONSOLE_LOGS", "51": "REALTIME_IMU_DATA_STREAM", "52": "HISTORICAL_IMU_DATA_STREAM",
+      "53": "RELATIVE_PUFFIN_EVENTS", "54": "PUFFIN_EVENTS_FROM_STRAP",
+      "55": "RELATIVE_BATTERY_PACK_CONSOLE_LOGS", "56": "PUFFIN_METADATA"},
+    "MetadataType": {"1": "HISTORY_START", "2": "HISTORY_END", "3": "HISTORY_COMPLETE"},
+    "EventNumber": {"0": "UNDEFINED", "1": "ERROR", "2": "CONSOLE_OUTPUT", "3": "BATTERY_LEVEL",
+      "4": "SYSTEM_CONTROL", "5": "EXTERNAL_5V_ON", "6": "EXTERNAL_5V_OFF",
+      "7": "CHARGING_ON", "8": "CHARGING_OFF", "9": "WRIST_ON",
+      "10": "WRIST_OFF", "11": "BLE_CONNECTION_UP", "12": "BLE_CONNECTION_DOWN", "13": "RTC_LOST",
+      "14": "DOUBLE_TAP", "15": "BOOT", "16": "SET_RTC", "17": "TEMPERATURE_LEVEL",
+      "18": "PAIRING_MODE", "19": "SERIAL_HEAD_CONNECTED", "20": "SERIAL_HEAD_REMOVED",
+      "21": "BATTERY_PACK_CONNECTED", "22": "BATTERY_PACK_REMOVED",
+      "23": "BLE_BONDED", "24": "BLE_HR_PROFILE_ENABLED", "25": "BLE_HR_PROFILE_DISABLED",
+      "26": "TRIM_ALL_DATA", "27": "TRIM_ALL_DATA_ENDED", "28": "FLASH_INIT_COMPLETE",
+      "29": "STRAP_CONDITION_REPORT", "30": "BOOT_REPORT", "31": "EXIT_VIRGIN_MODE",
+      "32": "CAPTOUCH_AUTOTHRESHOLD_ACTION", "33": "BLE_REALTIME_HR_ON", "34": "BLE_REALTIME_HR_OFF",
+      "35": "ACCELEROMETER_RESET", "36": "AFE_RESET", "37": "SHIP_MODE_ENABLED",
+      "38": "SHIP_MODE_DISABLED", "39": "SHIP_MODE_BOOT", "40": "CH1_SATURATION_DETECTED",
+      "41": "CH2_SATURATION_DETECTED", "42": "ACCELEROMETER_SATURATION_DETECTED",
+      "43": "BLE_SYSTEM_RESET", "44": "BLE_SYSTEM_ON", "45": "BLE_SYSTEM_INITIALIZED",
+      "46": "RAW_DATA_COLLECTION_ON", "47": "RAW_DATA_COLLECTION_OFF",
+      "56": "STRAP_DRIVEN_ALARM_SET", "57": "STRAP_DRIVEN_ALARM_EXECUTED",
+      "58": "APP_DRIVEN_ALARM_EXECUTED", "59": "STRAP_DRIVEN_ALARM_DISABLED",
+      "60": "HAPTICS_FIRED", "63": "EXTENDED_BATTERY_INFORMATION",
+      "96": "HIGH_FREQ_SYNC_PROMPT", "97": "HIGH_FREQ_SYNC_ENABLED", "98": "HIGH_FREQ_SYNC_DISABLED",
+      "100": "HAPTICS_TERMINATED"},
+    "CommandNumber": {"1": "LINK_VALID", "2": "GET_MAX_PROTOCOL_VERSION", "3": "TOGGLE_REALTIME_HR",
+      "7": "REPORT_VERSION_INFO", "10": "SET_CLOCK", "11": "GET_CLOCK",
+      "14": "TOGGLE_GENERIC_HR_PROFILE", "16": "TOGGLE_R7_DATA_COLLECTION",
+      "19": "RUN_HAPTIC_PATTERN_MAVERICK", "20": "ABORT_HISTORICAL_TRANSMITS",
+      "22": "SEND_HISTORICAL_DATA", "23": "HISTORICAL_DATA_RESULT", "25": "FORCE_TRIM",
+      "26": "GET_BATTERY_LEVEL", "29": "REBOOT_STRAP", "32": "POWER_CYCLE_STRAP",
+      "33": "SET_READ_POINTER", "34": "GET_DATA_RANGE", "35": "GET_HELLO_HARVARD",
+      "36": "START_FIRMWARE_LOAD", "37": "LOAD_FIRMWARE_DATA", "38": "PROCESS_FIRMWARE_IMAGE",
+      "39": "SET_LED_DRIVE", "40": "GET_LED_DRIVE", "41": "SET_TIA_GAIN", "42": "GET_TIA_GAIN",
+      "43": "SET_BIAS_OFFSET", "44": "GET_BIAS_OFFSET", "45": "ENTER_BLE_DFU",
+      "52": "SET_DP_TYPE", "53": "FORCE_DP_TYPE", "63": "SEND_R10_R11_REALTIME",
+      "66": "SET_ALARM_TIME", "67": "GET_ALARM_TIME", "68": "RUN_ALARM", "69": "DISABLE_ALARM",
+      "76": "GET_ADVERTISING_NAME_HARVARD", "77": "SET_ADVERTISING_NAME_HARVARD",
+      "79": "RUN_HAPTICS_PATTERN", "80": "GET_ALL_HAPTICS_PATTERN",
+      "81": "START_RAW_DATA", "82": "STOP_RAW_DATA", "83": "VERIFY_FIRMWARE_IMAGE",
+      "84": "GET_BODY_LOCATION_AND_STATUS", "96": "ENTER_HIGH_FREQ_SYNC", "97": "EXIT_HIGH_FREQ_SYNC",
+      "98": "GET_EXTENDED_BATTERY_INFO", "99": "RESET_FUEL_GAUGE", "100": "CALIBRATE_CAPSENSE",
+      "105": "TOGGLE_IMU_MODE_HISTORICAL", "106": "TOGGLE_IMU_MODE", "107": "ENABLE_OPTICAL_DATA",
+      "108": "TOGGLE_OPTICAL_MODE", "115": "START_DEVICE_CONFIG_KEY_EXCHANGE",
+      "116": "SEND_NEXT_DEVICE_CONFIG", "117": "START_FF_KEY_EXCHANGE", "118": "SEND_NEXT_FF",
+      "119": "SET_DEVICE_CONFIG_VALUE", "120": "SET_FF_VALUE", "121": "GET_DEVICE_CONFIG_VALUE",
+      "122": "STOP_HAPTICS", "123": "SELECT_WRIST", "124": "TOGGLE_LABRADOR_DATA_GENERATION",
+      "125": "TOGGLE_LABRADOR_RAW_SAVE", "128": "GET_FF_VALUE", "131": "SET_RESEARCH_PACKET",
+      "132": "GET_RESEARCH_PACKET", "139": "TOGGLE_LABRADOR_FILTERED",
+      "140": "SET_ADVERTISING_NAME", "141": "GET_ADVERTISING_NAME",
+      "142": "START_FIRMWARE_LOAD_NEW", "143": "LOAD_FIRMWARE_DATA_NEW",
+      "144": "PROCESS_FIRMWARE_IMAGE_NEW", "145": "GET_HELLO", "151": "GET_BATTERY_PACK_INFO",
+      "153": "TOGGLE_PERSISTENT_R20", "154": "TOGGLE_PERSISTENT_R21"}
+  },
+  "envelope": [
+    {"off": 0, "len": 1, "name": "SOF", "cat": "frame"},
+    {"off": 1, "len": 2, "name": "length", "cat": "frame"},
+    {"off": 3, "len": 1, "name": "crc8", "cat": "frame"},
+    {"off": 4, "len": 1, "name": "packet_type", "cat": "frame", "enum": "PacketType"},
+    {"off": 5, "len": 1, "name": "seq", "cat": "frame"}
+  ],
+  "packets": {
+    "REALTIME_DATA": {
+      "type": 40, "post": "realtime_data",
+      "fields": [
+        {"off": 6, "len": 4, "dtype": "u32", "name": "timestamp", "cat": "time"},
+        {"off": 10, "len": 2, "dtype": "u16", "name": "subseconds", "cat": "time"},
+        {"off": 12, "len": 1, "dtype": "u8", "name": "heart_rate", "cat": "hr", "note": "bpm"},
+        {"off": 13, "len": 1, "dtype": "u8", "name": "rr_count", "cat": "rr"}
+      ]
+    },
+    "REALTIME_RAW_DATA": {
+      "type": 43, "post": "raw_data",
+      "fields": [
+        {"off": 6, "len": 1, "dtype": "u8", "name": "cmd", "cat": "cmd"},
+        {"off": 7, "len": 4, "dtype": "u32", "name": "record_hdr", "cat": "meta"},
+        {"off": 11, "len": 4, "dtype": "u32", "name": "timestamp", "cat": "time", "note": "device epoch"},
+        {"off": 15, "len": 2, "dtype": "u16", "name": "subseconds", "cat": "time"},
+        {"off": 17, "len": 4, "dtype": "u32", "name": "unknown_hdr", "cat": "meta"}
+      ],
+      "variants": {
+        "1917": {
+          "kind": "imu",
+          "hr_off": 21, "rr_count_off": 22, "rr_first_off": 23,
+          "samples": 100,
+          "axes": [["accelX", 89, "accel"], ["accelY", 289, "accel"], ["accelZ", 489, "accel"],
+                   ["gyroX", 692, "gyro"], ["gyroY", 892, "gyro"], ["gyroZ", 1092, "gyro"]],
+          "accel_scale": 0.000244140625,
+          "accel_unit": "g",
+          "gyro_scale": 0.06103515625,
+          "gyro_unit": "deg/s",
+          "tail_from": 1292,
+          "note": "Gen4-VERIFIED (motion_capture.jsonl + gyro_calib 720deg rotations): 100 samples/axis @~100Hz (1 pkt/s), signed int16 LITTLE-endian. ACCEL scale 1/4096 LSB/g (sphere-fit |g|=0.99, residual 0.0%). GYRO scale 2000/32768 = 0.06104 deg/s/LSB = full-scale +/-2000 dps (16.4 LSB per deg/s); verified via controlled 720deg rotation (rotA = exact 16.4 LSB/dps; +/-~10% from turn-count precision). openwhoop's div-15 (0.0667) is within tolerance. Gaps [24:82],[682:685] + tail [1292:1917] (~36%) still unmapped."
+        },
+        "1921": {
+          "kind": "optical",
+          "ppg_off": 42, "ppg_stride": 4, "ppg_dtype": "s24", "ppg_samples": 419, "ppg_rate_hz": 437,
+          "config_from": 15, "config_to": 42,
+          "note": "Gen4-RE (optical_capture.jsonl): a SINGLE AC-coupled (DC-removed) PPG waveform, NOT 4 interleaved channels. Sample @ frame off 42, stride 4, bytes[0:3]=signed 24-bit LE, byte[3]=aux (status/exposure, UNKNOWN). ~419 samples/pkt @~437Hz. Finger phase = clean ~1Hz pulsatile (=green/HR LED); air phase flatlines. Red/IR/ambient NOT in this stream (only as DSP'd scalars in type-47 V24). Config header [15:42] and byte[3] UNKNOWN -> keep raw for those."
+        }
+      }
+    },
+    "HISTORICAL_DATA": {
+      "type": 47, "post": "historical_data",
+      "fields": [],
+      "note": "The 14-day biometric store. Version = seq byte (frame[5]). Reachable only via the high-freq-sync handshake + valid RTC. Field offsets below are FRAME-absolute (= openwhoop data offset + 7).",
+      "versions": {
+        "24": {
+          "kind": "biometric",
+          "fields": [
+            {"off": 11, "len": 4, "dtype": "u32", "name": "unix", "cat": "time", "note": "real unix seconds"},
+            {"off": 21, "len": 1, "dtype": "u8", "name": "heart_rate", "cat": "hr", "note": "bpm"},
+            {"off": 22, "len": 1, "dtype": "u8", "name": "rr_count", "cat": "rr"},
+            {"off": 33, "len": 2, "dtype": "u16", "name": "ppg_green", "cat": "ppg", "note": "green LED ADC (raw)"},
+            {"off": 35, "len": 2, "dtype": "u16", "name": "ppg_red_ir", "cat": "ppg", "note": "red/IR LED ADC (raw)"},
+            {"off": 40, "len": 4, "dtype": "f32", "name": "gravity_x", "cat": "accel", "note": "g"},
+            {"off": 44, "len": 4, "dtype": "f32", "name": "gravity_y", "cat": "accel", "note": "g"},
+            {"off": 48, "len": 4, "dtype": "f32", "name": "gravity_z", "cat": "accel", "note": "g"},
+            {"off": 55, "len": 1, "dtype": "u8", "name": "skin_contact", "cat": "contact", "note": "0=off-wrist"},
+            {"off": 56, "len": 4, "dtype": "f32", "name": "gravity2_x", "cat": "accel", "note": "2nd accel/gravity triplet (g)"},
+            {"off": 60, "len": 4, "dtype": "f32", "name": "gravity2_y", "cat": "accel", "note": "2nd accel/gravity triplet (g)"},
+            {"off": 64, "len": 4, "dtype": "f32", "name": "gravity2_z", "cat": "accel", "note": "2nd accel/gravity triplet (g)"},
+            {"off": 68, "len": 2, "dtype": "u16", "name": "spo2_red", "cat": "spo2", "note": "raw ADC; SpO2 % computed server-side"},
+            {"off": 70, "len": 2, "dtype": "u16", "name": "spo2_ir", "cat": "spo2", "note": "raw ADC; SpO2 % computed server-side"},
+            {"off": 72, "len": 2, "dtype": "u16", "name": "skin_temp_raw", "cat": "temp", "note": "raw ADC; degC computed server-side"},
+            {"off": 74, "len": 2, "dtype": "u16", "name": "ambient", "cat": "optical", "note": "ambient light ADC"},
+            {"off": 76, "len": 2, "dtype": "u16", "name": "led_drive_1", "cat": "optical"},
+            {"off": 78, "len": 2, "dtype": "u16", "name": "led_drive_2", "cat": "optical"},
+            {"off": 80, "len": 2, "dtype": "u16", "name": "resp_rate_raw", "cat": "resp", "note": "raw; resp rate computed server-side"},
+            {"off": 82, "len": 2, "dtype": "u16", "name": "signal_quality", "cat": "quality"}
+          ],
+          "rr_first_off": 23,
+          "note": "V24 (this WHOOP 4.0). Verified on 762 device records: HR 57-70, |gravity|~1g. Raw ADCs (SpO2/temp/resp) are NOT converted client-side; WHOOP computes them in cloud."
+        },
+        "12": {"kind": "biometric", "ref": "24", "note": "V12 = same DSP layout as V24 (openwhoop)."},
+        "5": {"kind": "generic", "fields": [
+            {"off": 11, "len": 4, "dtype": "u32", "name": "unix", "cat": "time"},
+            {"off": 21, "len": 1, "dtype": "u8", "name": "heart_rate", "cat": "hr", "note": "bpm"},
+            {"off": 22, "len": 1, "dtype": "u8", "name": "rr_count", "cat": "rr"}
+          ], "rr_first_off": 23, "note": "Generic HR/RR-only record (no DSP sensor block)."},
+        "7": {"kind": "generic", "ref": "5"},
+        "9": {"kind": "generic", "ref": "5"}
+      }
+    },
+    "EVENT": {
+      "type": 48, "post": "event",
+      "fields": [
+        {"off": 6, "len": 1, "dtype": "u8", "name": "event", "cat": "event", "enum": "EventNumber"},
+        {"off": 8, "len": 4, "dtype": "u32", "name": "event_timestamp", "cat": "time"}
+      ]
+    },
+    "COMMAND_RESPONSE": {
+      "type": 36, "post": "command_response",
+      "fields": [
+        {"off": 6, "len": 1, "dtype": "u8", "name": "resp_cmd", "cat": "cmd", "enum": "CommandNumber"}
+      ]
+    },
+    "METADATA": {
+      "type": 49, "post": "metadata",
+      "fields": [
+        {"off": 6, "len": 1, "dtype": "u8", "name": "meta_type", "cat": "meta", "enum": "MetadataType"}
+      ]
+    },
+    "CONSOLE_LOGS": {"type": 50, "post": "console_logs", "fields": []}
+  }
+}

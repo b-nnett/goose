@@ -524,13 +524,13 @@ fn compare_expected_frame(
         issues,
     );
 
-    if let Some(expected_payload) = expected.get("payload_hex").and_then(|value| value.as_str()) {
-        if frame.payload_hex != expected_payload {
-            issues.push(format!(
-                "{id} expected payload_hex={expected_payload}, got {}",
-                frame.payload_hex
-            ));
-        }
+    if let Some(expected_payload) = expected.get("payload_hex").and_then(|value| value.as_str())
+        && frame.payload_hex != expected_payload
+    {
+        issues.push(format!(
+            "{id} expected payload_hex={expected_payload}, got {}",
+            frame.payload_hex
+        ));
     }
     if let Some(expected_packet_type_name) = expected
         .get("packet_type_name")

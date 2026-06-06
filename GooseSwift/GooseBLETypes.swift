@@ -2,6 +2,46 @@ import CoreBluetooth
 import Foundation
 import OSLog
 
+// MARK: - WearableDescriptor
+
+struct WearableDescriptor {
+  let serviceUUIDPrefix: String
+  let commandCharacteristicPrefix: String
+
+  func isCommandCharacteristic(_ c: CBCharacteristic) -> Bool {
+    guard !commandCharacteristicPrefix.isEmpty else { return false }
+    return c.uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
+  }
+
+  func isCommandUUID(_ uuid: CBUUID) -> Bool {
+    guard !commandCharacteristicPrefix.isEmpty else { return false }
+    return uuid.uuidString.lowercased().hasPrefix(commandCharacteristicPrefix)
+  }
+}
+
+extension WearableDescriptor {
+  // Gen5 service UUID prefix fd4b0001-, command UUID prefix fd4b0002-
+  static let whoopGen5 = WearableDescriptor(
+    serviceUUIDPrefix: "fd4b0001",
+    commandCharacteristicPrefix: "fd4b0002"
+  )
+
+  // Gen4 service UUID prefix 61080001-, command UUID prefix 61080002-
+  static let whoopGen4 = WearableDescriptor(
+    serviceUUIDPrefix: "61080001",
+    commandCharacteristicPrefix: "61080002"
+  )
+
+  // Standard Bluetooth Heart Rate Service 0x180D / HR Measurement 0x2A37
+  // HR monitors are read-only notify devices with no command characteristic
+  static let genericHRMonitor = WearableDescriptor(
+    serviceUUIDPrefix: "180d",
+    commandCharacteristicPrefix: ""
+  )
+}
+
+// MARK: -
+
 enum GooseLogLevel: String {
   case debug
   case info
@@ -13,6 +53,7 @@ struct GooseDiscoveredDevice: Identifiable, Equatable {
   let id: UUID
   let name: String
   let rssi: Int
+  let generation: String
 }
 
 struct GooseMessage: Identifiable {
@@ -32,7 +73,14 @@ struct GooseNotificationEvent {
   let capturedAt: Date
 
   var rustDeviceType: String {
-    characteristicUUID.lowercased().hasPrefix("610800") ? "GEN4" : "GOOSE"
+    if characteristicUUID.lowercased().hasPrefix("610800") {
+      return "GEN4"
+    }
+    let normalizedUUID = characteristicUUID.replacingOccurrences(of: "-", with: "").lowercased()
+    if normalizedUUID == "2a37" || normalizedUUID.hasPrefix("00002a37") {
+      return "HR_MONITOR"
+    }
+    return "GOOSE"
   }
 }
 
@@ -118,7 +166,14 @@ struct GooseDebugCommandDefinition: Identifiable, Equatable {
     defaultPayloadHex != nil || !requiresPayloadHex
   }
 
+  var allowsRemoteInvocation: Bool {
+    risk == "read" || risk == "keyed read"
+  }
+
   var remoteURLExample: String {
+    guard allowsRemoteInvocation else {
+      return "Remote invocation disabled"
+    }
     if requiresPayloadHex {
       return "gooseswift://debug-command/\(id)?payload=<hex>"
     }

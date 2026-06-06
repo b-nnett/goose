@@ -167,7 +167,8 @@ pub fn whoop_generation_from_device_type(device_type: DeviceType) -> Option<Whoo
     match device_type {
         DeviceType::Gen4 => Some(WhoopGeneration::Gen4),
         DeviceType::Maverick | DeviceType::Goose => Some(WhoopGeneration::Gen5),
-        DeviceType::Puffin => None,
+        // HrMonitor is not a WHOOP device; Puffin has no known generation mapping.
+        DeviceType::Puffin | DeviceType::HrMonitor => None,
     }
 }
 

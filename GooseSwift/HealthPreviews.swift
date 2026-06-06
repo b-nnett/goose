@@ -11,7 +11,7 @@ struct HealthPreviewRouteHost: View {
     NavigationStack {
       HealthRouteDetailView(route: route, previewState: state)
     }
-    .environmentObject(GooseAppModel(startBLE: false))
+    .environment(GooseAppModel(startBLE: false))
     .environmentObject(AppRouter())
   }
 }
@@ -20,7 +20,7 @@ struct HealthPreviewRouteHost: View {
   NavigationStack {
     HealthView(store: HealthDataStore())
   }
-  .environmentObject(GooseAppModel(startBLE: false))
+  .environment(GooseAppModel(startBLE: false))
 }
 
 #Preview("Health Monitor - Populated") {

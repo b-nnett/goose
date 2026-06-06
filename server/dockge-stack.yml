@@ -1,0 +1,46 @@
+# Dockge stack — WHOOP ingest server
+# Colar em Dockge > New Stack > "whoop"
+# Preencher as variáveis de ambiente no painel do Dockge antes de fazer Deploy.
+#
+# Pré-requisito: fazer login no GHCR na máquina Dockge uma vez:
+#   docker login ghcr.io -u tigercraft4 --password-stdin
+#   (colar o PAT quando pedido)
+
+services:
+  whoop-db:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: whoop-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${WHOOP_DB_NAME:-whoop}
+      - POSTGRES_USER=${WHOOP_DB_USER:-whoop}
+      - POSTGRES_PASSWORD=${WHOOP_DB_PASSWORD}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - whoop-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WHOOP_DB_USER:-whoop} -d ${WHOOP_DB_NAME:-whoop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  whoop-ingest:
+    image: ghcr.io/tigercraft4/my-whoop/whoop-ingest:latest
+    container_name: whoop-ingest
+    restart: unless-stopped
+    depends_on:
+      whoop-db:
+        condition: service_healthy
+    environment:
+      - WHOOP_API_KEY=${WHOOP_API_KEY}
+      - WHOOP_DB_DSN=postgresql://${WHOOP_DB_USER:-whoop}:${WHOOP_DB_PASSWORD}@whoop-db:5432/${WHOOP_DB_NAME:-whoop}
+      - WHOOP_RAW_ROOT=/data/raw
+      - TZ=${TZ:-UTC}
+    volumes:
+      - whoop-raw-data:/data/raw
+    ports:
+      - "${WHOOP_INGEST_PORT:-8770}:8000"
+
+volumes:
+  whoop-db-data:
+  whoop-raw-data:

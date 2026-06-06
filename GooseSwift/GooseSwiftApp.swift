@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct GooseSwiftApp: App {
   @Environment(\.scenePhase) private var scenePhase
-  @StateObject private var model = GooseAppModel()
+  @State private var model = GooseAppModel()
   @StateObject private var router = AppRouter()
 
   init() {
@@ -13,7 +13,7 @@ struct GooseSwiftApp: App {
   var body: some Scene {
     WindowGroup {
       RootView()
-        .environmentObject(model)
+        .environment(model)
         .environmentObject(model.packetMonitor)
         .environmentObject(model.ble.messageStore)
         .environmentObject(router)

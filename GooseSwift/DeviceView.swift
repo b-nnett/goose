@@ -2,11 +2,11 @@ import SwiftUI
 import UIKit
 
 struct DeviceView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     DeviceContentView(ble: model.ble)
-      .environmentObject(model)
+      .environment(model)
   }
 }
 
@@ -16,9 +16,9 @@ private enum DevicePanel {
 }
 
 private struct DeviceContentView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var packetMonitor: PacketMonitorModel
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   @State private var selectedPanel: DevicePanel = .status
 
   var body: some View {
@@ -30,7 +30,8 @@ private struct DeviceContentView: View {
             connected: deviceConnected,
             statusText: connectionHeadline,
             deviceName: ble.activeDeviceName,
-            lastSync: lastSyncSummary
+            lastSync: lastSyncSummary,
+            generation: model.connectedDeviceGeneration
           )
           .padding(.bottom, 30)
 
@@ -205,6 +206,7 @@ private struct DeviceConnectionHeader: View {
   let statusText: String
   let deviceName: String
   let lastSync: String
+  let generation: String?  // nil when disconnected
 
   var body: some View {
     HStack(alignment: .bottom, spacing: 16) {
@@ -218,6 +220,11 @@ private struct DeviceConnectionHeader: View {
           .foregroundStyle(devicePrimaryText)
           .lineLimit(2)
           .minimumScaleFactor(0.78)
+        if let gen = generation, gen != "unknown" {
+          Text("Gen \(gen.prefix(1))")
+            .font(deviceLabelFont)
+            .foregroundStyle(secondaryText)
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -295,9 +302,9 @@ private struct BatteryRail: View {
 
 private struct DeviceAdvancedPanel: View {
   @EnvironmentObject private var messageStore: GooseMessageStore
-  @ObservedObject var model: GooseAppModel
+  var model: GooseAppModel
   @ObservedObject var packetMonitor: PacketMonitorModel
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
 
   var body: some View {
     VStack(alignment: .leading, spacing: 22) {
@@ -313,8 +320,8 @@ private struct DeviceAdvancedPanel: View {
 
       DeviceDetailStack {
         DeviceFactRow(systemName: "heart", label: "Live HR", value: heartRateSummary)
-        DeviceFactRow(systemName: "dot.radiowaves.left.and.right", label: "Connection", value: ble.connectionState.capitalized)
-        DeviceFactRow(systemName: "arrow.triangle.2.circlepath", label: "Historical sync", value: ble.historicalSyncStatus.capitalized)
+        DeviceFactRow(systemName: "dot.radiowaves.left.and.right", label: "Connection", value: ble.connectionState.localizedConnectionState)
+        DeviceFactRow(systemName: "arrow.triangle.2.circlepath", label: "Historical sync", value: ble.historicalSyncStatus.localizedHistoricalSyncStatus)
         DeviceFactRow(systemName: "bolt.horizontal", label: "High freq", value: ble.highFrequencyHistorySyncDisplaySummary)
         DeviceFactRow(systemName: "lungs", label: "RR packets", value: model.respiratoryPacketWatchStatus)
         DeviceFactRow(systemName: "cpu", label: "Rust", value: model.rustStatus)
@@ -339,7 +346,7 @@ private struct DeviceAdvancedPanel: View {
     guard let battery = ble.batteryLevelPercent else {
       return "Unknown"
     }
-    let status = ble.batteryPowerStatus == "Unknown" ? "" : " | \(ble.batteryPowerStatus)"
+    let status = ble.batteryPowerStatus == "Unknown" ? "" : " | \(ble.batteryPowerStatus.localizedBatteryPowerStatus)"
     if let updatedAt = ble.batteryUpdatedAt,
        Date().timeIntervalSince(updatedAt) > 3600,
        let relative = relativeSummary(for: updatedAt) {
@@ -371,14 +378,14 @@ private struct DeviceAdvancedPanel: View {
 
   private var clockSummary: String {
     guard let offset = ble.strapClockOffsetSeconds else {
-      return ble.strapClockStatus
+      return ble.strapClockStatus.localizedStrapClockStatus
     }
     let drift = formattedClockOffset(offset)
     if let updatedAt = ble.strapClockUpdatedAt,
        let relative = relativeSummary(for: updatedAt) {
-      return "\(drift) | \(ble.strapClockStatus) | \(relative)"
+      return "\(drift) | \(ble.strapClockStatus.localizedStrapClockStatus) | \(relative)"
     }
-    return "\(drift) | \(ble.strapClockStatus)"
+    return "\(drift) | \(ble.strapClockStatus.localizedStrapClockStatus)"
   }
 
   private func refreshClockIfPossible() {
@@ -445,8 +452,8 @@ private struct DeviceFactRow: View {
 }
 
 private struct DeviceActionGrid: View {
-  @ObservedObject var model: GooseAppModel
-  @ObservedObject var ble: GooseBLEClient
+  var model: GooseAppModel
+  var ble: GooseBLEClient
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
@@ -546,8 +553,13 @@ private struct DeviceActionButton: View {
   }
 }
 
+private func generationMajorVersion(_ generation: String) -> String {
+  // "4.0" -> "4", "5.0" -> "5", "unknown" -> "?"
+  generation == "unknown" ? "?" : String(generation.prefix(1))
+}
+
 private struct DiscoveredDeviceList: View {
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -571,15 +583,12 @@ private struct DiscoveredDeviceList: View {
                     .font(deviceBodyFont.weight(.black))
                     .foregroundStyle(devicePrimaryText)
                     .lineLimit(1)
-                  Text(device.id.uuidString)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                  Text("Gen \(generationMajorVersion(device.generation)) · \(device.rssi) dBm")
+                    .font(.system(size: 12, weight: .semibold, design: .default))
                     .foregroundStyle(mutedText)
                     .lineLimit(1)
                 }
                 Spacer()
-                Text("\(device.rssi)")
-                  .font(deviceBodyFont.weight(.black))
-                  .foregroundStyle(secondaryText)
               }
               .padding(.vertical, 13)
               .contentShape(Rectangle())

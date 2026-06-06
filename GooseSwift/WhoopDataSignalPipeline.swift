@@ -1,6 +1,6 @@
 import Foundation
 
-final class WhoopDataSignalPipeline {
+final class WhoopDataSignalPipeline: @unchecked Sendable {
   var onStatus: ((String) -> Void)?
 
   private let queue = DispatchQueue(label: "com.goose.swift.whoop-data-signal", qos: .utility)

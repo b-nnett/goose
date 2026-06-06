@@ -871,7 +871,7 @@ fn load_csv_rows(
             headers
                 .iter()
                 .cloned()
-                .zip(fields.into_iter())
+                .zip(fields)
                 .collect::<BTreeMap<_, _>>(),
         );
     }

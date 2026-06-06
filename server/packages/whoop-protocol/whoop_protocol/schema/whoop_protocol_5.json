@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "schema_note": "WHOOP 5.0 (Maverick) protocol schema. Mirrors the 4.0 whoop_protocol.json top-level layout (version/enums/envelope/packets) so the Phase 5 Swift (Schema.swift / WhoopProtocol) and Python (whoop_protocol) loaders stay compatible. This envelope describes the Maverick OUTER WRAPPER (NOT the 4.0 inner frame). Enums are the four r52 maps copied VERBATIM from the 4.0 schema (WG50_r52 confirmed identical, RESEARCH 'Don't Hand-Roll'). Packets carry body field maps decoded in Phase 4. OFFSET BASE (load-bearing): every packet field 'off' is BODY-ABSOLUTE, i.e. an index into the flat body returned by strip_maverick() (frame[4:4+length]). The body prefix is body[0]=role, body[1:4]=session token, body[4]=packet_type, body[5]=seq, body[6]=cmd, body[7:]=payload. So payload[N] == body[7+N]. The 4.0 schema offsets were FRAME-relative (4.0 REALTIME_DATA timestamp at frame off 6); the 5.0 offsets below are BODY-relative and were reconciled empirically in Plan 04 (see per-packet notes). Every field is tagged with epoch ('unix' vs 'device' vs 'none'), note (provenance), and confidence (VERIFIED/HYPOTHESIS) per SCHEMA-02.",
+  "framing_notes": "Maverick outer wrapper, empirically verified on 5028 captured ATT frames across two sessions (Phase 1 + Phase 2). Layout: [0xAA SOF][0x01 version][length u16-LE][body (length bytes, FLAT, body[0]==role)][trailer 4B]. total_len == length + 8 (4-byte header + length-byte body + 4-byte trailer) for 5028/5028 frames. The body is FLAT — it is NOT a nested 0xAA 4.0 frame (RESEARCH Finding 5). The 4.0 inner CRC gate fails 0% on all 5028 frames; the 4-byte trailer's checksum algorithm is OPEN (RESEARCH Finding 6): standard CRC16/CRC32 variants ruled out by exhaustive negative test.",
+  "enums": {
+    "PacketType": {"35": "COMMAND", "36": "COMMAND_RESPONSE", "37": "PUFFIN_COMMAND",
+      "38": "PUFFIN_COMMAND_RESPONSE", "40": "REALTIME_DATA",
+      "43": "REALTIME_RAW_DATA", "47": "HISTORICAL_DATA", "48": "EVENT", "49": "METADATA",
+      "50": "CONSOLE_LOGS", "51": "REALTIME_IMU_DATA_STREAM", "52": "HISTORICAL_IMU_DATA_STREAM",
+      "53": "RELATIVE_PUFFIN_EVENTS", "54": "PUFFIN_EVENTS_FROM_STRAP",
+      "55": "RELATIVE_BATTERY_PACK_CONSOLE_LOGS", "56": "PUFFIN_METADATA"},
+    "MetadataType": {"1": "HISTORY_START", "2": "HISTORY_END", "3": "HISTORY_COMPLETE"},
+    "EventNumber": {"0": "UNDEFINED", "1": "ERROR", "2": "CONSOLE_OUTPUT", "3": "BATTERY_LEVEL",
+      "4": "SYSTEM_CONTROL", "5": "EXTERNAL_5V_ON", "6": "EXTERNAL_5V_OFF",
+      "7": "CHARGING_ON", "8": "CHARGING_OFF", "9": "WRIST_ON",
+      "10": "WRIST_OFF", "11": "BLE_CONNECTION_UP", "12": "BLE_CONNECTION_DOWN", "13": "RTC_LOST",
+      "14": "DOUBLE_TAP", "15": "BOOT", "16": "SET_RTC", "17": "TEMPERATURE_LEVEL",
+      "18": "PAIRING_MODE", "19": "SERIAL_HEAD_CONNECTED", "20": "SERIAL_HEAD_REMOVED",
+      "21": "BATTERY_PACK_CONNECTED", "22": "BATTERY_PACK_REMOVED",
+      "23": "BLE_BONDED", "24": "BLE_HR_PROFILE_ENABLED", "25": "BLE_HR_PROFILE_DISABLED",
+      "26": "TRIM_ALL_DATA", "27": "TRIM_ALL_DATA_ENDED", "28": "FLASH_INIT_COMPLETE",
+      "29": "STRAP_CONDITION_REPORT", "30": "BOOT_REPORT", "31": "EXIT_VIRGIN_MODE",
+      "32": "CAPTOUCH_AUTOTHRESHOLD_ACTION", "33": "BLE_REALTIME_HR_ON", "34": "BLE_REALTIME_HR_OFF",
+      "35": "ACCELEROMETER_RESET", "36": "AFE_RESET", "37": "SHIP_MODE_ENABLED",
+      "38": "SHIP_MODE_DISABLED", "39": "SHIP_MODE_BOOT", "40": "CH1_SATURATION_DETECTED",
+      "41": "CH2_SATURATION_DETECTED", "42": "ACCELEROMETER_SATURATION_DETECTED",
+      "43": "BLE_SYSTEM_RESET", "44": "BLE_SYSTEM_ON", "45": "BLE_SYSTEM_INITIALIZED",
+      "46": "RAW_DATA_COLLECTION_ON", "47": "RAW_DATA_COLLECTION_OFF",
+      "56": "STRAP_DRIVEN_ALARM_SET", "57": "STRAP_DRIVEN_ALARM_EXECUTED",
+      "58": "APP_DRIVEN_ALARM_EXECUTED", "59": "STRAP_DRIVEN_ALARM_DISABLED",
+      "60": "HAPTICS_FIRED", "63": "EXTENDED_BATTERY_INFORMATION",
+      "96": "HIGH_FREQ_SYNC_PROMPT", "97": "HIGH_FREQ_SYNC_ENABLED", "98": "HIGH_FREQ_SYNC_DISABLED",
+      "100": "HAPTICS_TERMINATED"},
+    "CommandNumber": {"1": "LINK_VALID", "2": "GET_MAX_PROTOCOL_VERSION", "3": "TOGGLE_REALTIME_HR",
+      "7": "REPORT_VERSION_INFO", "10": "SET_CLOCK", "11": "GET_CLOCK",
+      "14": "TOGGLE_GENERIC_HR_PROFILE", "16": "TOGGLE_R7_DATA_COLLECTION",
+      "19": "RUN_HAPTIC_PATTERN_MAVERICK", "20": "ABORT_HISTORICAL_TRANSMITS",
+      "22": "SEND_HISTORICAL_DATA", "23": "HISTORICAL_DATA_RESULT", "25": "FORCE_TRIM",
+      "26": "GET_BATTERY_LEVEL", "29": "REBOOT_STRAP", "32": "POWER_CYCLE_STRAP",
+      "33": "SET_READ_POINTER", "34": "GET_DATA_RANGE", "35": "GET_HELLO_HARVARD",
+      "36": "START_FIRMWARE_LOAD", "37": "LOAD_FIRMWARE_DATA", "38": "PROCESS_FIRMWARE_IMAGE",
+      "39": "SET_LED_DRIVE", "40": "GET_LED_DRIVE", "41": "SET_TIA_GAIN", "42": "GET_TIA_GAIN",
+      "43": "SET_BIAS_OFFSET", "44": "GET_BIAS_OFFSET", "45": "ENTER_BLE_DFU",
+      "52": "SET_DP_TYPE", "53": "FORCE_DP_TYPE", "63": "SEND_R10_R11_REALTIME",
+      "66": "SET_ALARM_TIME", "67": "GET_ALARM_TIME", "68": "RUN_ALARM", "69": "DISABLE_ALARM",
+      "76": "GET_ADVERTISING_NAME_HARVARD", "77": "SET_ADVERTISING_NAME_HARVARD",
+      "79": "RUN_HAPTICS_PATTERN", "80": "GET_ALL_HAPTICS_PATTERN",
+      "81": "START_RAW_DATA", "82": "STOP_RAW_DATA", "83": "VERIFY_FIRMWARE_IMAGE",
+      "84": "GET_BODY_LOCATION_AND_STATUS", "96": "ENTER_HIGH_FREQ_SYNC", "97": "EXIT_HIGH_FREQ_SYNC",
+      "98": "GET_EXTENDED_BATTERY_INFO", "99": "RESET_FUEL_GAUGE", "100": "CALIBRATE_CAPSENSE",
+      "105": "TOGGLE_IMU_MODE_HISTORICAL", "106": "TOGGLE_IMU_MODE", "107": "ENABLE_OPTICAL_DATA",
+      "108": "TOGGLE_OPTICAL_MODE", "115": "START_DEVICE_CONFIG_KEY_EXCHANGE",
+      "116": "SEND_NEXT_DEVICE_CONFIG", "117": "START_FF_KEY_EXCHANGE", "118": "SEND_NEXT_FF",
+      "119": "SET_DEVICE_CONFIG_VALUE", "120": "SET_FF_VALUE", "121": "GET_DEVICE_CONFIG_VALUE",
+      "122": "STOP_HAPTICS", "123": "SELECT_WRIST", "124": "TOGGLE_LABRADOR_DATA_GENERATION",
+      "125": "TOGGLE_LABRADOR_RAW_SAVE", "128": "GET_FF_VALUE", "131": "SET_RESEARCH_PACKET",
+      "132": "GET_RESEARCH_PACKET", "139": "TOGGLE_LABRADOR_FILTERED",
+      "140": "SET_ADVERTISING_NAME", "141": "GET_ADVERTISING_NAME",
+      "142": "START_FIRMWARE_LOAD_NEW", "143": "LOAD_FIRMWARE_DATA_NEW",
+      "144": "PROCESS_FIRMWARE_IMAGE_NEW", "145": "GET_HELLO", "151": "GET_BATTERY_PACK_INFO",
+      "153": "TOGGLE_PERSISTENT_R20", "154": "TOGGLE_PERSISTENT_R21"}
+  },
+  "envelope": [
+    {"off": 0, "len": 1, "name": "SOF", "cat": "frame", "value": "0xAA", "confidence": "VERIFIED", "epoch": "none", "note": "constant 0xAA, 5028/5028 frames"},
+    {"off": 1, "len": 1, "name": "version", "cat": "frame", "value": "0x01", "confidence": "VERIFIED", "epoch": "none", "note": "protocol/version byte, constant 0x01, 5028/5028 frames"},
+    {"off": 2, "len": 2, "name": "length", "cat": "frame", "dtype": "u16", "endian": "LE", "confidence": "VERIFIED", "epoch": "none", "note": "u16-LE body length; total_len == length + 8 for 5028/5028 frames"},
+    {"off": 4, "len": 1, "name": "role", "cat": "frame", "confidence": "VERIFIED", "epoch": "none", "note": "role/direction discriminator: 0x00 = cmd-in write, 0x01 = notify"},
+    {"off": 4, "len": -1, "name": "body", "cat": "body", "confidence": "VERIFIED", "epoch": "none", "note": "flat body region; frame[4:4+length]. body[0]==role. length bytes total including role. NOT a nested 0xAA frame (Finding 5). Packet body field maps below are indexed BODY-ABSOLUTE against this region."},
+    {"off": -4, "len": 4, "name": "trailer", "cat": "frame", "confidence": "HYPOTHESIS", "epoch": "none", "note": "checksum algorithm OPEN; standard CRC16/CRC32 variants ruled out (Finding 6). Likely non-standard checksum or computed over a transformed input."}
+  ],
+  "packets": {
+    "COMMAND_RESPONSE": {
+      "type": 36, "post": "command_response",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "VERIFIED", "note": "body[4] == 36 COMMAND_RESPONSE (Plan 03 command_surface_5.py over the 5028-frame corpus)"},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "monotonic sequence; request->response pairing by seq (A7, 89/106 in-burst MATCHes, Plan 03)"},
+        {"off": 6, "len": 1, "dtype": "u8", "name": "resp_cmd", "cat": "cmd", "enum": "CommandNumber", "epoch": "none", "confidence": "VERIFIED", "note": "body[6] CommandNumber being responded to. 10 OBSERVED commands (3,22,23,34,69,117,118,120,141,145); resolved via r52 CommandNumber (Plan 03)"},
+        {"off": 7, "len": -1, "dtype": "bytes", "name": "payload", "cat": "data", "epoch": "none", "confidence": "VERIFIED", "note": "command-specific response payload (body[7:]). For GET_DATA_RANGE (cmd 34) it carries unix-epoch u32-LE timestamps — see unix_range_start below."},
+        {"off": 8, "len": 4, "dtype": "u32", "endian": "LE", "name": "unix_range_start", "cat": "time", "epoch": "unix", "confidence": "VERIFIED", "note": "PROTO-15 unix epoch. GET_DATA_RANGE (cmd 34) response payload carries u32-LE Unix seconds (19 candidates in corpus; headline 2026-05-08, decode_5.scan_unix_timestamps). Offset within payload is scanned (1.4e9..1.9e9 window); representative body offset shown. epoch=unix."}
+      ],
+      "note": "COMMAND (35) shares this body prefix layout (role/token/type/seq/cmd); the cmd-in WRITE direction. Field offsets are BODY-ABSOLUTE (payload starts body[7])."
+    },
+    "EVENT": {
+      "type": 48, "post": "event",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "VERIFIED", "note": "body[4] == 48 EVENT (Plan 03 decode_streams_5.py, 136 EVENT frames resolved)"},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "monotonic sequence"},
+        {"off": 6, "len": 1, "dtype": "u8", "name": "event", "cat": "event", "enum": "EventNumber", "epoch": "none", "confidence": "VERIFIED", "note": "body[6] r52 EventNumber. OBSERVED: STRAP_CONDITION_REPORT(29 via remap), BLE_CONNECTION_UP/DOWN, BLE_REALTIME_HR_ON/OFF, BATTERY_LEVEL(3), EXTENDED_BATTERY_INFORMATION(63). Three unmapped (110/120/123) surfaced as 5.0-new candidates (Plan 03)"},
+        {"off": 8, "len": 4, "dtype": "u32", "endian": "LE", "name": "event_timestamp", "cat": "time", "epoch": "device", "confidence": "VERIFIED", "note": "PROTO-15 DEVICE epoch (NOT unix). u32-LE at body[8] == payload[1]. 136 device-epoch values decoded (e.g. 1780152939). epoch=device — distinct from the GET_DATA_RANGE unix epoch (decode_5.parse_body_5)"}
+      ],
+      "note": "EVENT carries a DEVICE-epoch u32 at body[8], whereas COMMAND_RESPONSE GET_DATA_RANGE carries a UNIX-epoch u32 — the PROTO-15 dual-epoch model. Field offsets BODY-ABSOLUTE."
+    },
+    "EVENT_BATTERY_LEVEL": {
+      "type": 48, "post": "event_battery",
+      "fields": [
+        {"off": 6, "len": 1, "dtype": "u8", "name": "event", "cat": "event", "enum": "EventNumber", "epoch": "none", "confidence": "VERIFIED", "note": "body[6] == 3 BATTERY_LEVEL (or 63 EXTENDED_BATTERY_INFORMATION). The event itself is VERIFIED-present; the SOC byte layout below is HYPOTHESIS (Plan 03)"},
+        {"off": 8, "len": 4, "dtype": "u32", "endian": "LE", "name": "event_timestamp", "cat": "time", "epoch": "device", "confidence": "VERIFIED", "note": "device-epoch u32 at body[8] (same as generic EVENT)"},
+        {"off": 8, "len": 2, "dtype": "u16", "endian": "LE", "name": "state_of_charge_x10", "cat": "battery", "epoch": "none", "confidence": "HYPOTHESIS", "note": "4.0 A6 layout: SOC x10 as u16. On 5.0 NO candidate u16 in the BATTERY_LEVEL/EXTENDED payload cleanly resolves to the CONFIRMED 0x2A19=23% read (Plan 03). HYPOTHESIS pending a dedicated GET_BATTERY_LEVEL (cmd 26) capture in Phase 5. Offset overlaps event_timestamp by design (4.0 candidate layout) — not yet disambiguated."},
+        {"off": 12, "len": 2, "dtype": "u16", "endian": "LE", "name": "millivolts", "cat": "battery", "epoch": "none", "confidence": "HYPOTHESIS", "note": "4.0 A6 layout: battery mV as u16 at event off 5. HYPOTHESIS on 5.0 — not cross-validated against ground truth (Plan 03)."}
+      ],
+      "note": "Battery event located and decoded but the SOC offset is HYPOTHESIS: the 4.0 A6 layout does not cleanly produce 23% on 5.0. Dedicated GET_BATTERY_LEVEL capture flagged for Phase 5. Field offsets BODY-ABSOLUTE."
+    },
+    "METADATA": {
+      "type": 49, "post": "metadata",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "VERIFIED", "note": "body[4] == 49 METADATA"},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "monotonic sequence"},
+        {"off": 6, "len": 1, "dtype": "u8", "name": "meta_type", "cat": "meta", "enum": "MetadataType", "epoch": "none", "confidence": "VERIFIED", "note": "body[6] r52 MetadataType. OBSERVED: HISTORY_START(73 frames), HISTORY_END(79), HISTORY_COMPLETE(2) — the historical-offload framing markers (Plan 03 decode_streams_5.py)"},
+        {"off": 7, "len": -1, "dtype": "bytes", "name": "payload", "cat": "data", "epoch": "none", "confidence": "HYPOTHESIS", "note": "HISTORY_END payload (4.0 precedent <LHLL): [unix u32][subsec u16][unk u32][trim u32]. On 5.0 the offload is documented-only (D-09); live-test deferred to Phase 5 (PROTO-10)."}
+      ],
+      "note": "METADATA brackets the historical-offload stream (HISTORY_START/END/COMPLETE). Field offsets BODY-ABSOLUTE."
+    },
+    "CONSOLE_LOGS": {
+      "type": 50, "post": "console_logs",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "VERIFIED", "note": "body[4] == 50 CONSOLE_LOGS"},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "monotonic sequence"},
+        {"off": 7, "len": -1, "dtype": "ascii", "name": "log_text", "cat": "log", "epoch": "none", "confidence": "VERIFIED", "note": "ASCII firmware console narration. Plan 03 scrubbed digit-runs (T-04-04) and surfaced only protocol-structure narration + the hex trim cursor 0x00000004:000130ef (the store-then-ack persistence pointer for historical offload, PROTO-10). No device identity committed."}
+      ],
+      "note": "Firmware console log stream — narration scrubbed for safe documentation (digit-run redaction). Field offsets BODY-ABSOLUTE."
+    },
+    "REALTIME_DATA": {
+      "type": 40, "post": "realtime_data",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "VERIFIED", "note": "body[4] == 40 REALTIME_DATA. 159 frames decoded in Plan 04 (decode_biometrics_5.py)"},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "monotonic sequence"},
+        {"off": 6, "len": 1, "dtype": "u8", "name": "subseq", "cat": "frame", "epoch": "none", "confidence": "VERIFIED", "note": "body[6] is a per-frame SUB-SEQUENCE counter (41-243 monotonic), NOT a CommandNumber for this stream (Plan 04 empirical finding)"},
+        {"off": 8, "len": 4, "dtype": "u32", "endian": "LE", "name": "device_timestamp", "cat": "time", "epoch": "device", "confidence": "VERIFIED", "note": "device-epoch u32 at payload[1:5] == body[8:12] (Plan 04 empirical reconciliation). epoch=device."},
+        {"off": 12, "len": 1, "dtype": "u8", "name": "heart_rate", "cat": "hr", "epoch": "none", "confidence": "VERIFIED", "note": "bpm. HR @ payload[5] == body[12] (EMPIRICALLY reconciled — the literal 4.0 offset decodes to all-zero/0x01 on 5.0). Smooth physiological series 84-131 bpm, mean 102, across 159 frames. PROTO-07 VERIFIED. Cross-validated by standard 0x2A37 parse_hr (D-08 substitute: RR<->HR self-consistency 8/8)."},
+        {"off": 13, "len": 1, "dtype": "u8", "name": "rr_count", "cat": "rr", "epoch": "none", "confidence": "VERIFIED", "note": "number of RR intervals following. rr_count @ payload[6] == body[13] (Plan 04)"},
+        {"off": 14, "len": 2, "dtype": "u16", "endian": "LE", "name": "rr_interval", "cat": "rr", "epoch": "none", "confidence": "VERIFIED", "note": "RR interval(s) in ms, uint16-LE, repeated rr_count times from payload[7:] == body[14:]. 8/8 RR-bearing frames self-consistent with 60000/HR (e.g. HR=91 -> RR 645-694 ms). PROTO-07 VERIFIED."}
+      ],
+      "note": "5.0 REALTIME_DATA (type 40) layout was reconciled EMPIRICALLY in Plan 04, NOT from the literal 4.0 frame offsets. Payload base is body[7]: device-epoch @ payload[1:5], HR @ payload[5], rr_count @ payload[6], RR @ payload[7:]. Field offsets shown BODY-ABSOLUTE."
+    },
+    "REALTIME_RAW_DATA": {
+      "type": 43, "post": "raw_data",
+      "fields": [
+        {"off": 4, "len": 1, "dtype": "u8", "name": "packet_type", "cat": "frame", "enum": "PacketType", "epoch": "none", "confidence": "HYPOTHESIS", "note": "body[4] == 43 REALTIME_RAW_DATA. NOT OBSERVED in the Phase 4 captures (Plan 04: raw_imu_present=false; START_RAW_DATA cmd 81 / TOGGLE_IMU_MODE cmd 106 never triggered). r52-expected from the PacketType enum."},
+        {"off": 5, "len": 1, "dtype": "u8", "name": "seq", "cat": "frame", "epoch": "none", "confidence": "HYPOTHESIS", "note": "monotonic sequence (template from 4.0; type 43 absent from 5.0 captures)"},
+        {"off": 18, "len": 4, "dtype": "u32", "endian": "LE", "name": "device_timestamp", "cat": "time", "epoch": "device", "confidence": "HYPOTHESIS", "note": "device-epoch u32 (4.0 Gen4 layout template, frame off 11 -> body-absolute estimate). HYPOTHESIS: type 43 not captured on 5.0 (Plan 04)."},
+        {"off": 28, "len": 1, "dtype": "u8", "name": "heart_rate", "cat": "hr", "epoch": "none", "confidence": "HYPOTHESIS", "note": "4.0 Gen4 IMU-variant HR header (frame off 21 template). HYPOTHESIS on 5.0 (type 43 absent)."}
+      ],
+      "variants": {
+        "1917": {
+          "kind": "imu",
+          "offset_base": "body-absolute",
+          "hr_off": 21, "rr_count_off": 22, "rr_first_off": 23,
+          "samples": 100,
+          "axes": [["accelX", 89, "accel"], ["accelY", 289, "accel"], ["accelZ", 489, "accel"],
+                   ["gyroX", 692, "gyro"], ["gyroY", 892, "gyro"], ["gyroZ", 1092, "gyro"]],
+          "accel_scale": 0.000244140625,
+          "accel_unit": "g",
+          "gyro_scale": 0.06103515625,
+          "gyro_unit": "deg/s",
+          "tail_from": 1292,
+          "confidence": "HYPOTHESIS",
+          "epoch": "device",
+          "note": "Gen4-VERIFIED 4.0 layout kept as a DECODE-READY TEMPLATE for 5.0 — type 43 was NOT observed in the Phase 4 D-05 capture (raw_imu_present=false). NO 5.0 offsets fabricated (Pitfall 5). Apply ONLY when a real type-43 frame appears; needs a TOGGLE_IMU_MODE/START_RAW_DATA capture (Phase 5) to grade VERIFIED. PROTO-14 HYPOTHESIS. WR-03 reference frame: axis offsets in this schema are BODY-ABSOLUTE (apply against raw body bytes). The Python decoder in decode_biometrics_5.py uses PAYLOAD-RELATIVE offsets (subtract 7 = the 7-byte body prefix: role[1]+token[3]+ptype[1]+seq[1]+subseq[1]). Both reference the same physical bytes; body-absolute = payload-relative + 7."
+        }
+      },
+      "note": "PROTO-14 IMU: HYPOTHESIS. Type 43 absent from the 5.0 captures; the 4.0 Gen4-VERIFIED layout is a decode-ready template only. No 5.0 offsets fabricated."
+    }
+  },
+  "gatt": {
+    "confidence": "VERIFIED",
+    "source": "re/capture/evidence/2026-05-30-gatt-survey-5.meta.yaml",
+    "service": "FD4B0001-CCE1-4033-93CE-002D5875F58A",
+    "characteristics": {
+      "cmd_in": "FD4B0002-CCE1-4033-93CE-002D5875F58A",
+      "cmd_resp": "FD4B0003-CCE1-4033-93CE-002D5875F58A",
+      "events": "FD4B0004-CCE1-4033-93CE-002D5875F58A",
+      "data": "FD4B0005-CCE1-4033-93CE-002D5875F58A",
+      "diagnostics": "FD4B0007-CCE1-4033-93CE-002D5875F58A",
+      "heart_rate": "00002A37-0000-1000-8000-00805f9b34fb",
+      "battery_level": "00002A19-0000-1000-8000-00805f9b34fb"
+    },
+    "legacy_61080001": "ABSENT"
+  },
+  "firmware_revision": {
+    "value": "WG50_r52",
+    "source": "Device Information 0x2A27",
+    "confidence": "VERIFIED"
+  },
+  "biometric_verdicts": {
+    "note": "Per-stream biometric confidence map (PROTO-07/11/12/13/14, Plan 04 decode_biometrics_5.py). Streams without on-wire bytes are HYPOTHESIS with 4.0-cloud-computed provenance — no schema packet entries are fabricated for them (Pitfall 5 / T-04-05).",
+    "HR_RR": {"requirement": "PROTO-07", "confidence": "VERIFIED", "epoch": "device", "provenance": "standard 0x2A37 parse_hr verbatim + custom type-40 reconciled (HR @ payload[5], RR @ payload[7:]); RR<->HR self-consistent 8/8 frames"},
+    "IMU": {"requirement": "PROTO-14", "confidence": "HYPOTHESIS", "epoch": "device", "provenance": "type 43 absent (raw_imu_present=false); 4.0 Gen4 template ready; needs TOGGLE_IMU_MODE capture"},
+    "SpO2": {"requirement": "PROTO-11", "confidence": "HYPOTHESIS", "epoch": "none", "provenance": "type 53 byte not observed; 4.0 = cloud-computed off-wire; no fabricated offset"},
+    "skin_temp": {"requirement": "PROTO-12", "confidence": "HYPOTHESIS", "epoch": "none", "provenance": "event 17 TEMPERATURE_LEVEL not observed; 4.0 never captured it"},
+    "respiration": {"requirement": "PROTO-13", "confidence": "HYPOTHESIS", "epoch": "none", "provenance": "no respiration field on the wire; likely derived/sleep metric, may be cloud-only"}
+  }
+}

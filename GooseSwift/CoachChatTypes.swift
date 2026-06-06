@@ -58,6 +58,13 @@ enum CoachModelPreset: String, CaseIterable, Identifiable {
   case gpt55Low
   case gpt55Medium
   case gpt55High
+  // Wave 2: Claude presets
+  case claudeOpus48
+  case claudeSonnet46
+  case claudeHaiku45
+  // Wave 4: Gemini presets
+  case gemini25Pro
+  case gemini25Flash
 
   var id: String { rawValue }
 
@@ -66,11 +73,21 @@ enum CoachModelPreset: String, CaseIterable, Identifiable {
   var title: String {
     switch self {
     case .gpt55Low:
-      return "GPT-5.5 Low"
+      return String(localized: "GPT-5.5 Low")
     case .gpt55Medium:
-      return "GPT-5.5 Medium"
+      return String(localized: "GPT-5.5 Medium")
     case .gpt55High:
-      return "GPT-5.5 High"
+      return String(localized: "GPT-5.5 High")
+    case .claudeOpus48:
+      return String(localized: "Claude Opus 4.8")
+    case .claudeSonnet46:
+      return String(localized: "Claude Sonnet 4.6")
+    case .claudeHaiku45:
+      return String(localized: "Claude Haiku 4.5")
+    case .gemini25Pro:
+      return String(localized: "Gemini 2.5 Pro")
+    case .gemini25Flash:
+      return String(localized: "Gemini 2.5 Flash")
     }
   }
 
@@ -86,6 +103,25 @@ enum CoachModelPreset: String, CaseIterable, Identifiable {
       return "medium"
     case .gpt55High:
       return "high"
+    default:
+      return "medium"
+    }
+  }
+
+  var claudeModelID: String? {
+    switch self {
+    case .claudeOpus48: return "claude-opus-4-8"
+    case .claudeSonnet46: return "claude-sonnet-4-6"
+    case .claudeHaiku45: return "claude-haiku-4-5-20251001"
+    default: return nil
+    }
+  }
+
+  var geminiModelID: String? {
+    switch self {
+    case .gemini25Pro: return "gemini-2.5-pro"
+    case .gemini25Flash: return "gemini-2.5-flash"
+    default: return nil
     }
   }
 }

@@ -28,13 +28,19 @@ pub enum DeviceType {
     Maverick,
     Puffin,
     Goose,
+    HrMonitor,
 }
 
 impl DeviceType {
     pub fn header_len(self) -> usize {
         match self {
             DeviceType::Gen4 => 4,
-            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => 8,
+            // HrMonitor never reaches frame parsing (raw-evidence storage only); grouping
+            // with the 8-byte family is a compile-time formality.
+            DeviceType::Maverick
+            | DeviceType::Puffin
+            | DeviceType::Goose
+            | DeviceType::HrMonitor => 8,
         }
     }
 
@@ -47,7 +53,10 @@ impl DeviceType {
                     Some(u16::from_le_bytes([buffer[1], buffer[2]]) as usize + 4)
                 }
             }
-            DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => {
+            DeviceType::Maverick
+            | DeviceType::Puffin
+            | DeviceType::Goose
+            | DeviceType::HrMonitor => {
                 if buffer.len() < 8 {
                     None
                 } else {
@@ -248,7 +257,7 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
 
     let declared_len = match device_type {
         DeviceType::Gen4 => u16::from_le_bytes([frame[1], frame[2]]) as usize,
-        DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => {
+        DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor => {
             u16::from_le_bytes([frame[2], frame[3]]) as usize
         }
     };
@@ -260,7 +269,7 @@ pub fn parse_frame(device_type: DeviceType, frame: &[u8]) -> GooseResult<ParsedF
 
     let header_crc_valid = match device_type {
         DeviceType::Gen4 => crc8(&frame[1..3]) == frame[3],
-        DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose => {
+        DeviceType::Maverick | DeviceType::Puffin | DeviceType::Goose | DeviceType::HrMonitor => {
             let actual = u16::from_le_bytes([frame[6], frame[7]]);
             crc16_modbus(&frame[..6]) == actual
         }

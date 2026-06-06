@@ -179,6 +179,7 @@ fn imports_app_captured_frame_batch_and_returns_timeline_rows() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -222,6 +223,7 @@ fn captured_frame_batch_preserves_raw_bytes_when_session_reference_is_broken() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -269,6 +271,7 @@ fn captured_frame_batch_preserves_raw_bytes_when_parse_fails() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -326,6 +329,7 @@ fn repeated_captured_frame_batch_import_is_idempotent() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -334,6 +338,7 @@ fn repeated_captured_frame_batch_import_is_idempotent() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -366,6 +371,7 @@ fn captured_frame_batch_reports_next_actions_for_invalid_hex_and_empty_input() {
         }],
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -384,6 +390,7 @@ fn captured_frame_batch_reports_next_actions_for_invalid_hex_and_empty_input() {
         &[],
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -515,12 +522,216 @@ fn capture_sqlite_import_preserves_raw_evidence_for_parser_failures() {
     assert_eq!(store.table_count("decoded_frames").unwrap(), 0);
 }
 
+// D-02 regression: upload bridge filters decoded_frames by device_type column, NOT by JOIN
+// to capture_sessions. This test verifies that the separation is present at the store layer:
+// HR monitor frames are stored with device_type "HR_MONITOR" and Goose frames with "Goose".
+// The upload bridge code at bridge.rs:3194 gates on `frame.device_type == "HR_MONITOR"` which
+// prevents cross-contamination between device types.
+#[test]
+fn upload_device_type_filter_hr_frames_are_stored_separate_from_goose_frames() {
+    let store = GooseStore::open_in_memory().unwrap();
+
+    // Insert an HR monitor frame (GATT 0x2A37 standard measurement format)
+    // flags=0x00: 8-bit HR only; HR=72 bpm
+    let hr_frames = vec![CapturedFrameInput {
+        evidence_id: "d02-hr-frame".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-06-01T12:00:00Z".to_string(),
+        device_model: "HR-Monitor-Model".to_string(),
+        frame_hex: "0048".to_string(), // valid HR_MONITOR GATT bytes
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::HrMonitor,
+    }];
+
+    // Insert a Goose BLE frame (WHOOP protocol)
+    let goose_frames = vec![CapturedFrameInput {
+        evidence_id: "d02-goose-frame".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-06-01T12:01:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: None,
+        device_type: DeviceType::Goose,
+    }];
+
+    // Import both batches
+    let hr_report = import_captured_frame_batch(
+        &store,
+        &hr_frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+    let goose_report = import_captured_frame_batch(
+        &store,
+        &goose_frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+
+    // Both imports must succeed
+    assert!(hr_report.pass, "HR import failed: {:?}", hr_report.issues);
+    assert!(
+        goose_report.pass,
+        "Goose import failed: {:?}",
+        goose_report.issues
+    );
+
+    // Verify decoded_frames stores both types and they are distinct
+    let all_frames = store
+        .decoded_frames_between("2026-06-01T11:00:00Z", "2026-06-01T13:00:00Z")
+        .unwrap();
+    assert_eq!(all_frames.len(), 2, "expected 2 decoded frames total");
+
+    let hr_decoded = all_frames
+        .iter()
+        .find(|f| f.evidence_id == "d02-hr-frame")
+        .expect("HR frame must be in decoded_frames");
+    let goose_decoded = all_frames
+        .iter()
+        .find(|f| f.evidence_id == "d02-goose-frame")
+        .expect("Goose frame must be in decoded_frames");
+
+    // D-02: device_type column is the separation mechanism — no JOIN needed
+    assert_eq!(
+        hr_decoded.device_type, "HR_MONITOR",
+        "HR monitor frame must have device_type HR_MONITOR"
+    );
+    assert_eq!(
+        goose_decoded.device_type, "GOOSE",
+        "WHOOP frame must have device_type GOOSE"
+    );
+    // D-02 confirmed: upload bridge at bridge.rs gates on device_type column value,
+    // no JOIN to capture_sessions is needed or present.
+}
+
 fn seed_processed_capture_sqlite(path: &Path, rows: &[(&str, i64)]) {
     let rows = rows
         .iter()
         .map(|(timestamp, line_no)| (*timestamp, *line_no, GET_HELLO_FRAME))
         .collect::<Vec<_>>();
     seed_processed_capture_sqlite_with_hex(path, &rows);
+}
+
+#[test]
+fn batch_import_with_active_device_id_stores_non_null_device_id_in_capture_session() {
+    // FIX-01: capture.import_frame_batch should persist active_device_id in capture_sessions.
+    // RED test — will fail to compile until Task 2 adds the active_device_id field to
+    // CapturedFrameBatchOptions.
+
+    let store = GooseStore::open_in_memory().unwrap();
+
+    // Arrange: create the capture session without an active_device_id (as the Swift side
+    // currently does — the fix will wire it up so the Rust side records it).
+    store
+        .start_capture_session(CaptureSessionInput {
+            session_id: "device-id-test-session",
+            source: "ios.corebluetooth.notification",
+            started_at_unix_ms: 1770000000000,
+            device_model: "WHOOP 5.0 HRMonitor",
+            active_device_id: None,
+            provenance_json: "{}",
+        })
+        .unwrap();
+
+    let frames = vec![CapturedFrameInput {
+        evidence_id: "device-id-test-frame-1".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-05-28T12:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 HRMonitor".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: Some("device-id-test-session".to_string()),
+        device_type: DeviceType::Goose,
+    }];
+
+    // Act: import with active_device_id supplied in batch options.
+    let report = import_captured_frame_batch(
+        &store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: Some("test-uuid-1234"),
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+
+    // Assert: the session row now carries the device id.
+    let session = store
+        .capture_session("device-id-test-session")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        session.active_device_id.as_deref(),
+        Some("test-uuid-1234"),
+        "capture_sessions.active_device_id must be non-NULL after batch import with device id"
+    );
+}
+
+#[test]
+fn batch_import_without_active_device_id_leaves_session_device_id_null() {
+    // FIX-01 backward-compatibility path: when active_device_id is None in options,
+    // the import still succeeds and capture_sessions.active_device_id stays NULL.
+
+    let store = GooseStore::open_in_memory().unwrap();
+
+    store
+        .start_capture_session(CaptureSessionInput {
+            session_id: "device-id-null-session",
+            source: "ios.corebluetooth.notification",
+            started_at_unix_ms: 1770000000000,
+            device_model: "WHOOP 5.0 Goose",
+            active_device_id: None,
+            provenance_json: "{}",
+        })
+        .unwrap();
+
+    let frames = vec![CapturedFrameInput {
+        evidence_id: "device-id-null-frame-1".to_string(),
+        frame_id: None,
+        source: "ios.corebluetooth.notification".to_string(),
+        captured_at: "2026-05-28T12:00:00Z".to_string(),
+        device_model: "WHOOP 5.0 Goose".to_string(),
+        frame_hex: GET_HELLO_FRAME.to_string(),
+        sensitivity: "user-owned-capture".to_string(),
+        capture_session_id: Some("device-id-null-session".to_string()),
+        device_type: DeviceType::Goose,
+    }];
+
+    // Act: import WITHOUT active_device_id (backward-compatible path).
+    let report = import_captured_frame_batch(
+        &store,
+        &frames,
+        CapturedFrameBatchOptions {
+            parser_version: "goose-core/test",
+            active_device_id: None,
+        },
+    )
+    .unwrap();
+
+    assert!(report.pass, "{:?}", report.issues);
+
+    // Assert: active_device_id remains NULL — backward compat preserved.
+    let session = store
+        .capture_session("device-id-null-session")
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        session.active_device_id, None,
+        "capture_sessions.active_device_id must stay NULL when not supplied"
+    );
 }
 
 fn seed_processed_capture_sqlite_with_hex(path: &Path, rows: &[(&str, i64, &str)]) {

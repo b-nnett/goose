@@ -19,10 +19,10 @@ enum FitnessWorkoutPage: Int, CaseIterable, Identifiable {
 
 struct LiveActivityContentView: View {
   @Environment(\.dismiss) private var dismiss
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @AppStorage("goose.swift.activity.lockHintSeen") private var lockHintSeen = false
   @AppStorage("goose.swift.activity.recentWorkouts") private var recentWorkoutRawValues = ""
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   @ObservedObject var session: ActivitySessionModel
   @ObservedObject var locationTracker: ActivityLocationTracker
 

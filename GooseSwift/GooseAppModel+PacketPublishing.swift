@@ -144,7 +144,7 @@ extension GooseAppModel {
     }
   }
 
-  static func healthPacketCaptureFamily(for parsed: [String: Any], capturedAt: Date) -> HealthPacketCaptureFamily {
+  nonisolated static func healthPacketCaptureFamily(for parsed: [String: Any], capturedAt: Date) -> HealthPacketCaptureFamily {
     let packetName = parsed["packet_type_name"] as? String ?? "unknown"
     let packetType = intString(parsed["packet_type"])
     guard let payload = parsed["parsed_payload"] as? [String: Any] else {
@@ -201,7 +201,7 @@ extension GooseAppModel {
     )
   }
 
-  static func healthPacketCaptureFamily(for compact: NotificationFrameCompactSummary, capturedAt: Date) -> HealthPacketCaptureFamily {
+  nonisolated static func healthPacketCaptureFamily(for compact: NotificationFrameCompactSummary, capturedAt: Date) -> HealthPacketCaptureFamily {
     let packetName = compact.packetTypeName ?? "unknown"
     let packetType = compact.packetType.map(String.init) ?? "?"
     guard let payloadKind = compact.payloadKind else {
@@ -251,7 +251,7 @@ extension GooseAppModel {
     )
   }
 
-  static func healthPacketCaptureStatus(packetK: Int?, bodyKind: String) -> HealthPacketCaptureFamilyStatus {
+  nonisolated static func healthPacketCaptureStatus(packetK: Int?, bodyKind: String) -> HealthPacketCaptureFamilyStatus {
     guard let packetK else {
       return .unresolved
     }
@@ -267,7 +267,7 @@ extension GooseAppModel {
     }
   }
 
-  static func healthPacketCaptureEventStatus(eventID: Int?, eventName: String) -> HealthPacketCaptureFamilyStatus {
+  nonisolated static func healthPacketCaptureEventStatus(eventID: Int?, eventName: String) -> HealthPacketCaptureFamilyStatus {
     if eventID == 17 || eventName == "TEMPERATURE_LEVEL" {
       return .target
     }
@@ -280,7 +280,7 @@ extension GooseAppModel {
     return .unknown
   }
 
-  static func healthPacketCaptureFamilyName(packetK: Int) -> String {
+  nonisolated static func healthPacketCaptureFamilyName(packetK: Int) -> String {
     switch packetK {
     case 2:
       return "Status K2"
@@ -342,7 +342,7 @@ extension GooseAppModel {
     }
   }
 
-  static func extractHeartRate(from parsed: [String: Any]) -> Int? {
+  nonisolated static func extractHeartRate(from parsed: [String: Any]) -> Int? {
     guard
       let payload = parsed["parsed_payload"] as? [String: Any],
       payload["kind"] as? String == "data_packet",
@@ -354,7 +354,7 @@ extension GooseAppModel {
     return intValue(body["heart_rate"])
   }
 
-  static func extractMovementPacket(
+  nonisolated static func extractMovementPacket(
     from parsed: [String: Any],
     compact: NotificationFrameCompactSummary?,
     capturedAt: Date,
@@ -375,19 +375,19 @@ extension GooseAppModel {
     )
   }
 
-  static func extractWhoopEvent(from parsed: [String: Any], capturedAt: Date) -> WhoopEventSample? {
+  nonisolated static func extractWhoopEvent(from parsed: [String: Any], capturedAt: Date) -> WhoopEventSample? {
     WhoopEventSample.fromParsedFrame(parsed, capturedAt: capturedAt)
   }
 
-  static func extractWhoopEvent(from compact: NotificationFrameCompactSummary?, capturedAt: Date) -> WhoopEventSample? {
+  nonisolated static func extractWhoopEvent(from compact: NotificationFrameCompactSummary?, capturedAt: Date) -> WhoopEventSample? {
     compact.flatMap { WhoopEventSample.fromCompactSummary($0, capturedAt: capturedAt) }
   }
 
-  static func extractWhoopDataSignal(from parsed: [String: Any], capturedAt: Date) -> WhoopDataSignalSample? {
+  nonisolated static func extractWhoopDataSignal(from parsed: [String: Any], capturedAt: Date) -> WhoopDataSignalSample? {
     WhoopDataSignalSample.fromParsedFrame(parsed, capturedAt: capturedAt)
   }
 
-  static func extractWhoopDataSignal(from compact: NotificationFrameCompactSummary?, capturedAt: Date) -> WhoopDataSignalSample? {
+  nonisolated static func extractWhoopDataSignal(from compact: NotificationFrameCompactSummary?, capturedAt: Date) -> WhoopDataSignalSample? {
     compact.flatMap { WhoopDataSignalSample.fromCompactSummary($0, capturedAt: capturedAt) }
   }
 

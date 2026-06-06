@@ -1,56 +1,62 @@
 import Foundation
+import Observation
 import UIKit
 
 
-@MainActor
-final class GooseAppModel: ObservableObject {
-  @Published var onboardingComplete = false
-  @Published var rustStatus = "Rust bridge not checked"
-  @Published var helloSummary = "Client hello not prepared"
-  @Published var packetImportRevision = 0
-  @Published var packetImportStatus = "No packet import"
-  @Published var activityPersistenceStatus = "No activity stored"
-  @Published var homeActivityTimelineItems: [ActivityTimelineItem] = []
-  @Published var homeActivityTimelineStatus = "Activity timeline not loaded"
-  @Published var activityDetectionStatus = "Watching for movement packets"
-  @Published var movementPacketValidationStatus = "Not run"
-  @Published var movementPacketValidationIsRunning = false
-  @Published var heartRateHourlyRanges: [HeartRateHourlyRange] = []
-  @Published var heartRateStorageStatus = "No HR samples stored"
-  @Published var healthPacketCaptureSessionID: String?
-  @Published var healthPacketCaptureStatus = "No health packet capture"
-  @Published var healthPacketCaptureStartedAt: Date?
-  @Published var healthPacketCaptureFrameCount = 0
-  @Published var healthPacketCaptureTargetSummary = "No health packet capture"
-  @Published var healthPacketCaptureLastPacketSummary = "No packets captured"
-  @Published var healthPacketCaptureFamilyRows: [HealthPacketCaptureFamily] = []
-  @Published var respiratoryPacketWatchActive = false
-  @Published var respiratoryPacketWatchStatus = "Not watching K18 respiratory history"
-  @Published var overnightGuardActive = false
-  @Published var overnightGuardStatus = "Not started"
-  @Published var overnightGuardReadinessStatus = "pending"
-  @Published var overnightGuardReadinessSummary = "Not sleep-ready | connect WHOOP and start Overnight Guard"
-  @Published var overnightGuardRawNotificationCount = 0
-  @Published var overnightGuardRangePollCount = 0
-  @Published var overnightGuardRangeTelemetryCount = 0
-  @Published var overnightGuardSuccessfulRangePollCount = 0
-  @Published var overnightGuardCommandWriteCount = 0
-  @Published var overnightGuardEventLogCount = 0
-  @Published var overnightGuardTargetSummary = OvernightGuardTargetCounts().summary
-  @Published var overnightGuardHistoricalOrderSummary = OvernightGuardHistoricalOrderEvidence().summary
-  @Published var overnightGuardLastPacketSummary = "No raw notifications"
-  @Published var overnightGuardSpoolPath = "No overnight spool"
-  @Published var overnightGuardSpoolSizeSummary = "No overnight spool size"
-  @Published var overnightGuardSQLiteMirrorSummary = "SQLite mirror not started"
-  @Published var overnightGuardPowerSummary = "Power not checked"
-  @Published var overnightGuardWatchdogSummary = "Watchdog not checked"
-  @Published var overnightGuardWarning = "Keep the official WHOOP app closed until Goose final sync/export finishes."
-  @Published var overnightGuardExportStatus = "No overnight export"
-  @Published var overnightGuardExportInProgress = false
-  @Published var overnightGuardExportURL: URL?
-  @Published var overnightGuardExportManifestURL: URL?
-  @Published var overnightGuardExportManifestError: String?
-  @Published var overnightGuardCanExportLastSession = false
+@MainActor @Observable
+final class GooseAppModel {
+  var onboardingComplete = false
+  var rustStatus = "Rust bridge not checked"
+  var helloSummary = "Client hello not prepared"
+  var packetImportRevision = 0
+  var packetImportStatus = "No packet import"
+  var activityPersistenceStatus = "No activity stored"
+  var homeActivityTimelineItems: [ActivityTimelineItem] = []
+  var homeActivityTimelineStatus = "Activity timeline not loaded"
+  var activityDetectionStatus = "Watching for movement packets"
+  var movementPacketValidationStatus = "Not run"
+  var movementPacketValidationIsRunning = false
+  var heartRateHourlyRanges: [HeartRateHourlyRange] = []
+  var heartRateStorageStatus = "No HR samples stored"
+  var healthPacketCaptureSessionID: String?
+  var healthPacketCaptureStatus = "No health packet capture"
+  var healthPacketCaptureStartedAt: Date?
+  var healthPacketCaptureFrameCount = 0
+  var healthPacketCaptureTargetSummary = "No health packet capture"
+  var healthPacketCaptureLastPacketSummary = "No packets captured"
+  var healthPacketCaptureFamilyRows: [HealthPacketCaptureFamily] = []
+  var respiratoryPacketWatchActive = false
+  var respiratoryPacketWatchStatus = "Not watching K18 respiratory history"
+  var overnightGuardActive = false
+  var overnightGuardStatus = "Not started"
+  var overnightGuardReadinessStatus = "pending"
+  var overnightGuardReadinessSummary = "Not sleep-ready | connect WHOOP and start Overnight Guard"
+  var overnightGuardRawNotificationCount = 0
+  var overnightGuardRangePollCount = 0
+  var overnightGuardRangeTelemetryCount = 0
+  var overnightGuardSuccessfulRangePollCount = 0
+  var overnightGuardCommandWriteCount = 0
+  var overnightGuardEventLogCount = 0
+  var overnightGuardTargetSummary = OvernightGuardTargetCounts().summary
+  var overnightGuardHistoricalOrderSummary = OvernightGuardHistoricalOrderEvidence().summary
+  var overnightGuardLastPacketSummary = "No raw notifications"
+  var overnightGuardSpoolPath = "No overnight spool"
+  var overnightGuardSpoolSizeSummary = "No overnight spool size"
+  var overnightGuardSQLiteMirrorSummary = "SQLite mirror not started"
+  var overnightGuardPowerSummary = "Power not checked"
+  var overnightGuardWatchdogSummary = "Watchdog not checked"
+  var overnightGuardWarning = "Keep the official WHOOP app closed until Goose final sync/export finishes."
+  var overnightGuardExportStatus = "No overnight export"
+  var overnightGuardExportInProgress = false
+  var overnightGuardExportURL: URL?
+  var overnightGuardExportManifestURL: URL?
+  var overnightGuardExportManifestError: String?
+  var overnightGuardCanExportLastSession = false
+  var serverReachable: Bool? = nil
+  var lastUploadAt: Date? = nil
+  var pendingBatchCount: Int = 0
+  var lastSyncedCount: Int? = nil
+  var connectedDeviceGeneration: String? = nil
 
   let ble: GooseBLEClient
   let packetMonitor = PacketMonitorModel()
@@ -82,6 +88,7 @@ final class GooseAppModel: ObservableObject {
     maxQueuedRows: GooseAppModel.captureFrameWriteQueueMaxRows,
     maxBatchRows: GooseAppModel.captureFrameWriteBatchMaxRows
   )
+  let uploadService = GooseUploadService(databasePath: HealthDataStore.defaultDatabasePath())
   let captureFrameEnqueueAggregator = CaptureFrameEnqueueAggregator(
     publishInterval: GooseAppModel.packetUIStatePublishInterval
   )
@@ -160,8 +167,8 @@ final class GooseAppModel: ObservableObject {
   var notificationParseQueueDepth = 0
   var notificationParseQueueHighWatermark = 0
   let captureFrameRowBuildStateLock = NSLock()
-  var captureFrameRowBuildQueueDepth = 0
-  var captureFrameRowBuildQueueHighWatermark = 0
+  @ObservationIgnored nonisolated(unsafe) var captureFrameRowBuildQueueDepth = 0
+  @ObservationIgnored nonisolated(unsafe) var captureFrameRowBuildQueueHighWatermark = 0
   let pipelinePerformanceLogLock = NSLock()
   var lastPipelinePerformanceLoggedAt = Date.distantPast
   var respiratoryPacketWatchK18Count = 0
@@ -171,7 +178,8 @@ final class GooseAppModel: ObservableObject {
   var lastWhoopEventStatusUpdatedAt = Date.distantPast
   var activityTimelineRefreshGeneration = 0
   var skippedNotificationDiagnostics = SkippedNotificationDiagnostics()
-  var frameReassemblyBuffers: [String: Data] = [:]
+  @ObservationIgnored nonisolated(unsafe) var frameReassemblyBuffers: [String: Data] = [:]
+  var lastNotificationEvent: GooseNotificationEvent?
   let autoStartHealthPacketCaptureOnReady: Bool = {
     let processInfo = ProcessInfo.processInfo
     return processInfo.arguments.contains("--goose-start-health-packet-capture")
@@ -192,66 +200,26 @@ final class GooseAppModel: ObservableObject {
     return processInfo.arguments.contains("--goose-start-respiratory-packet-watch")
       || processInfo.environment["GOOSE_START_RESPIRATORY_PACKET_WATCH"] == "1"
   }()
-  let autoStartHealthPacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_HEALTH_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-health-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 30 * 60
-  }()
-  let autoStartTemperaturePacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_TEMPERATURE_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-temperature-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 10 * 60
-  }()
-  let autoStartPhysiologyPacketCaptureDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_PHYSIOLOGY_PACKET_CAPTURE_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-physiology-packet-capture-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 30 * 60
-  }()
-  let autoStartRespiratoryPacketWatchDuration: TimeInterval = {
-    let processInfo = ProcessInfo.processInfo
-    if let value = processInfo.environment["GOOSE_RESPIRATORY_PACKET_WATCH_DURATION_SECONDS"],
-       let seconds = Double(value),
-       seconds > 0 {
-      return seconds
-    }
-    let prefix = "--goose-respiratory-packet-watch-duration="
-    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(prefix) }),
-       let seconds = Double(argument.dropFirst(prefix.count)),
-       seconds > 0 {
-      return seconds
-    }
-    return 10 * 60
-  }()
+  let autoStartHealthPacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_HEALTH_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-health-packet-capture-duration=",
+    fallback: 30 * 60
+  )
+  let autoStartTemperaturePacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_TEMPERATURE_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-temperature-packet-capture-duration=",
+    fallback: 10 * 60
+  )
+  let autoStartPhysiologyPacketCaptureDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_PHYSIOLOGY_PACKET_CAPTURE_DURATION_SECONDS",
+    cliPrefix: "--goose-physiology-packet-capture-duration=",
+    fallback: 30 * 60
+  )
+  let autoStartRespiratoryPacketWatchDuration: TimeInterval = GooseAppModel.durationFromEnvironment(
+    envVar: "GOOSE_RESPIRATORY_PACKET_WATCH_DURATION_SECONDS",
+    cliPrefix: "--goose-respiratory-packet-watch-duration=",
+    fallback: 10 * 60
+  )
   let autoSyncHistoryDuringPhysiologyCapture: Bool = {
     let processInfo = ProcessInfo.processInfo
     return processInfo.arguments.contains("--goose-sync-history-during-physiology-capture")
@@ -276,7 +244,7 @@ final class GooseAppModel: ObservableObject {
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter
   }()
-  static let maximumBufferedFrameBytes = 64 * 1024
+  nonisolated static let maximumBufferedFrameBytes = 64 * 1024
   static let packetImportRevisionInterval: TimeInterval = 5
   static let healthPacketCaptureUIUpdateInterval: TimeInterval = 1
   static let healthPacketCaptureSummaryLogInterval: TimeInterval = 10
@@ -373,7 +341,9 @@ final class GooseAppModel: ObservableObject {
       )
     }
     ble.onNotification = { [weak self] event in
-      self?.handleNotification(event)
+      Task { @MainActor [weak self] in
+        self?.handleNotification(event)
+      }
     }
     ble.onLiveHeartRate = { bpm, source, capturedAt in
       heartRateSamplePipeline.recordHeartRateSample(bpm: bpm, source: source, capturedAt: capturedAt)
@@ -391,6 +361,11 @@ final class GooseAppModel: ObservableObject {
         self?.handleBLEConnectionStateChange(state)
       }
     }
+    ble.onHRConnectionStateChange = { [weak self] state in
+      Task { @MainActor in
+        self?.handleHRConnectionStateChange(state)
+      }
+    }
     ble.onHistoricalSyncProgress = { [weak self] progress in
       Task { @MainActor in
         self?.handleHistoricalSyncProgress(progress)
@@ -402,6 +377,7 @@ final class GooseAppModel: ObservableObject {
     ble.onMessage = { [weak self] message in
       self?.persistOvernightEventLog(message)
     }
+    configureUploadService()
     refreshHeartRateHourlyRanges()
     ble.record(source: "app", title: "model.init")
     prepareClientHello()
@@ -410,9 +386,13 @@ final class GooseAppModel: ObservableObject {
     scheduleAutoStartHealthPacketCaptureIfNeeded()
     scheduleAutoStartRespiratoryPacketWatchIfNeeded()
     recoverUncleanOvernightGuardSessionIfNeeded()
+    // FIX-05 (D-09a): trigger storage compaction at launch from a background queue (Pitfall 6).
+    DispatchQueue.global(qos: .utility).async { [weak self] in
+      self?.runStorageCompactionIfNeeded()
+    }
   }
 
-  deinit {
+  @MainActor deinit {
     activityDetectionIdleWorkItem?.cancel()
     movementPacketValidationTimeoutWorkItem?.cancel()
     packetImportRevisionWorkItem?.cancel()
@@ -438,6 +418,48 @@ final class GooseAppModel: ObservableObject {
     } else {
       _ = overnightRawSpool.finish(status: "model_deinit")
     }
+  }
+
+  private nonisolated func runStorageCompactionIfNeeded() {
+    // nonisolated: called from DispatchQueue.global background queue (Pitfall 6).
+    // Uses a local GooseRustBridge() — the Rust side is stateless across instances.
+    let localRust = GooseRustBridge()
+    guard let report = try? localRust.request(
+      method: "storage.compact_raw_evidence",
+      args: [
+        "database_path": HealthDataStore.defaultDatabasePath(),
+        "limit_bytes": 25_165_824,
+      ]
+    ) else { return }
+
+    let compactedRows = (report["compacted_rows"] as? Int) ?? 0
+    let freedBytes = (report["freed_bytes"] as? Int) ?? 0
+    // D-10: log only when compaction actually happened; silent otherwise.
+    if compactedRows > 0 {
+      let mbFreed = String(format: "%.1f", Double(freedBytes) / 1_048_576)
+      DispatchQueue.main.async { [weak self] in
+        self?.ble.record(source: "storage", title: "compact", body: "\(compactedRows) rows, \(mbFreed) MB freed")
+      }
+    }
+  }
+
+  private nonisolated static func durationFromEnvironment(
+    envVar: String,
+    cliPrefix: String,
+    fallback: TimeInterval
+  ) -> TimeInterval {
+    let processInfo = ProcessInfo.processInfo
+    if let value = processInfo.environment[envVar],
+       let seconds = Double(value),
+       seconds > 0 {
+      return seconds
+    }
+    if let argument = processInfo.arguments.first(where: { $0.hasPrefix(cliPrefix) }),
+       let seconds = Double(argument.dropFirst(cliPrefix.count)),
+       seconds > 0 {
+      return seconds
+    }
+    return fallback
   }
 
 }

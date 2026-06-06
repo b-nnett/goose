@@ -5,8 +5,8 @@ import UIKit
 
 struct SleepV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  @ObservedObject var store: HealthDataStore
-  @ObservedObject var ble: GooseBLEClient
+  var store: HealthDataStore
+  var ble: GooseBLEClient
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingInsightsSheet = false

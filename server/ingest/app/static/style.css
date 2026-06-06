@@ -1,0 +1,273 @@
+:root{
+  --bg:#070b0d; --bg2:#0c1216; --panel:#0e1519; --panel2:#101a1f;
+  --line:#1c2a30; --line2:#26383f;
+  --ink:#cfe7df; --dim:#6f8a86; --faint:#3f5450;
+  --phos:#39ff9e; --phos-dim:#1f8f5c; --amber:#ffb648; --red:#ff5a6e;
+  --c-frame:#5b6e74; --c-cmd:#8fb0ff; --c-time:#39d6ff; --c-hr:#ff5a6e;
+  --c-rr:#ff9f43; --c-accel:#b6ff4d; --c-gyro:#c08bff; --c-ppg:#2ee6c6;
+  --c-battery:#ffd23f; --c-event:#5b9bff; --c-meta:#ff6fd0; --c-text:#7CFFB2;
+  --c-unknown:#46585e;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --disp:"Martian Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #0d2a22 0%, transparent 55%),
+    radial-gradient(900px 500px at -10% 110%, #1a1306 0%, transparent 50%),
+    var(--bg);
+  color:var(--ink); font-family:var(--mono); font-size:13px; line-height:1.4;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.05;mix-blend-mode:overlay;
+  background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);}
+h1,h2{font-family:var(--disp);font-weight:500;letter-spacing:.04em;margin:0}
+
+/* ---------- topbar ---------- */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:24px;
+  padding:14px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--bg2),transparent);}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{font-size:30px;color:var(--phos);text-shadow:0 0 14px var(--phos-dim);animation:spin 9s linear infinite;
+  display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;line-height:1;
+  transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+.topbar h1{font-size:19px}.topbar h1 .sep{color:var(--phos)}
+.tag{margin:1px 0 0;color:var(--dim);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase}
+.readouts{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:3px;min-width:54px}
+.stat label{font-size:9px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+.stat .val{font-size:13px;color:var(--ink);font-weight:500}
+.stat .val.big{font-size:20px;color:var(--phos);line-height:1;text-shadow:0 0 12px var(--phos-dim)}
+
+/* ---------- query deck ---------- */
+.deck{display:flex;gap:12px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line);
+  background:var(--bg2);flex-wrap:wrap}
+.ctl{font-size:9px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase;display:flex;flex-direction:column;gap:4px}
+.btn{font-family:var(--mono);font-size:11.5px;color:var(--dim);background:var(--panel);
+  border:1px solid var(--line2);padding:7px 13px;border-radius:5px;cursor:pointer;letter-spacing:.03em;
+  transition:.15s;text-transform:lowercase}
+.btn:hover{color:var(--ink);border-color:var(--phos-dim);box-shadow:0 0 0 1px var(--phos-dim) inset}
+.btn.on{color:var(--phos);border-color:var(--phos-dim)}
+.btn.accent{color:var(--amber);border-color:#5a4416}
+.btn.accent:hover{box-shadow:0 0 0 1px #5a4416 inset}
+.ranges{display:flex;gap:6px}
+select{font-family:var(--mono);font-size:12px;background:var(--panel);color:var(--ink);
+  border:1px solid var(--line2);border-radius:5px;padding:6px 8px;min-width:150px}
+.status{margin-left:auto;font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+
+/* ---------- layout ---------- */
+/* Two columns: LEFT = derived insights (daily + sleep history), RIGHT = raw signal
+   charts. align-items:start lets each column take its own natural height (they are
+   independent). Collapses to one column on narrow viewports (media query below). */
+main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;
+  padding:14px 22px;align-items:start}
+.col-left{display:flex;flex-direction:column;gap:14px;min-width:0}
+.col-right{min-width:0}
+.panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+  border-radius:9px;overflow:hidden;box-shadow:0 10px 30px -18px #000 inset,0 1px 0 #ffffff08 inset}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 16px;border-bottom:1px solid var(--line);background:#0b1316}
+.panel-head.sub{background:transparent;border-top:1px solid var(--line)}
+.panel-head h2{font-size:12px;color:var(--phos);letter-spacing:.16em}
+.pkt-meta{font-size:10.5px;color:var(--dim)}
+.empty{padding:18px 16px;color:var(--faint);font-size:11px;font-style:italic}
+
+/* ---------- signals / charts ---------- */
+.chart-wrap{padding:12px 14px 6px}
+.chart-label{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+.chart-unit{color:var(--dim)}
+.approx{color:var(--faint);font-style:italic;opacity:.8;margin-left:.4em}
+.chart{width:100%;display:block}
+
+/* Signals horizontal-scroll: each chart-wrap gets an explicit width (--sig-w, set by JS
+   so 24h fills the visible width) → the scroll content is genuinely wide, which is what
+   lets sticky labels/axes work; a wider loaded range overflows → horizontal scroll.
+   Labels, sub-heads and the y-axis overlay stick to the left so they stay readable. */
+.signals-scroll{overflow-x:auto;overflow-y:hidden}
+.signals-scroll .chart-wrap{position:relative;width:var(--sig-w,100%)}
+.signals-scroll .chart{width:100%}
+.signals-scroll .chart-label{position:sticky;left:0;justify-content:flex-start;gap:.6em;
+  width:max-content;padding:2px 10px 2px 14px;background:linear-gradient(90deg,var(--panel2),transparent);border-radius:0 4px 4px 0}
+.signals-scroll .panel-head.sub{position:sticky;left:0;width:max-content;border-top:none}
+/* Frozen y-axis: zero-box sticky element pinned left; its absolutely-positioned value
+   labels (set by renderYAxis) float over the plot's left edge and stay put when scrolled. */
+.signals-scroll .yaxis{position:sticky;left:0;width:0;height:0;z-index:4;pointer-events:none}
+.signals-scroll .yaxis span{position:absolute;left:6px;transform:translateY(-50%);white-space:nowrap;
+  font:9px var(--mono);color:var(--dim);background:rgba(11,19,22,.85);padding:0 4px;border-radius:3px}
+/* hover tooltip colour chips (reuses the shared #tooltip element) */
+.tooltip .tt-val i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:baseline}
+
+/* ---------- DAILY panel (sleep / recovery / strain) ---------- */
+.daily-body{padding:14px 16px}
+/* Sleep is the busiest card → its own full-width row; recovery + strain share the row below. */
+.daily-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.daily-grid .sleep{grid-column:1 / -1}
+.dcard{background:#0a1417;border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  display:flex;flex-direction:column;gap:6px;min-width:0}
+.dcard label{font-size:9px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+.dcard .big-metric{font-family:var(--disp);font-size:34px;line-height:1;font-weight:500;color:var(--ink);
+  display:flex;align-items:baseline;gap:8px}
+.dcard .big-metric .unit{font-family:var(--mono);font-size:11px;color:var(--dim);font-weight:400;letter-spacing:.04em}
+.dcard .dsub{font-size:10.5px;color:var(--dim);letter-spacing:.02em}
+/* Recovery color-coding (WHOOP-style green/yellow/red) — APPROXIMATE. */
+.dcard.recovery.good .big-metric{color:var(--phos);text-shadow:0 0 14px var(--phos-dim)}
+.dcard.recovery.mid  .big-metric{color:var(--amber);text-shadow:0 0 14px #5a441666}
+.dcard.recovery.low  .big-metric{color:var(--red);text-shadow:0 0 14px #ff5a6e44}
+.dcard.recovery.na   .big-metric{color:var(--faint)}
+.dcard.strain .big-metric{color:var(--c-time)}
+.dcard.sleep .big-metric{color:var(--c-ppg)}
+.hypno{width:100%;display:block;height:34px;border-radius:4px;overflow:hidden;
+  border:1px solid var(--line);background:#06100f;margin-top:2px}
+.stage-legend{display:flex;flex-wrap:wrap;gap:5px 12px;margin-top:2px}
+.slg{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--dim);letter-spacing:.04em}
+.slg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.daily-trend{padding:6px 0 2px;margin-top:12px;border-top:1px solid var(--line)}
+.daily-trend .chart-label{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--faint);margin:8px 2px 4px}
+@media(max-width:760px){.daily-grid{grid-template-columns:1fr}}
+
+/* ---------- SLEEP HISTORY panel (per-night list + drill-down) ---------- */
+.sleep-body{padding:6px 0 8px}
+.sleep-empty{padding:22px 16px}
+.snight{border-bottom:1px solid #142025}
+.snight.open{background:#0a1417}
+.snrow{display:flex;align-items:center;gap:12px;padding:9px 16px 3px;cursor:pointer;transition:.12s}
+.snrow:hover{background:#0f1d22}
+.snight.open .snrow{box-shadow:inset 2px 0 0 var(--c-ppg)}
+.sncaret{color:var(--faint);font-size:11px;width:12px;flex:none}
+.snday{color:var(--ink);font-size:11.5px;width:118px;flex:none;letter-spacing:.02em}
+.snbar{flex:1;height:10px;background:#06100f;border:1px solid var(--line);border-radius:3px;overflow:hidden;min-width:40px}
+.snbar i{display:block;height:100%;background:linear-gradient(90deg,var(--c-ppg),#1f8f5c);box-shadow:0 0 8px -2px var(--c-ppg)}
+.snhrs{color:var(--c-ppg);font-size:12.5px;font-weight:600;width:54px;text-align:right;flex:none}
+.sneff{color:var(--dim);font-size:11px;width:42px;text-align:right;flex:none}
+.snsub{padding:0 16px 9px 40px;color:var(--dim);font-size:10px;letter-spacing:.02em}
+.sndetail{padding:4px 16px 16px 16px;border-top:1px dashed var(--line2)}
+.snd-head{display:flex;flex-wrap:wrap;gap:18px;margin:10px 0 8px}
+.snd-metric{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.snd-metric b{font-family:var(--disp);font-size:15px;color:var(--ink);font-weight:500;letter-spacing:.02em;margin-left:6px}
+.snd-charts{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-top:8px}
+.snd-charts .chart-wrap{padding:6px 0 4px}
+.snd-close{margin-top:12px}
+@media(max-width:760px){.snd-charts{grid-template-columns:1fr}.snday{width:96px}}
+
+/* ---------- events ---------- */
+.events{max-height:26vh;overflow:auto}
+.erow{display:flex;gap:14px;align-items:baseline;padding:5px 16px;border-bottom:1px solid #142025}
+.erow .et{color:var(--faint);font-size:10.5px;width:150px;flex:none}
+.erow .ek{font-size:11.5px;font-weight:500;letter-spacing:.02em}
+
+/* ---------- raw archive · research (secondary, collapsible) ---------- */
+.research{margin:8px 22px 14px;border-top:1px dashed var(--line2);padding-top:14px}
+.research-head{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+  font-family:var(--mono);background:transparent;border:0;padding:4px 0;color:var(--dim)}
+.research-head:hover .research-title{color:var(--ink)}
+.research-caret{color:var(--faint);font-size:11px;width:12px;flex:none;transition:.12s}
+.research-title{font-family:var(--disp);font-size:12px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.research-title .sep{color:var(--faint)}
+.research-tag{color:var(--amber)}
+.research-head .pkt-meta{margin-left:auto}
+.research-note{margin:5px 0 12px 22px;color:var(--faint);font-size:10.5px;font-style:italic;max-width:760px;line-height:1.5}
+/* batches aside on top, full-width hex inspector below (keeps the inspector's own 2-pane grid roomy) */
+.research-main{display:flex;flex-direction:column;gap:14px}
+.research-main .batches{max-width:560px}
+
+/* ---------- batches / frames ---------- */
+.batch-list{max-height:40vh;overflow:auto}
+.brow{display:flex;gap:12px;align-items:baseline;padding:8px 16px;border-bottom:1px solid #142025;cursor:pointer;transition:.12s}
+.brow:hover{background:#0f1d22}
+.brow.sel{background:#10242a;box-shadow:inset 2px 0 0 var(--phos)}
+.brow .bt{color:var(--ink);font-size:11px;flex:1}
+.brow .bp{color:var(--c-accel);font-size:10.5px;flex:none}
+.brow .bz{color:var(--faint);font-size:10.5px;width:62px;text-align:right;flex:none}
+.frame-list{max-height:30vh;overflow:auto}
+.frrow{display:flex;gap:12px;align-items:baseline;padding:6px 16px;border-bottom:1px solid #142025;cursor:pointer;transition:.12s}
+.frrow:hover{background:#0f1d22}
+.frrow.sel{background:#10242a;box-shadow:inset 2px 0 0 var(--phos)}
+.frrow .frseq{color:var(--faint);font-size:10.5px;width:42px;flex:none}
+.frrow .frtype{font-size:11px;font-weight:600;flex:1}
+.frrow .frcrc{color:var(--phos);font-size:11px}
+.frrow .frcrc.bad{color:var(--red)}
+
+/* ---------- inspector (lives in the research-main grid's right column) ---------- */
+.inspector{align-self:start}
+.inspector-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:0}
+.inspector-body{padding:14px 16px;max-height:52vh;overflow:auto;border-right:1px solid var(--line)}
+.readout{display:flex;flex-direction:column;min-width:0}
+.hexgrid{font-size:12px;line-height:1.85;white-space:nowrap}
+.hexrow{display:flex;gap:14px;align-items:center}
+.hoff{color:var(--faint);width:60px;text-align:right;flex:none;font-size:11px;user-select:none}
+.hbytes{display:flex;gap:3px;flex:none}
+.hascii{color:var(--faint);margin-left:10px;letter-spacing:1px}
+.byte{display:inline-block;width:21px;text-align:center;border-radius:3px;cursor:default;
+  color:var(--ink);background:#ffffff06;transition:transform .08s,box-shadow .08s;border:1px solid transparent}
+.byte.gap{opacity:.25}
+.byte:hover,.byte.hl{transform:translateY(-1px);z-index:2}
+.byte.hl{box-shadow:0 0 0 1px currentColor, 0 0 10px -2px currentColor}
+.field-sel{outline:1px dashed currentColor;outline-offset:1px}
+.legend{display:flex;flex-wrap:wrap;gap:7px 14px;padding:11px 0 2px;margin-top:10px;border-top:1px solid var(--line)}
+.lg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);cursor:default}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.fields{max-height:34vh;overflow:auto}
+.frow{display:grid;grid-template-columns:14px 1fr auto;gap:9px;align-items:baseline;
+  padding:6px 14px;border-bottom:1px solid #142025;cursor:pointer;transition:.12s}
+.frow:hover{background:#0f1d22}
+.frow.sel{background:#10242a}
+.frow .swatch{width:9px;height:9px;border-radius:2px;align-self:center}
+.frow .fname{color:var(--ink);font-size:11.5px}
+.frow .fval{color:var(--phos);font-size:11.5px;text-align:right;font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.frow .fnote{grid-column:2/4;color:var(--dim);font-size:9.5px;margin-top:1px}
+.parsed{padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px}
+.kv{background:#0a1417;border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-width:90px}
+.kv b{display:block;font-size:9px;color:var(--faint);letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
+.kv span{color:var(--phos);font-size:13px}
+
+/* ---------- tooltip ---------- */
+.tooltip{position:fixed;pointer-events:none;z-index:1000;background:#04080a;border:1px solid var(--line2);
+  border-radius:6px;padding:7px 10px;font-size:11px;max-width:280px;opacity:0;transition:opacity .1s;
+  box-shadow:0 8px 30px -8px #000}
+.tooltip.show{opacity:1}
+.tooltip .tt-name{color:var(--phos);font-weight:600}
+.tooltip .tt-val{color:var(--ink);margin-top:2px;word-break:break-all}
+.tooltip .tt-note{color:var(--dim);margin-top:3px;font-size:10px}
+.tooltip .tt-off{color:var(--faint);font-size:10px;margin-top:2px}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+@media(max-width:1000px){.inspector-grid{grid-template-columns:1fr}
+  .inspector-body{border-right:none;border-bottom:1px solid var(--line)}}
+/* Keep the two main columns down to tablet width — a browser sidebar (e.g. Arc) eats
+   enough horizontal space that a 1000px cutoff collapsed it on normal laptops. */
+@media(max-width:760px){main{grid-template-columns:1fr}}
+
+/* bed/wake line on the DAILY sleep card */
+.dcard.sleep .dsub.bedwake{color:var(--c-ppg);letter-spacing:.02em}
+
+/* ---------- DAILY · nightly biometrics card (SpO2 / skin-temp dev / resp) ---------- */
+/* Spans full width below the recovery+strain row, same as the sleep card above. */
+.daily-grid .biometrics{grid-column:1 / -1}
+.bio-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:2px}
+.bio-item{display:flex;align-items:baseline;gap:5px;min-width:0}
+.bio-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);flex:none}
+.bio-val{font-family:var(--disp);font-size:22px;font-weight:500;color:var(--c-time);line-height:1}
+.bio-unit{font-family:var(--mono);font-size:10px;color:var(--dim);font-weight:400;letter-spacing:.03em}
+/* Skin-temp deviation: green if positive (warm), cooler if negative — neutral otherwise. */
+.bio-val.skin-dev{color:var(--ink)}
+
+/* ---------- DAILY · exercise per-bout detail (from /v1/compute-daily) ---------- */
+.ex-detail{margin:10px 0 4px;padding:0 2px;border-top:1px dashed var(--line2);padding-top:8px}
+.ex-list{display:flex;flex-direction:column;gap:8px}
+.ex-bout{background:#0a1417;border:1px solid var(--line);border-radius:7px;
+  padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.ex-kind{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);flex:none;width:100%}
+.ex-dur{font-family:var(--disp);font-size:19px;font-weight:500;color:var(--c-ppg)}
+.ex-strain{font-family:var(--disp);font-size:19px;font-weight:500;color:var(--c-time)}
+.ex-hrr{font-size:13px;color:var(--amber)}
+.ex-hr{font-size:13px;color:var(--c-hr)}
+/* Zone bar: a narrow horizontal strip with colored segments for zones 0–5. */
+.ex-zones{flex:1;min-width:100px;height:7px;border-radius:3px;overflow:hidden;background:#06100f;
+  border:1px solid var(--line);display:flex}
+.ex-zones i{display:block;height:100%;opacity:.85;transition:opacity .1s}
+.ex-zones i:hover{opacity:1}
+/* Exercise toggle button inside the strain dsub — inherits .btn but smaller */
+.ex-toggle{padding:3px 9px;font-size:10.5px;letter-spacing:.03em}

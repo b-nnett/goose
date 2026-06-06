@@ -811,10 +811,10 @@ fn validate_activity_sync_candidate(
     }
     let start_time = parse_required_field_instant("start_time", &session.start_time, &mut reasons);
     let end_time = parse_required_field_instant("end_time", &session.end_time, &mut reasons);
-    if let Some(start_time) = start_time {
-        if backfill.contains_start(start_time) == Some(false) {
-            reasons.push("outside_backfill_window".to_string());
-        }
+    if let Some(start_time) = start_time
+        && backfill.contains_start(start_time) == Some(false)
+    {
+        reasons.push("outside_backfill_window".to_string());
     }
     if let (Some(start_time), Some(end_time)) = (start_time, end_time)
         && end_time <= start_time

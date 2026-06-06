@@ -163,6 +163,139 @@ use crate::{
 pub const BRIDGE_REQUEST_SCHEMA: &str = "goose.bridge.request.v1";
 pub const BRIDGE_RESPONSE_SCHEMA: &str = "goose.bridge.response.v1";
 pub const CAPTURE_ARRIVAL_PLAN_REPORT_SCHEMA: &str = "goose.capture-arrival-plan-report.v1";
+pub const BRIDGE_METHODS_LIST_SCHEMA: &str = "goose.bridge.methods-list.v1";
+
+/// Canonical list of every bridge RPC method understood by
+/// [`handle_bridge_request`].
+///
+/// The list is kept sorted and is verified against the dispatcher match arms
+/// by `tests::bridge_methods_constant_matches_dispatcher` so it cannot drift
+/// when new methods are added. Exposed via the `core.list_methods` RPC for
+/// discoverability by external clients (the Swift app, future Android port,
+/// debug tooling).
+pub const BRIDGE_METHODS: &[&str] = &[
+    "activity.apply_correction",
+    "activity.attach_interval",
+    "activity.attach_metric",
+    "activity.attach_metrics",
+    "activity.correction_plans",
+    "activity.create_session",
+    "activity.delete_session",
+    "activity.get_session",
+    "activity.list_intervals",
+    "activity.list_metrics",
+    "activity.list_sessions",
+    "activity.list_sessions_with_metrics",
+    "activity.metrics_for_session_in_window",
+    "activity.update_session",
+    "calibration.apply",
+    "calibration.evaluate_dataset",
+    "calibration.evaluate_stored_labels",
+    "calibration.import_labels",
+    "calibration.list_labels",
+    "capture.arrival_plan",
+    "capture.correlation_report",
+    "capture.finish_session",
+    "capture.import_frame_batch",
+    "capture.list_sessions",
+    "capture.observability_timeline",
+    "capture.sanitize",
+    "capture.start_session",
+    "capture.timeline",
+    "commands.capture_plan",
+    "commands.definitions",
+    "commands.direct_send_gate",
+    "commands.direct_send_preflight",
+    "commands.evidence_from_emulator_log",
+    "commands.evidence_template",
+    "commands.import_validation_records",
+    "commands.list_validation_records",
+    "commands.promote_local_frame_matches",
+    "commands.validate_evidence",
+    "core.list_methods",
+    "core.version",
+    "debug.finish_command",
+    "debug.record_event",
+    "debug.session_snapshot",
+    "debug.start_command",
+    "debug.start_session",
+    "diagnostics.perf_budget",
+    "diagnostics.property_suite",
+    "export.raw_timeframe",
+    "export.validate_bundle",
+    "health_sync.activity_dry_run",
+    "health_sync.dry_run",
+    "historical_sync.dry_run",
+    "historical_sync.physical_evidence_template",
+    "historical_sync.validate_physical_evidence",
+    "metrics.activity_unavailable_daily_status",
+    "metrics.built_in_definitions",
+    "metrics.daily_activity_metrics",
+    "metrics.daily_recovery_metrics",
+    "metrics.default_preferences",
+    "metrics.energy_capture_validation",
+    "metrics.energy_daily_rollup",
+    "metrics.energy_hourly_rollup",
+    "metrics.energy_unavailable_daily_status",
+    "metrics.goose_hrv_v0",
+    "metrics.goose_recovery_v0",
+    "metrics.goose_sleep_v0",
+    "metrics.goose_sleep_v1",
+    "metrics.goose_strain_v0",
+    "metrics.goose_stress_v0",
+    "metrics.heart_rate_features",
+    "metrics.hourly_activity_metrics",
+    "metrics.hrv_capture_validation",
+    "metrics.hrv_features",
+    "metrics.input_readiness",
+    "metrics.motion_features",
+    "metrics.oxygen_saturation_capture_validation",
+    "metrics.raw_motion_step_estimate",
+    "metrics.recovery_score_from_features",
+    "metrics.recovery_sensor_daily_rollup",
+    "metrics.recovery_sensor_discovery",
+    "metrics.recovery_unavailable_daily_status",
+    "metrics.reference_compare",
+    "metrics.reference_definitions",
+    "metrics.respiratory_rate_capture_validation",
+    "metrics.resting_hr_capture_validation",
+    "metrics.resting_hr_daily_rollup",
+    "metrics.resting_hr_features",
+    "metrics.sleep_score_from_features",
+    "metrics.step_capture_validation",
+    "metrics.step_counter_daily_rollup",
+    "metrics.step_counter_hourly_rollup",
+    "metrics.step_counter_ingest",
+    "metrics.step_packet_discovery",
+    "metrics.strain_score_from_features",
+    "metrics.stress_score_from_features",
+    "metrics.temperature_capture_validation",
+    "metrics.vital_event_features",
+    "metrics.window_features",
+    "openwhoop.reference_report",
+    "overnight.mirror_batch",
+    "overnight.mirror_counts",
+    "privacy.lint",
+    "protocol.parse_frame_hex",
+    "protocol.parse_frame_hex_batch",
+    "settings.apply_default_algorithm_preferences",
+    "settings.get_algorithm_preference",
+    "settings.list_algorithm_preferences",
+    "settings.set_algorithm_preference",
+    "sleep.add_correction_label",
+    "sleep.import_external_history",
+    "sleep.list_correction_labels",
+    "sleep.validate_stage_labels",
+    "sleep.validate_v1_evidence_folder",
+    "sleep.validate_v1_explanation_stability",
+    "sleep.validate_v1_release_gates",
+    "sleep.validate_window_labels",
+    "storage.check",
+    "storage.compact_raw_evidence",
+    "timeline.from_decoded_frames",
+    "ui_coverage.audit",
+    "upload.get_recent_decoded_streams",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeRequest {
@@ -210,6 +343,8 @@ struct ParseFrameBatchArgs {
     frames: Vec<String>,
     #[serde(default = "default_device_type")]
     device_type: String,
+    #[serde(default = "default_true")]
+    include_result: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1142,6 +1277,12 @@ struct StressFeatureScoreArgs {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+struct StorageCompactRawEvidenceArgs {
+    database_path: String,
+    limit_bytes: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 struct CaptureImportFrameBatchArgs {
     database_path: String,
     #[serde(default = "default_parser_version")]
@@ -1152,6 +1293,10 @@ struct CaptureImportFrameBatchArgs {
     compact_raw_payloads: bool,
     #[serde(default = "default_true")]
     include_results: bool,
+    /// Optional CoreBluetooth peripheral UUID supplied by the Swift caller. Written to
+    /// capture_sessions.active_device_id for every session referenced in this batch.
+    #[serde(default)]
+    active_device_id: Option<String>,
     frames: Vec<CapturedFrameInput>,
 }
 
@@ -1842,6 +1987,24 @@ pub fn core_version_payload() -> serde_json::Value {
     })
 }
 
+/// Payload returned by the `core.list_methods` bridge RPC.
+///
+/// Returns the canonical, alphabetically sorted list of every bridge method
+/// the current build understands, alongside the methods-list schema id and
+/// the count. Intended for client-side discovery: the iOS app, a future
+/// Android port, debug tooling, or anyone wiring a new front end can pull
+/// the live list at runtime instead of grepping the Rust source.
+///
+/// The list itself is the compile-time constant [`BRIDGE_METHODS`]; this
+/// function exists only to wrap it in the bridge response envelope.
+pub fn core_list_methods_payload() -> serde_json::Value {
+    json!({
+        "schema": BRIDGE_METHODS_LIST_SCHEMA,
+        "count": BRIDGE_METHODS.len(),
+        "methods": BRIDGE_METHODS,
+    })
+}
+
 pub fn openwhoop_reference_report_payload() -> serde_json::Value {
     let service_roles = whoop_generation_references()
         .iter()
@@ -1951,6 +2114,7 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
 
     match request.method.as_str() {
         "core.version" => bridge_ok(&request.request_id, core_version_payload()),
+        "core.list_methods" => bridge_ok(&request.request_id, core_list_methods_payload()),
         "openwhoop.reference_report" => {
             bridge_ok(&request.request_id, openwhoop_reference_report_payload())
         }
@@ -2488,6 +2652,24 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .and_then(list_algorithm_preferences_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "upload.get_recent_decoded_streams" => {
+            request_args::<UploadGetRecentDecodedStreamsArgs>(&request)
+                .and_then(upload_get_recent_decoded_streams_bridge)
+                .map(|value| bridge_ok(&request.request_id, value))
+                .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error))
+        }
+        "storage.compact_raw_evidence" => request_args::<StorageCompactRawEvidenceArgs>(&request)
+            .and_then(storage_compact_raw_evidence_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        // Test-only arm: deterministic panic trigger for FFI catch_unwind coverage.
+        // Gated on debug_assertions (true in test/dev, false in release) so it is
+        // never compiled into the release static library (satisfies T-09-04 threat model).
+        // Note: #[cfg(test)] is not used here because integration tests compile the crate
+        // in library mode without activating cfg(test) on the dependency; debug_assertions
+        // achieves the same release-exclusion guarantee for this use case.
+        #[cfg(debug_assertions)]
+        "test.panic" => panic!("test.panic: intentional panic for FFI catch_unwind coverage"),
         method => bridge_error(
             &request.request_id,
             "unknown_method",
@@ -2501,6 +2683,27 @@ pub extern "C" fn goose_core_version_json() -> *mut c_char {
     json_to_c_string(core_version_payload())
 }
 
+/// Handle a JSON-encoded bridge request from the host platform.
+///
+/// Returns a newly-allocated, null-terminated UTF-8 C string containing a
+/// JSON-encoded response. The caller takes ownership of the returned pointer
+/// and **must** release it by passing it to [`goose_bridge_free_string`].
+/// Mixing this allocation with `free(3)` or any other deallocator is
+/// undefined behaviour.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+///
+/// - `request_json` is either null **or** a valid pointer to a
+///   null-terminated UTF-8 C string that remains valid (and unmodified by
+///   other threads) for the duration of this call.
+/// - The buffer referenced by `request_json` is not aliased by any mutable
+///   reference for the duration of this call.
+///
+/// A null `request_json` is handled defensively and returns a structured
+/// error response rather than dereferencing the pointer. Invalid UTF-8 in the
+/// input is likewise reported as a structured error.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -> *mut c_char {
     if request_json.is_null() {
@@ -2522,9 +2725,45 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
             ));
         }
     };
-    string_to_c_string(handle_bridge_request_json(request))
+    // Wrap ALL panic-prone work inside catch_unwind so that a panic in dispatch
+    // is caught at the FFI boundary and returned as a structured JSON error instead
+    // of aborting the process. AssertUnwindSafe is sound here because the closure
+    // does not alias mutable state that would be left in an inconsistent state on
+    // unwind — the bridge is stateless across calls and the only side effect is the
+    // returned C string allocation.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        string_to_c_string(handle_bridge_request_json(request))
+    })) {
+        Ok(ptr) => ptr,
+        Err(payload) => {
+            let message = payload
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| payload.downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "unknown panic payload".to_string());
+            response_to_c_string(&bridge_error("unknown", "panic", message))
+        }
+    }
 }
 
+/// Free a C string previously returned by any `goose_bridge_*` or
+/// `goose_core_*` function.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+///
+/// - `value` is either null **or** a pointer that was returned by a Goose
+///   bridge entry point (e.g. [`goose_bridge_handle_json`] or
+///   `goose_core_version_json`) and has not yet been freed.
+/// - The pointer is not aliased by any other live reference and is not used
+///   after this call returns.
+///
+/// Passing a pointer that was not produced by the Goose core (for example,
+/// one allocated by `malloc(3)` on the host) is undefined behaviour, because
+/// the Rust allocator backing [`CString`] is not guaranteed to match the
+/// host's allocator. A null pointer is handled as a no-op. Calling this
+/// function twice on the same pointer is a double-free.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_free_string(value: *mut c_char) {
     if value.is_null() {
@@ -2546,12 +2785,19 @@ fn parse_frame_hex_batch_bridge(args: ParseFrameBatchArgs) -> GooseResult<serde_
     let mut results = Vec::with_capacity(args.frames.len());
     for (index, frame_hex) in args.frames.iter().enumerate() {
         match parse_frame_hex(device_type, frame_hex) {
-            Ok(parsed) => results.push(json!({
-                "index": index,
-                "ok": true,
-                "compact": compact_parsed_frame_summary(&parsed),
-                "result": parsed,
-            })),
+            Ok(parsed) => {
+                let mut item = json!({
+                    "index": index,
+                    "ok": true,
+                    "compact": compact_parsed_frame_summary(&parsed),
+                });
+                if args.include_result
+                    && let Some(obj) = item.as_object_mut()
+                {
+                    obj.insert("result".to_string(), json!(parsed));
+                }
+                results.push(item);
+            }
             Err(error) => results.push(json!({
                 "index": index,
                 "ok": false,
@@ -2807,6 +3053,285 @@ fn list_algorithm_preferences_bridge(args: ListPreferencesArgs) -> GooseResult<s
     let preferences = store.algorithm_preferences(args.scope.as_deref())?;
     serde_json::to_value(preferences)
         .map_err(|error| GooseError::message(format!("cannot serialize preferences: {error}")))
+}
+
+// ── Upload bridge ─────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct UploadGetRecentDecodedStreamsArgs {
+    database_path: String,
+    #[allow(dead_code)] // device_id filter deferred to v3.0 (namespace mismatch: UUID vs BLE name)
+    device_id: String,
+    since_ts: f64, // Unix timestamp (seconds); fetch decoded frames captured >= since_ts
+}
+
+/// Extract biometric streams from recent decoded_frames and return them in the
+/// format expected by the server's `POST /v1/ingest-decoded` endpoint.
+///
+/// The Rust/SQLite database stores raw and decoded BLE frames (not individual
+/// per-stream rows). This function walks the decoded_frames captured since
+/// `since_ts`, parses each `parsed_payload_json`, and extracts hr/rr/events/
+/// battery/spo2/skin_temp/resp/gravity rows — mirroring what the Python
+/// `extract_streams` / `extract_historical_streams` helpers produce.
+///
+/// Only frames where `header_crc_valid` and `payload_crc_valid` are both true
+/// are considered (CRC-failed frames are skipped, matching the server-side rule).
+fn upload_get_recent_decoded_streams_bridge(
+    args: UploadGetRecentDecodedStreamsArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+
+    // Convert unix timestamp to ISO-8601 for decoded_frames_between query
+    let since_dt = chrono_from_unix(args.since_ts);
+    let now_dt = chrono_now();
+
+    let frames = store.decoded_frames_between(&since_dt, &now_dt)?;
+
+    let mut hr: Vec<serde_json::Value> = Vec::new();
+
+    let rr: Vec<serde_json::Value> = Vec::new();
+    let mut events: Vec<serde_json::Value> = Vec::new();
+    let battery: Vec<serde_json::Value> = Vec::new();
+    let spo2: Vec<serde_json::Value> = Vec::new();
+    let skin_temp: Vec<serde_json::Value> = Vec::new();
+    let resp: Vec<serde_json::Value> = Vec::new();
+    let gravity: Vec<serde_json::Value> = Vec::new();
+
+    for frame in &frames {
+        // Skip CRC-failed frames (matches server-side rule)
+        if !frame.header_crc_valid || !frame.payload_crc_valid {
+            continue;
+        }
+
+        // CR-02: per-row device_id filtering is deferred to v3.0 multi-device tracking.
+        // The device_id field (iOS CoreBluetooth peripheral UUID) and device_model
+        // (sanitized BLE device name) live in different namespaces — a comparison
+        // between them always mismatches. For the current single-device case, all
+        // captured frames belong to the active device, so the time-window filter
+        // (since_ts) is the correct and sufficient filter.
+
+        let parsed: Option<ParsedPayload> =
+            serde_json::from_str(&frame.parsed_payload_json).unwrap_or(None);
+
+        match parsed {
+            Some(ParsedPayload::DataPacket {
+                packet_k,
+                timestamp_seconds,
+                body_summary,
+                ..
+            }) => {
+                // REALTIME_DATA (packet_k == Some(40 | 0x28)) — canonical HR stream
+                // HISTORICAL_DATA (packet_k == Some(47 | 0x2F)) — V24 biometric history
+                let ts_unix: Option<f64> = timestamp_seconds.map(|s| s as f64);
+
+                // Extract heart rate and RR intervals from the body_summary
+                if let Some(ref summary) = body_summary {
+                    match summary {
+                        DataPacketBodySummary::NormalHistory {
+                            hr_present,
+                            marker_value,
+                            ..
+                        } => {
+                            // Normal history packet: hr_present flag + marker_value = HR bpm
+                            if hr_present.unwrap_or(false)
+                                && let (Some(ts), Some(bpm)) = (ts_unix, marker_value)
+                            {
+                                hr.push(json!({"ts": ts, "bpm": *bpm}));
+                            }
+                        }
+                        DataPacketBodySummary::RawMotionK10 { heart_rate, .. } => {
+                            // k10 raw motion carries an HR byte
+                            if let (Some(ts), Some(bpm)) = (ts_unix, heart_rate) {
+                                hr.push(json!({"ts": ts, "bpm": *bpm}));
+                            }
+                        }
+                        DataPacketBodySummary::R17OpticalOrLabradorFiltered { .. } => {
+                            // Optical/Labrador filtered — SpO2 raw ADC data
+                            // Raw interpretation requires calibration; skip for now
+                            // (historical V24 spo2 comes via a different packet type)
+                        }
+                        DataPacketBodySummary::RawMotionK21 { .. } => {
+                            // K21 raw motion — gravity/accel data; no direct extraction
+                            // without additional parsing beyond what DataPacketBodySummary exposes
+                        }
+                    }
+                }
+
+                let _ = packet_k; // used for routing above
+            }
+            Some(ParsedPayload::Event {
+                event_id,
+                event_name,
+                timestamp_seconds,
+                data_hex,
+                ..
+            }) => {
+                // EVENT packets: wall-clock unix seconds (real RTC, not device epoch)
+                let ts_unix: Option<f64> = timestamp_seconds.map(|s| s as f64);
+                let kind = event_name
+                    .clone()
+                    .or_else(|| event_id.map(|id| format!("event_{id}")));
+
+                events.push(json!({
+                    "ts": ts_unix,
+                    "kind": kind,
+                    "payload": {"data_hex": data_hex},
+                }));
+            }
+            _ => {
+                // Command, CommandResponse, Raw, None — no biometric streams to extract
+            }
+        }
+
+        // HR monitor branch: 0x2A37 standard GATT notifications stored with device_type == "HR_MONITOR".
+        // parsed_payload_json is "null" for these rows (parse_frame was bypassed in capture_import.rs),
+        // so the match above falls through to `_ => {}`. Gate on device_type string.
+        // D-01: bpm + rr_intervals embedded in hr entry. D-02: NOT pushed to top-level rr.
+        // D-03: captured_at parsed to f64 unix seconds via unix_from_iso8601 helper.
+        // T-08.1-01: hex::decode or parse_hr_measurement failures skip the frame silently.
+        if frame.device_type == "HR_MONITOR" {
+            let bytes = match hex::decode(&frame.payload_hex) {
+                Ok(b) => b,
+                Err(_) => continue,
+            };
+            let measurement = match crate::heart_rate_gatt_protocol::parse_hr_measurement(&bytes) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            // D-03: captured_at is "YYYY-MM-DDTHH:MM:SS.mmmZ" — parse to f64 unix seconds.
+            // T-08.1-02: on parse failure use null rather than panicking.
+            let ts_opt: Option<f64> = unix_from_iso8601(&frame.captured_at);
+            hr.push(json!({
+                "ts": ts_opt,
+                "bpm": measurement.hr_bpm,
+                "rr_intervals": measurement.rr_intervals_ms,
+            }));
+        }
+    }
+
+    let result = json!({
+        "hr": hr,
+        "rr": rr,
+        "events": events,
+        "battery": battery,
+        "spo2": spo2,
+        "skin_temp": skin_temp,
+        "resp": resp,
+        "gravity": gravity,
+        "frame_count": frames.len(),
+    });
+
+    serde_json::to_value(result)
+        .map_err(|error| GooseError::message(format!("upload streams serialize failed: {error}")))
+}
+
+/// Format a Unix timestamp (seconds, f64) as an ISO-8601 UTC string for SQLite comparison.
+fn chrono_from_unix(ts: f64) -> String {
+    let secs = ts as i64;
+    let nanos = ((ts - secs as f64) * 1_000_000_000.0) as u32;
+    let dt = std::time::UNIX_EPOCH + std::time::Duration::new(secs as u64, nanos);
+    // Format as ISO-8601 with millisecond precision, matching SQLite stored format
+    let elapsed = dt.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+    let total_secs = elapsed.as_secs();
+    let ms = elapsed.subsec_millis();
+    let h = total_secs / 3600;
+    let m = (total_secs % 3600) / 60;
+    let s = total_secs % 60;
+    let days_since_epoch = total_secs / 86400;
+    // Simple ISO-8601 formatting without chrono dependency
+    // epoch = 1970-01-01; compute year/month/day from days_since_epoch
+    let (year, month, day) = days_to_ymd(days_since_epoch as u32);
+    format!(
+        "{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}.{ms:03}Z",
+        h = h % 24
+    )
+}
+
+/// Return the current UTC time as an ISO-8601 string for use as an upper bound.
+fn chrono_now() -> String {
+    use std::time::SystemTime;
+    let since_epoch = SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    chrono_from_unix(since_epoch.as_secs_f64())
+}
+
+/// Convert days since Unix epoch (1970-01-01) to (year, month, day).
+/// Gregorian calendar implementation without external dependencies.
+fn days_to_ymd(days: u32) -> (u32, u32, u32) {
+    // Algorithm: Julian Day Number from epoch offset
+    let jd = days + 2440588; // Julian Day Number of 1970-01-01 is 2440588
+    let l = jd + 68569;
+    let n = 4 * l / 146097;
+    let l = l - (146097 * n).div_ceil(4);
+    let i = 4000 * (l + 1) / 1461001;
+    let l = l - 1461 * i / 4 + 31;
+    let j = 80 * l / 2447;
+    let day = l - 2447 * j / 80;
+    let l = j / 11;
+    let month = j + 2 - 12 * l;
+    let year = 100 * (n - 49) + i + l;
+    (year, month, day)
+}
+
+/// Parse the codebase's ISO-8601 format "YYYY-MM-DDTHH:MM:SS.mmmZ" to unix seconds (f64).
+/// D-03: inverse of chrono_from_unix / days_to_ymd — no chrono dependency.
+/// Returns None on any malformed component (T-08.1-02: no panic on bad timestamps).
+fn unix_from_iso8601(s: &str) -> Option<f64> {
+    // Expected format: "YYYY-MM-DDTHH:MM:SS.mmmZ" (may omit milliseconds or Z suffix)
+    // Minimum: "YYYY-MM-DDTHH:MM:SS" (19 chars)
+    if s.len() < 19 {
+        return None;
+    }
+    let year: u32 = s[0..4].parse().ok()?;
+    let month: u32 = s[5..7].parse().ok()?;
+    let day: u32 = s[8..10].parse().ok()?;
+    let hour: u32 = s[11..13].parse().ok()?;
+    let minute: u32 = s[14..16].parse().ok()?;
+    let sec: u32 = s[17..19].parse().ok()?;
+    // Milliseconds: optional, after "." if present
+    let millis: f64 = if s.len() > 20 && s.as_bytes().get(19) == Some(&b'.') {
+        // Collect digits after "."
+        let frac: &str = s[20..].trim_end_matches('Z');
+        let frac_digits: &str = frac
+            .split_once(|c: char| !c.is_ascii_digit())
+            .map_or(frac, |(d, _)| d);
+        if frac_digits.is_empty() {
+            0.0
+        } else {
+            let raw: f64 = frac_digits.parse().ok()?;
+            // Normalise to milliseconds (e.g. "123" → 123 ms, "12" → 12 ms, "1" → 1 ms)
+            raw / 10f64.powi(frac_digits.len() as i32 - 3)
+        }
+    } else {
+        0.0
+    };
+
+    // Validate calendar ranges
+    if !(1..=12).contains(&month)
+        || !(1..=31).contains(&day)
+        || hour > 23
+        || minute > 59
+        || sec > 59
+    {
+        return None;
+    }
+
+    // Convert calendar date to days since Unix epoch via inverse Julian-day math
+    // (mirror of days_to_ymd, which implements the same Gregorian algorithm)
+    let a = (14u32.wrapping_sub(month)) / 12;
+    let y = year + 4800 - a;
+    let m = month + 12 * a - 3;
+    let jdn = day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+    // Julian Day Number of 1970-01-01 is 2440588
+    let days_since_epoch = jdn.checked_sub(2_440_588)?;
+
+    let secs = days_since_epoch as f64 * 86400.0
+        + hour as f64 * 3600.0
+        + minute as f64 * 60.0
+        + sec as f64
+        + millis / 1000.0;
+    Some(secs)
 }
 
 fn evaluate_calibration_dataset_bridge(
@@ -3106,14 +3631,14 @@ fn matching_calibration_algorithm_run<'a>(
     provenance: &serde_json::Value,
     options: &CalibrationOptions,
 ) -> Option<&'a AlgorithmRunRecord> {
-    if let Some(run_id) = provenance_algorithm_run_id(provenance) {
-        if let Some(run) = algorithm_runs.iter().find(|run| {
+    if let Some(run_id) = provenance_algorithm_run_id(provenance)
+        && let Some(run) = algorithm_runs.iter().find(|run| {
             run.run_id.as_str() == run_id
                 && run.algorithm_id.as_str() == options.algorithm_id.as_str()
                 && run.version.as_str() == options.algorithm_version.as_str()
-        }) {
-            return Some(run);
-        }
+        })
+    {
+        return Some(run);
     }
 
     algorithm_runs.iter().find(|run| {
@@ -5297,6 +5822,7 @@ fn capture_import_frame_batch_bridge(
         &args.frames,
         CapturedFrameBatchOptions {
             parser_version: &args.parser_version,
+            active_device_id: args.active_device_id.as_deref(),
         },
         CapturedFrameBatchOutputOptions {
             include_timeline_rows: args.include_timeline_rows,
@@ -5306,6 +5832,16 @@ fn capture_import_frame_batch_bridge(
     )?;
     serde_json::to_value(report).map_err(|error| {
         GooseError::message(format!("cannot serialize capture import report: {error}"))
+    })
+}
+
+fn storage_compact_raw_evidence_bridge(
+    args: StorageCompactRawEvidenceArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let report = store.compact_raw_evidence_payloads_to_limit(args.limit_bytes)?;
+    serde_json::to_value(report).map_err(|error| {
+        GooseError::message(format!("cannot serialize compaction report: {error}"))
     })
 }
 
@@ -5577,7 +6113,7 @@ fn activity_list_sessions_with_metrics_bridge(
     for metric in metrics {
         metrics_by_session
             .entry(metric.activity_session_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(metric);
     }
 
@@ -6781,7 +7317,7 @@ fn capture_arrival_plan_next_focus(
         arrival_action_is_local_health_validation,
         arrival_action_is_metric_input_work,
     ] {
-        if let Some(action) = actions.iter().find(|action| priority(action)).cloned() {
+        if let Some(action) = actions.iter().find(priority).cloned() {
             return Some(action);
         }
     }
@@ -7556,10 +8092,11 @@ where
 
 fn parse_device_type(value: &str) -> GooseResult<DeviceType> {
     match value {
-        "GEN_4" | "Gen4" | "gen4" => Ok(DeviceType::Gen4),
+        "GEN4" | "GEN_4" | "Gen4" | "gen4" => Ok(DeviceType::Gen4),
         "MAVERICK" | "Maverick" | "maverick" => Ok(DeviceType::Maverick),
         "PUFFIN" | "Puffin" | "puffin" => Ok(DeviceType::Puffin),
         "GOOSE" | "Goose" | "goose" => Ok(DeviceType::Goose),
+        "HR_MONITOR" | "hr_monitor" => Ok(DeviceType::HrMonitor),
         other => Err(GooseError::message(format!(
             "unsupported device_type: {other}"
         ))),
@@ -7733,6 +8270,117 @@ fn escape_json_string(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Guard against drift between [`BRIDGE_METHODS`] and the dispatcher.
+    ///
+    /// Scans the live source of `handle_bridge_request_inner` for every
+    /// `"method.name" =>` arm and asserts the extracted set equals
+    /// `BRIDGE_METHODS`. Anyone adding a new bridge method must register it
+    /// in the constant or this test fails — keeping `core.list_methods`
+    /// authoritative.
+    #[test]
+    fn bridge_methods_constant_matches_dispatcher() {
+        let src = include_str!("bridge.rs");
+        let start = src
+            .find("match request.method.as_str()")
+            .expect("dispatcher match not found");
+        // The dispatcher arm uses `method =>` as its catch-all. Stop scanning
+        // there so we don't pick up unrelated string literals later in the
+        // file (e.g. in tests).
+        let catchall = src[start..]
+            .find("method => bridge_error(")
+            .expect("dispatcher catch-all not found");
+        let block = &src[start..start + catchall];
+
+        let mut found: Vec<String> = Vec::new();
+        let lines: Vec<&str> = block.lines().collect();
+        for (i, line) in lines.iter().enumerate() {
+            let trimmed = line.trim_start();
+            if !trimmed.starts_with('"') {
+                continue;
+            }
+            // Skip arms preceded by a #[cfg(...)] attribute — these are
+            // conditionally compiled (e.g. test-only) and must not appear in
+            // the public BRIDGE_METHODS list.
+            if i > 0 {
+                let prev = lines[i - 1].trim_start();
+                if prev.starts_with("#[cfg(") {
+                    continue;
+                }
+            }
+            // Match `"some.method" =>` at line start.
+            let after_quote = &trimmed[1..];
+            let Some(end_quote) = after_quote.find('"') else {
+                continue;
+            };
+            let name = &after_quote[..end_quote];
+            let rest = after_quote[end_quote + 1..].trim_start();
+            if rest.starts_with("=>") {
+                found.push(name.to_string());
+            }
+        }
+        found.sort();
+        found.dedup();
+
+        let mut expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
+        expected.sort();
+
+        assert_eq!(
+            found, expected,
+            "BRIDGE_METHODS is out of sync with the dispatcher. \
+             Either add the new method to BRIDGE_METHODS (keep it sorted) \
+             or remove the stale entry."
+        );
+    }
+
+    /// Belt-and-braces: `BRIDGE_METHODS` is documented as sorted; verify it.
+    #[test]
+    fn bridge_methods_constant_is_sorted_and_unique() {
+        let mut sorted = BRIDGE_METHODS.to_vec();
+        sorted.sort();
+        assert_eq!(
+            BRIDGE_METHODS,
+            sorted.as_slice(),
+            "BRIDGE_METHODS must be sorted"
+        );
+        let mut deduped = sorted.clone();
+        deduped.dedup();
+        assert_eq!(sorted.len(), deduped.len(), "BRIDGE_METHODS must be unique");
+    }
+
+    /// The `core.list_methods` RPC must round-trip through the bridge envelope
+    /// and return the exact same list as the constant.
+    #[test]
+    fn core_list_methods_rpc_returns_full_method_set() {
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-list-methods".to_string(),
+            method: "core.list_methods".to_string(),
+            args: serde_json::Value::Null,
+        };
+        let response = handle_bridge_request(request);
+        assert!(
+            response.ok,
+            "core.list_methods should succeed: {:?}",
+            response.error
+        );
+        let result = response.result.expect("result payload");
+        assert_eq!(result["schema"], BRIDGE_METHODS_LIST_SCHEMA);
+        assert_eq!(
+            result["count"].as_u64().unwrap() as usize,
+            BRIDGE_METHODS.len()
+        );
+        let methods: Vec<String> = result["methods"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_string())
+            .collect();
+        let expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
+        assert_eq!(methods, expected);
+        // `core.list_methods` must itself appear in the list it advertises.
+        assert!(methods.iter().any(|m| m == "core.list_methods"));
+    }
 
     #[test]
     fn capture_arrival_next_focus_includes_recovery_sensor_capture_actions() {
@@ -8149,5 +8797,70 @@ mod tests {
             source: "healthkit".to_string(),
             excluded_from_baseline: false,
         }
+    }
+
+    // Phase 08-P03 — parse_device_type HrMonitor assertions (HIGH-2)
+    #[test]
+    fn parse_device_type_hr_monitor_uppercase() {
+        let result = parse_device_type("HR_MONITOR").expect("HR_MONITOR must parse");
+        assert_eq!(
+            result,
+            DeviceType::HrMonitor,
+            "HR_MONITOR must map to DeviceType::HrMonitor"
+        );
+    }
+
+    #[test]
+    fn parse_device_type_hr_monitor_lowercase() {
+        let result = parse_device_type("hr_monitor").expect("hr_monitor must parse");
+        assert_eq!(
+            result,
+            DeviceType::HrMonitor,
+            "hr_monitor must map to DeviceType::HrMonitor"
+        );
+    }
+
+    #[test]
+    fn parse_device_type_goose_no_regression() {
+        let result = parse_device_type("GOOSE").expect("GOOSE must parse");
+        assert_eq!(
+            result,
+            DeviceType::Goose,
+            "GOOSE must still map to DeviceType::Goose"
+        );
+    }
+}
+
+#[cfg(target_os = "android")]
+pub mod android {
+    use jni::JNIEnv;
+    use jni::objects::{JClass, JString};
+    use jni::sys::jstring;
+    use std::ptr;
+
+    /// JNI entry point for com.goose.core.GooseBridge.handle(String) -> String.
+    ///
+    /// Converts the Java string to a Rust str, delegates to the existing
+    /// handle_bridge_request_json dispatch function, and returns the response
+    /// as a new Java string. Never panics — all errors are returned as JSON.
+    #[unsafe(no_mangle)]
+    pub extern "system" fn Java_com_goose_core_GooseBridge_handle(
+        mut env: JNIEnv,
+        _class: JClass,
+        request_json: JString,
+    ) -> jstring {
+        let request = match env.get_string(&request_json) {
+            Ok(s) => s.to_string_lossy().into_owned(),
+            Err(_) => {
+                return env
+                    .new_string("{\"ok\":false,\"error\":\"jni_string_conversion_error\"}")
+                    .map(|s| s.into_raw())
+                    .unwrap_or(ptr::null_mut());
+            }
+        };
+        let response = super::handle_bridge_request_json(&request);
+        env.new_string(response)
+            .map(|s| s.into_raw())
+            .unwrap_or(ptr::null_mut())
     }
 }

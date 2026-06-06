@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHOOP·DECODE — live BLE telemetry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="grain"></div>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◍</span>
+    <div>
+      <h1>WHOOP<span class="sep">·</span>DECODE</h1>
+      <p class="tag">live BLE telemetry decoder · 4.0</p>
+    </div>
+  </div>
+  <div class="readouts">
+    <div class="stat"><label>LINK</label><span id="st-conn" class="val"><i class="dot"></i> —</span></div>
+    <div class="stat"><label>DEVICE</label><span id="st-dev" class="val">—</span></div>
+    <div class="stat"><label>BOND</label><span id="st-bond" class="val">—</span></div>
+    <div class="stat"><label>FW</label><span id="st-fw" class="val">—</span></div>
+    <div class="stat"><label>BATTERY</label><span id="st-batt" class="val">—</span>
+      <div class="batt"><i id="batt-fill"></i></div></div>
+    <div class="stat hrbox"><label>HR</label><span id="st-hr" class="val big">—</span>
+      <canvas id="spark" width="120" height="28"></canvas></div>
+  </div>
+</header>
+
+<nav class="deck">
+  <button data-act="start_realtime" class="btn on">▶ realtime HR</button>
+  <button data-act="stop_realtime" class="btn">■ stop HR</button>
+  <button data-act="start_raw" class="btn on">▶ raw stream</button>
+  <button data-act="stop_raw" class="btn">■ stop raw</button>
+  <button data-act="historical" class="btn accent">⤓ historical sync</button>
+  <span class="cmdgroup">
+    <select id="cmd-sel"></select>
+    <button id="cmd-send" class="btn">send cmd</button>
+  </span>
+</nav>
+
+<main>
+  <section class="inspector panel">
+    <div class="panel-head">
+      <h2>HEX INSPECTOR</h2>
+      <div id="type-tabs" class="tabs"></div>
+    </div>
+    <div class="inspector-body">
+      <div id="hexgrid" class="hexgrid"></div>
+    </div>
+    <div id="legend" class="legend"></div>
+  </section>
+
+  <aside class="readout panel">
+    <div class="panel-head"><h2>FIELD READOUT</h2><span id="pkt-meta" class="pkt-meta"></span></div>
+    <div id="fields" class="fields"></div>
+    <div class="panel-head sub"><h2>PARSED</h2></div>
+    <div id="parsed" class="parsed"></div>
+  </aside>
+</main>
+
+<section class="stream panel">
+  <div class="panel-head"><h2>LIVE STREAM</h2><span id="rate" class="pkt-meta">0 pkt/s</span></div>
+  <div id="log" class="log"></div>
+</section>
+
+<div id="tooltip" class="tooltip"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -343,6 +343,7 @@ fn store_correlation_counts_owned_app_imports() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();

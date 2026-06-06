@@ -1,0 +1,87 @@
+name: Security
+
+# Scans the repository for known security vulnerabilities and leaked secrets.
+#
+# Coverage:
+#   * cargo-audit  - Rust dependency advisories (RustSec) for the Goose Rust core.
+#   * trivy        - filesystem scan for vulnerable dependencies, leaked secrets,
+#                    and misconfigurations across the whole repo (Rust, Python,
+#                    workflows, config).
+#
+# Runs on pushes/PRs that touch dependency or build manifests, on a weekly
+# schedule (so newly disclosed advisories surface even without code changes),
+# and on demand via workflow_dispatch.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Rust/core/Cargo.toml"
+      - "Rust/core/Cargo.lock"
+      - "server/ingest/Dockerfile"
+      - "server/ingest/requirements.txt"
+      - ".github/workflows/security.yml"
+  pull_request:
+    paths:
+      - "Rust/core/Cargo.toml"
+      - "Rust/core/Cargo.lock"
+      - "server/ingest/Dockerfile"
+      - "server/ingest/requirements.txt"
+      - ".github/workflows/security.yml"
+  schedule:
+    - cron: "0 7 * * 1" # Mondays at 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-audit:
+    name: Rust dependency audit (RustSec)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          cargo --version
+
+      - name: Cache cargo-audit binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: ${{ runner.os }}-cargo-audit
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked || cargo-audit --version
+
+      # Audits Rust/core/Cargo.lock against the RustSec advisory database.
+      # Fails the job when a known-vulnerable dependency is present so the
+      # advisory is surfaced on the PR / scheduled run.
+      - name: Audit Rust core dependencies
+        working-directory: Rust/core
+        run: cargo audit --deny warnings
+
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # Scans the working tree for vulnerable dependencies, hard-coded secrets,
+      # and insecure configuration. Results print to the job log; the job fails
+      # on HIGH/CRITICAL findings.
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table

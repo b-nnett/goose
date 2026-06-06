@@ -397,6 +397,7 @@ fn export_workload(scale: usize, budgets: &PerfBudgets) -> GooseResult<PerfWorkl
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/perf-budget",
+            active_device_id: None,
         },
     )?;
     if !import_report.pass {

@@ -2660,6 +2660,7 @@ fn import_motion_frame_with_hex(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -2692,6 +2693,7 @@ fn import_historical_k21_motion_frame_at_with_device_timestamp(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -2759,6 +2761,7 @@ fn import_history_frame_with_hex(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -2792,6 +2795,7 @@ fn import_r17_frame_at(
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -2818,6 +2822,7 @@ fn import_temperature_event(store: &GooseStore, sensitivity: &str, body: &[u8]) 
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();

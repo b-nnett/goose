@@ -7,7 +7,7 @@ struct FitnessLiveWorkoutView: View {
   @Binding var selectedPage: FitnessWorkoutPage
   let activity: ActivityKind
   @ObservedObject var session: ActivitySessionModel
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   @ObservedObject var locationTracker: ActivityLocationTracker
   let segmentNumber: Int
   @Binding var dockExpanded: Bool
@@ -131,7 +131,7 @@ struct FitnessPageCarousel: View {
   @Binding var selectedPage: FitnessWorkoutPage
   let activity: ActivityKind
   @ObservedObject var session: ActivitySessionModel
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   @ObservedObject var locationTracker: ActivityLocationTracker
   let segmentNumber: Int
 

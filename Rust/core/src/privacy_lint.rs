@@ -417,7 +417,7 @@ fn contains_unredacted_query_token(line: &str) -> bool {
         let value_start = search_start + relative_index + "token=".len();
         let value = &line[value_start..];
         let value_end = value
-            .find(|ch: char| matches!(ch, '&' | '"' | '\'' | ' ' | '}' | ']'))
+            .find(['&', '"', '\'', ' ', '}', ']'])
             .unwrap_or(value.len());
         let value = &value[..value_end];
         if !value.is_empty() && !value.starts_with("<redacted>") {

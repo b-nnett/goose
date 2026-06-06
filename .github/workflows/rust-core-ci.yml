@@ -1,0 +1,107 @@
+name: Rust Core CI
+
+# Builds and tests the Goose Rust core. The Swift/iOS app needs macOS + Xcode
+# and is not built here; the Rust core is the portable, Linux-buildable part of
+# the project, so it is the natural target for fast pull-request feedback.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "Rust/core/**"
+      - ".github/workflows/rust-core-ci.yml"
+  pull_request:
+    paths:
+      - "Rust/core/**"
+      - ".github/workflows/rust-core-ci.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: Rust/core
+
+jobs:
+  build-test:
+    name: Build, test, and lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup component add clippy
+          rustc --version
+          cargo --version
+
+      # Several integration tests shell out to python3 for the external
+      # reference adapters under tools/reference (NeuroKit2, pyHRV,
+      # pyActigraphy). python3 ships on ubuntu-latest; the adapters fall back to
+      # hand-derived values when the optional science packages are absent.
+      - name: Confirm python3 is available
+        run: python3 --version
+
+      - name: Cache cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            Rust/core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Rust/core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build
+        run: cargo build --all-targets --locked
+
+      - name: Test
+        run: cargo test --locked --no-fail-fast
+
+      # Clippy runs for visibility but does not gate the build: the crate
+      # currently carries pre-existing style warnings that are out of scope for
+      # this workflow. Real defects are caught by the test suite above.
+      - name: Clippy (non-blocking)
+        run: cargo clippy --all-targets --locked || true
+
+  android-build:
+    name: Android cross-compile (aarch64)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Rust/core
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-linux-android
+          rustc --version
+          cargo --version
+
+      - name: Set up Android NDK r29
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r29
+          add-to-path: true
+
+      - name: Cache cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-android-${{ hashFiles('Rust/core/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-android-
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --version 4.1.2 --locked
+
+      - name: Build for aarch64-linux-android
+        run: cargo ndk -t arm64-v8a build --release --lib

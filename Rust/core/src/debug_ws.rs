@@ -423,17 +423,17 @@ pub fn append_debug_event(
             input.session_id
         )));
     }
-    if let Some(command_id) = input.command_id.as_deref() {
-        if !command_id.trim().is_empty() {
-            let command = store.debug_command(command_id)?.ok_or_else(|| {
-                GooseError::message(format!("debug command {command_id} not found"))
-            })?;
-            if command.session_id != input.session_id {
-                return Err(GooseError::message(format!(
-                    "debug command {command_id} belongs to session {}, not {}",
-                    command.session_id, input.session_id
-                )));
-            }
+    if let Some(command_id) = input.command_id.as_deref()
+        && !command_id.trim().is_empty()
+    {
+        let command = store
+            .debug_command(command_id)?
+            .ok_or_else(|| GooseError::message(format!("debug command {command_id} not found")))?;
+        if command.session_id != input.session_id {
+            return Err(GooseError::message(format!(
+                "debug command {command_id} belongs to session {}, not {}",
+                command.session_id, input.session_id
+            )));
         }
     }
 
@@ -627,10 +627,11 @@ fn validate_event<'a>(
                 event.sequence
             )),
         }
-    } else if let Some(command_id) = event.command_id.as_deref() {
-        if !command_id.trim().is_empty() && !command_by_id.contains_key(command_id) {
-            issues.push(format!("event_unknown_command_id:{}", command_id));
-        }
+    } else if let Some(command_id) = event.command_id.as_deref()
+        && !command_id.trim().is_empty()
+        && !command_by_id.contains_key(command_id)
+    {
+        issues.push(format!("event_unknown_command_id:{}", command_id));
     }
 }
 

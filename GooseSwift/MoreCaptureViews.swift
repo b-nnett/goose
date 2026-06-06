@@ -54,7 +54,7 @@ struct MoreCommandGroup: Identifiable {
 }
 
 struct MoreCaptureView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var messageStore: GooseMessageStore
   @ObservedObject var store: MoreDataStore
 
@@ -78,7 +78,7 @@ struct MoreCaptureView: View {
       Section("Overnight Guard") {
         MoreInfoRow(
           title: "Status",
-          value: model.overnightGuardStatus,
+          value: model.overnightGuardStatus.localizedOvernightGuardStatus,
           systemImage: "moon",
           status: overnightGuardStatus
         )

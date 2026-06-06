@@ -27,7 +27,7 @@ struct MoreGreetingHeader: View {
 
       Spacer(minLength: 8)
 
-      Label("Update Profile", systemImage: "person.crop.circle.badge.pencil")
+      Label("Update Profile", systemImage: "person.crop.circle")
         .font(.caption.weight(.semibold))
         .labelStyle(.titleAndIcon)
         .foregroundStyle(.blue)
@@ -86,7 +86,7 @@ struct MoreDeveloperView: View {
 }
 
 struct MoreProfileView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @AppStorage(OnboardingStorage.firstName) private var firstName = ""
   @AppStorage(OnboardingStorage.dateOfBirth) private var dateOfBirthString = ""
   @AppStorage(OnboardingStorage.unitSystem) private var unitSystemRaw = MoreProfileUnitSystem.imperial.rawValue

@@ -992,6 +992,7 @@ fn fake_history_sync_can_seed_capture_evidence_and_a_candidate_activity_session(
         &[historical_frame],
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();

@@ -1,73 +1,78 @@
 import CoreBluetooth
 import Foundation
+import Observation
 import OSLog
 
 
-final class GooseBLEClient: NSObject, ObservableObject {
-  @Published var bluetoothState = "not requested"
-  @Published var connectionState = "disconnected"
-  @Published var isScanning = false
-  @Published var discoveredDevices: [GooseDiscoveredDevice] = []
-  @Published var liveHeartRateBPM: Int?
-  @Published var liveHeartRateSource = "waiting"
-  @Published var liveHeartRateUpdatedAt: Date?
-  @Published var restingHeartRateEstimateBPM: Double?
-  @Published var restingHeartRateEstimateSampleCount = 0
-  @Published var restingHeartRateEstimateSource = "waiting"
-  @Published var restingHeartRateEstimateUpdatedAt: Date?
-  @Published var liveHRVRMSSD: Double?
-  @Published var liveHRVRRIntervalCount = 0
-  @Published var liveHRVSource = "waiting"
-  @Published var liveHRVUpdatedAt: Date?
-  @Published var liveHRVRMSSDSampleCount = 0
-  @Published var reconnectState = "idle"
-  @Published var rememberedDeviceDescription = "none"
-  @Published var activeDeviceName = "WHOOP"
-  @Published var activeDeviceIdentifier: UUID?
-  @Published var selectedDeviceID: UUID?
-  @Published var connectedAt: Date?
-  @Published var lastSyncAt: Date?
-  @Published var batteryLevelPercent: Int?
-  @Published var batteryUpdatedAt: Date?
-  @Published var batteryIsCharging: Bool?
-  @Published var batteryPowerStatus = "Unknown"
-  @Published var firmwareVersion: String?
-  @Published var modelNumber: String?
-  @Published var hardwareRevision: String?
-  @Published var softwareRevision: String?
-  @Published var manufacturerName: String?
-  @Published var isHistoricalSyncing = false
-  @Published var historicalSyncStatus = "idle"
-  @Published var historicalPacketCount = 0
-  @Published var lastHistoricalSyncCompletedAt: Date?
-  @Published var lastHistoricalRangeCommandStatus = "No GET_DATA_RANGE response"
-  @Published var alarmCommandStatus = "No alarm command sent"
-  @Published var lastAlarmCommandFrameHex = ""
-  @Published var lastAlarmResponseSummary = "No alarm response yet"
-  @Published var lastAlarmResponsePayloadHex = ""
-  @Published var lastAlarmEventSummary = "No alarm event yet"
-  @Published var lastAlarmEventPayloadHex = ""
-  @Published var lastAlarmScheduledAt: Date?
-  @Published var lastAlarmID: Int?
-  @Published var physiologyCaptureStatus = "Not started"
-  @Published var lastPhysiologyCommandSummary = "No physiology stream command sent"
-  @Published var highFrequencyHistorySyncStatus = "Off"
-  @Published var highFrequencyHistorySyncActive = false
-  @Published var highFrequencyHistorySyncExpiresAt: Date?
-  @Published var lastHighFrequencyHistorySyncResponse = "No high-frequency sync response yet"
-  @Published var lastHighFrequencyHistorySyncEvent = "No high-frequency sync event yet"
-  @Published var strapClockDate: Date?
-  @Published var strapClockOffsetSeconds: TimeInterval?
-  @Published var strapClockUpdatedAt: Date?
-  @Published var strapClockStatus = "Not read"
-  @Published var lastClockCommandFrameHex = ""
-  @Published var lastClockResponsePayloadHex = ""
-  @Published var syncToast: GooseSyncToast?
-  @Published var lastSyncFailure: GooseSyncFailure?
-  @Published var syncFailureSheet: GooseSyncFailure?
-  @Published var debugCommandStatus = "No debug command sent"
-  @Published var debugCommandResponses: [GooseDebugCommandResponse] = []
-  @Published var debugCommandSnapshotPath = "No debug command snapshot"
+@Observable final class GooseBLEClient: NSObject, @unchecked Sendable {
+  var bluetoothState = "not requested"
+  var connectionState = "disconnected"
+  var isScanning = false
+  var discoveredDevices: [GooseDiscoveredDevice] = []
+  var liveHeartRateBPM: Int?
+  var liveHeartRateSource = "waiting"
+  var liveHeartRateUpdatedAt: Date?
+  var restingHeartRateEstimateBPM: Double?
+  var restingHeartRateEstimateSampleCount = 0
+  var restingHeartRateEstimateSource = "waiting"
+  var restingHeartRateEstimateUpdatedAt: Date?
+  var liveHRVRMSSD: Double?
+  var liveHRVRRIntervalCount = 0
+  var liveHRVSource = "waiting"
+  var liveHRVUpdatedAt: Date?
+  var liveHRVRMSSDSampleCount = 0
+  var reconnectState = "idle"
+  var hrReconnectState = "idle"
+  var discoveredHRDevices: [GooseDiscoveredDevice] = []
+  var hrConnectionState: String = "disconnected"
+  var hrBluetoothState: String = "unknown"
+  var rememberedDeviceDescription = "none"
+  var activeDeviceName = "WHOOP"
+  var activeDeviceIdentifier: UUID?
+  var selectedDeviceID: UUID?
+  var connectedAt: Date?
+  var lastSyncAt: Date?
+  var batteryLevelPercent: Int?
+  var batteryUpdatedAt: Date?
+  var batteryIsCharging: Bool?
+  var batteryPowerStatus = "Unknown"
+  var firmwareVersion: String?
+  var modelNumber: String?
+  var hardwareRevision: String?
+  var softwareRevision: String?
+  var manufacturerName: String?
+  var isHistoricalSyncing = false
+  var historicalSyncStatus = "idle"
+  var historicalPacketCount = 0
+  var lastHistoricalSyncCompletedAt: Date?
+  var lastHistoricalRangeCommandStatus = "No GET_DATA_RANGE response"
+  var alarmCommandStatus = "No alarm command sent"
+  var lastAlarmCommandFrameHex = ""
+  var lastAlarmResponseSummary = "No alarm response yet"
+  var lastAlarmResponsePayloadHex = ""
+  var lastAlarmEventSummary = "No alarm event yet"
+  var lastAlarmEventPayloadHex = ""
+  var lastAlarmScheduledAt: Date?
+  var lastAlarmID: Int?
+  var physiologyCaptureStatus = "Not started"
+  var lastPhysiologyCommandSummary = "No physiology stream command sent"
+  var highFrequencyHistorySyncStatus = "Off"
+  var highFrequencyHistorySyncActive = false
+  var highFrequencyHistorySyncExpiresAt: Date?
+  var lastHighFrequencyHistorySyncResponse = "No high-frequency sync response yet"
+  var lastHighFrequencyHistorySyncEvent = "No high-frequency sync event yet"
+  var strapClockDate: Date?
+  var strapClockOffsetSeconds: TimeInterval?
+  var strapClockUpdatedAt: Date?
+  var strapClockStatus = "Not read"
+  var lastClockCommandFrameHex = ""
+  var lastClockResponsePayloadHex = ""
+  var syncToast: GooseSyncToast?
+  var lastSyncFailure: GooseSyncFailure?
+  var syncFailureSheet: GooseSyncFailure?
+  var debugCommandStatus = "No debug command sent"
+  var debugCommandResponses: [GooseDebugCommandResponse] = []
+  var debugCommandSnapshotPath = "No debug command snapshot"
 
   var onNotification: ((GooseNotificationEvent) -> Void)?
   var onRawNotification: ((GooseNotificationEvent) -> Void)?
@@ -76,6 +81,7 @@ final class GooseBLEClient: NSObject, ObservableObject {
   var onLiveHeartRate: ((Int, String, Date) -> Void)?
   var onHRVSample: ((Double, Int, String, Date) -> Void)?
   var onConnectionStateChange: ((String) -> Void)?
+  var onHRConnectionStateChange: ((String) -> Void)?
   var onHistoricalSyncProgress: ((GooseHistoricalSyncProgress) -> Void)?
   var onHistoricalRangeTelemetry: ((GooseHistoricalRangeTelemetry) -> Void)?
   var onMessage: ((GooseMessage) -> Void)?
@@ -89,12 +95,13 @@ final class GooseBLEClient: NSObject, ObservableObject {
     maximumMessages: GooseBLEClient.maximumDisplayedMessages,
     flushInterval: GooseBLEClient.displayedMessageFlushInterval
   )
+  let hrMonitorManager = GooseBLEHRMonitorManager()
   let notificationContextLock = NSLock()
   var notificationContextActiveDeviceName = "WHOOP"
   var notificationContextConnectionState = "disconnected"
   static let displayedMessageFlushInterval: TimeInterval = 0.5
   static let maximumDisplayedMessages = 300
-  static let bleUIStatePublishInterval: TimeInterval = 0.2
+  static let bleUIStatePublishInterval: TimeInterval = 1.0
   static let diagnosticLogProtection: FileProtectionType = .completeUntilFirstUserAuthentication
   static let diagnosticLogSetupWarningLock = NSLock()
   static var diagnosticLogSetupWarnings: [String] = []
@@ -230,16 +237,20 @@ final class GooseBLEClient: NSObject, ObservableObject {
     messageStore.messages
   }
   var commandCharacteristic: CBCharacteristic?
+  var activeDescriptor: WearableDescriptor?
   var debugMenuCharacteristic: CBCharacteristic?
   var batteryLevelCharacteristic: CBCharacteristic?
   var batteryLevelStatusCharacteristic: CBCharacteristic?
+  var batteryCharacteristicDiscoveryPending = false
   var lastBatteryLevelSample: (percent: Int, capturedAt: Date)?
   var inferredBatteryChargingUntil: Date?
   var rememberedDeviceID: UUID?
   var rememberedDeviceName: String?
   var rememberedDeviceValidated = false
   var autoReconnectTargetID: UUID?
-  var autoReconnectInFlight = false
+  var reconnectBackoff = ReconnectBackoff()
+  var reconnectWorkItem: DispatchWorkItem?
+  var reconnectGeneration: Int = 0
   var startupReconnectAttempted = false
   var pendingConnectionReason: String?
   var pendingAutomaticHistoricalSyncReason: String?
@@ -846,11 +857,11 @@ final class GooseBLEClient: NSObject, ObservableObject {
   }
 
   var canSyncHistorical: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5HistoricalSync
+    canSendHello && !isHistoricalSyncing && supportsHistoricalSync
   }
 
   var canWriteHighFrequencyHistorySync: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5SensorCommands
+    canSendHello && !isHistoricalSyncing && supportsSensorCommands
   }
 
   var debugResearchCommands: [GooseDebugCommandDefinition] {
@@ -858,13 +869,13 @@ final class GooseBLEClient: NSObject, ObservableObject {
   }
 
   var canWriteAlarm: Bool {
-    canSendHello && !isHistoricalSyncing && supportsV5AlarmCommands && pendingAlarmCommand == nil
+    canSendHello && !isHistoricalSyncing && supportsAlarmCommands && pendingAlarmCommand == nil
   }
 
   var canSyncClock: Bool {
     canSendHello
       && !isHistoricalSyncing
-      && supportsV5ClockCommands
+      && supportsClockCommands
       && pendingClockCommand == nil
       && pendingAlarmCommand == nil
   }
@@ -895,8 +906,8 @@ final class GooseBLEClient: NSObject, ObservableObject {
     if pendingAlarmCommand != nil {
       return "Alarm command in flight"
     }
-    if !supportsV5AlarmCommands {
-      return "Alarm writes need fd4b0002 V5 command framing; active \(commandCharacteristic.uuid.uuidString)"
+    if !supportsAlarmCommands {
+      return "Alarm writes need command characteristic; active \(commandCharacteristic.uuid.uuidString)"
     }
     if !canSendHello {
       return "WHOOP connection is not ready"
@@ -939,6 +950,36 @@ final class GooseBLEClient: NSObject, ObservableObject {
 
   var hasRememberedDevice: Bool {
     rememberedDeviceID != nil
+  }
+
+  var isReconnecting: Bool {
+    reconnectState.contains("reconnecting")
+  }
+
+  var reconnectFailed: Bool {
+    reconnectState.hasPrefix("failed")
+  }
+
+  var hrIsReconnecting: Bool {
+    hrReconnectState.contains("reconnecting")
+  }
+
+  var hrReconnectFailed: Bool {
+    hrReconnectState.hasPrefix("failed")
+  }
+
+  func updateHRReconnectState(_ value: String) {
+    DispatchQueue.main.async { [weak self] in
+      self?.hrReconnectState = value
+    }
+  }
+
+  func stopHRReconnect() {
+    hrMonitorManager.hrStopReconnect()
+  }
+
+  func retryHRReconnect() {
+    hrMonitorManager.hrRetryReconnect()
   }
 
   init(startCentral: Bool = true) {

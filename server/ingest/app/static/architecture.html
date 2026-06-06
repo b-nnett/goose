@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WHOOP·DECODE — device link architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b0d; --bg2:#0c1216; --panel:#0e1519; --panel2:#101a1f;
+  --line:#1c2a30; --line2:#26383f;
+  --ink:#cfe7df; --dim:#6f8a86; --faint:#3f5450;
+  --phos:#39ff9e; --phos-dim:#1f8f5c; --amber:#ffb648; --red:#ff5a6e; --cyan:#39d6ff;
+  --c-hr:#ff5a6e; --c-rr:#ff9f43; --c-accel:#b6ff4d; --c-ppg:#2ee6c6;
+  --c-time:#39d6ff; --c-battery:#ffd23f; --c-event:#5b9bff; --c-meta:#ff6fd0; --c-cmd:#8fb0ff;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --disp:"Martian Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 82% -8%, #0d2a22 0%, transparent 55%),
+    radial-gradient(900px 520px at -10% 108%, #1a1306 0%, transparent 50%),
+    var(--bg);
+  color:var(--ink); font-family:var(--mono); font-size:13px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh;
+}
+/* grain + scanlines for CRT atmosphere */
+.grain{position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.05;mix-blend-mode:overlay;
+  background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px);}
+.scan{position:fixed;inset:0;pointer-events:none;z-index:998;opacity:.35;
+  background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.18) 2px 4px);}
+::selection{background:var(--phos-dim);color:#03110b}
+a{color:inherit;text-decoration:none}
+h1,h2,h3{font-family:var(--disp);font-weight:500;letter-spacing:.04em;margin:0}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;gap:24px;
+  padding:13px 26px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(8,13,15,.96),rgba(8,13,15,.82));backdrop-filter:blur(7px)}
+.brand{display:flex;align-items:center;gap:13px}
+.logo{font-size:27px;color:var(--phos);text-shadow:0 0 14px var(--phos-dim);animation:spin 9s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.topbar h1{font-size:17px}.topbar h1 .sep{color:var(--phos)}
+.tag{margin:1px 0 0;color:var(--dim);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.back{font-size:11px;color:var(--dim);border:1px solid var(--line2);padding:7px 13px;border-radius:5px;
+  letter-spacing:.04em;transition:.16s;white-space:nowrap}
+.back:hover{color:var(--phos);border-color:var(--phos-dim);box-shadow:0 0 0 1px var(--phos-dim) inset}
+
+/* ---------- hero ---------- */
+.hero{padding:74px 26px 30px;max-width:1080px;margin:0 auto;text-align:center;position:relative}
+.kicker{font-family:var(--disp);font-size:10.5px;letter-spacing:.42em;text-transform:uppercase;color:var(--phos);
+  text-shadow:0 0 12px var(--phos-dim)}
+.hero h2{font-size:clamp(26px,5vw,44px);line-height:1.12;margin:18px auto 0;max-width:16ch;font-weight:500;color:#eafff4}
+.hero h2 em{font-style:normal;color:var(--phos);text-shadow:0 0 18px var(--phos-dim)}
+.hero p{margin:18px auto 0;max-width:62ch;color:var(--dim);font-size:13.5px}
+.tocrow{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.tocrow a{font-size:10.5px;letter-spacing:.06em;color:var(--dim);border:1px solid var(--line2);
+  padding:6px 12px;border-radius:20px;transition:.16s}
+.tocrow a:hover{color:var(--phos);border-color:var(--phos-dim);background:rgba(57,255,158,.05)}
+
+/* ---------- section frame ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:0 26px}
+section.block{padding:46px 0;border-top:1px solid var(--line);scroll-margin-top:64px}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px}
+.sec-num{font-family:var(--disp);font-size:11px;color:var(--phos-dim);letter-spacing:.1em}
+.sec-head h3{font-size:19px;color:#eafff4}
+.sec-sub{color:var(--dim);max-width:74ch;margin:0 0 26px;font-size:13px}
+.sec-sub b{color:var(--ink);font-weight:600}
+
+/* reveal-on-scroll — hidden state scoped to .js so content is ALWAYS visible without JS */
+.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.js .reveal{opacity:1;transform:none;transition:none}}
+
+/* ---------- the link diagram (sec 01) ---------- */
+.link-stage{position:relative;border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  padding:30px 26px;overflow:hidden}
+.link-stage::before{content:"";position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:30px 30px;-webkit-mask:radial-gradient(circle at 50% 45%,#000,transparent 75%);mask:radial-gradient(circle at 50% 45%,#000,transparent 75%)}
+.link-grid{position:relative;display:grid;grid-template-columns:1fr minmax(280px,2fr) 1fr;align-items:center;gap:14px}
+.node{display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center}
+.node .glyph{width:84px;height:84px;border-radius:18px;display:grid;place-items:center;font-size:34px;
+  border:1px solid var(--line2);background:radial-gradient(circle at 50% 30%,#13242a,#0a1115);
+  box-shadow:0 0 0 1px rgba(57,255,158,.06),0 10px 30px rgba(0,0,0,.45)}
+.node.phone .glyph{color:var(--phos);text-shadow:0 0 14px var(--phos-dim)}
+.node.strap .glyph{color:var(--cyan);text-shadow:0 0 14px rgba(57,214,255,.4)}
+.node .name{font-family:var(--disp);font-size:12px;letter-spacing:.06em;color:var(--ink)}
+.node .role{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.channels{display:flex;flex-direction:column;gap:7px;min-width:0}
+.chan{position:relative;display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:10px;
+  border:1px solid var(--line);border-radius:7px;padding:7px 11px;background:rgba(8,13,15,.6);overflow:hidden}
+.chan .wire{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,var(--cw,var(--phos-dim)),transparent);opacity:.25}
+.chan .pulse{position:absolute;top:50%;width:5px;height:5px;border-radius:50%;margin-top:-2.5px;
+  background:var(--cw,var(--phos));box-shadow:0 0 8px var(--cw,var(--phos));
+  animation:flow var(--dur,2.6s) linear infinite;animation-delay:var(--d,0s)}
+.chan.rev .pulse{animation-name:flowrev}
+@keyframes flow{from{left:-4%;opacity:0}10%{opacity:1}90%{opacity:1}to{left:104%;opacity:0}}
+@keyframes flowrev{from{left:104%;opacity:0}10%{opacity:1}90%{opacity:1}to{left:-4%;opacity:0}}
+.chan .dir{font-size:13px;color:var(--cw,var(--phos));z-index:1;text-align:center}
+.chan .lbl{z-index:1;min-width:0}
+.chan .lbl b{font-size:11.5px;color:var(--ink);font-weight:600;letter-spacing:.02em}
+.chan .lbl span{display:block;font-size:10px;color:var(--dim)}
+.chan .tagk{z-index:1;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.link-foot{position:relative;margin-top:22px;text-align:center;color:var(--dim);font-size:11.5px}
+.link-foot b{color:var(--phos)}
+
+/* ---------- lifecycle timeline (sec 02) ---------- */
+.life{position:relative;margin-top:6px;padding-left:4px}
+.life::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(180deg,var(--phos-dim),var(--line2) 70%,transparent)}
+.step{position:relative;display:grid;grid-template-columns:26px 1fr;gap:16px;padding:9px 0}
+.step .dot{position:relative;z-index:1;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--disp);font-size:10px;color:#03110b;background:var(--phos);box-shadow:0 0 12px var(--phos-dim)}
+.step.minor .dot{background:var(--panel);color:var(--phos);border:1px solid var(--phos-dim);box-shadow:none}
+.step .body b{font-size:13px;color:var(--ink);letter-spacing:.02em}
+.step .body span{display:block;color:var(--dim);font-size:11.5px;margin-top:1px}
+.once{display:inline-block;margin-left:9px;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--amber);border:1px solid #5a4416;border-radius:20px;padding:2px 8px;vertical-align:middle}
+
+/* ---------- data cards (sec 03) ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-left:2px solid var(--ca,var(--phos));border-radius:8px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));padding:15px 15px 14px;transition:.18s}
+.card:hover{transform:translateY(-2px);border-color:var(--line2);box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.card .ico{font-size:17px;color:var(--ca,var(--phos))}
+.card h4{font-family:var(--disp);font-size:12px;font-weight:500;margin:8px 0 4px;color:var(--ink);letter-spacing:.02em}
+.card p{margin:0;font-size:11px;color:var(--dim);line-height:1.55}
+.card .freq{margin-top:9px;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ca,var(--phos));opacity:.85}
+.card.primary{border-left-width:2px;background:radial-gradient(420px 160px at 0% 0%,rgba(57,255,158,.07),transparent),linear-gradient(180deg,var(--panel2),var(--panel))}
+.card.wide{grid-column:1/-1}
+.subgrid{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.chip{font-size:10px;color:var(--ink);border:1px solid var(--line2);border-radius:20px;padding:3px 10px;
+  display:inline-flex;align-items:center;gap:6px}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--cd,var(--phos));box-shadow:0 0 6px var(--cd,var(--phos))}
+
+/* ---------- offload loop (sec 04) ---------- */
+.loop{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:stretch}
+@media(max-width:760px){.loop{grid-template-columns:1fr}}
+.loop-flow{border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,var(--panel2),var(--panel));padding:18px 18px 8px;position:relative;overflow:hidden}
+.frame-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.tok{font-family:var(--disp);font-size:10px;letter-spacing:.04em;border:1px solid var(--line2);border-radius:5px;
+  padding:6px 9px;color:var(--dim);background:rgba(8,13,15,.55);white-space:nowrap}
+.tok.start{color:var(--cyan);border-color:#1d4954}
+.tok.rec{color:var(--phos);border-color:var(--phos-dim)}
+.tok.end{color:var(--amber);border-color:#5a4416}
+.tok.done{color:#eafff4;border-color:var(--phos-dim);background:rgba(57,255,158,.08)}
+.arrowm{color:var(--faint)}
+.loopstep{display:grid;grid-template-columns:20px 1fr;gap:12px;padding:7px 0;border-top:1px dashed var(--line)}
+.loopstep:first-of-type{border-top:none}
+.loopstep .k{font-family:var(--disp);color:var(--phos);font-size:11px}
+.loopstep b{font-size:12px;color:var(--ink)}
+.loopstep span{display:block;color:var(--dim);font-size:11px;margin-top:1px}
+.guard{border:1px solid var(--phos-dim);border-radius:10px;background:radial-gradient(300px 200px at 100% 0%,rgba(57,255,158,.08),transparent),var(--panel);
+  padding:18px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.guard .big{font-family:var(--disp);font-size:14px;color:var(--phos);line-height:1.4;text-shadow:0 0 14px var(--phos-dim)}
+.guard p{margin:0;font-size:11.5px;color:var(--dim)}
+.guard .rule{font-size:10px;letter-spacing:.06em;color:var(--ink);border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.guard .rule b{color:var(--amber)}
+
+/* ---------- cadence (sec 05) ---------- */
+.cadence{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.trigger{border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,var(--panel2),var(--panel));padding:14px 15px;position:relative;overflow:hidden}
+.trigger .bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ct,var(--phos));box-shadow:0 0 10px var(--ct,var(--phos))}
+.trigger h4{font-family:var(--disp);font-size:12px;font-weight:500;margin:0 0 3px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.trigger h4 .ic{color:var(--ct,var(--phos))}
+.trigger p{margin:0;font-size:11px;color:var(--dim)}
+.trigger .floor{margin-top:10px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ct,var(--phos));
+  border:1px solid currentColor;border-radius:20px;padding:3px 9px;display:inline-block;opacity:.85}
+.always{margin-top:16px;border:1px dashed var(--line2);border-radius:10px;padding:14px 16px;display:flex;gap:14px;align-items:center;color:var(--dim);font-size:11.5px}
+.always .pill{font-family:var(--disp);font-size:11px;color:var(--cyan);white-space:nowrap;letter-spacing:.04em}
+.always b{color:var(--ink)}
+
+/* ---------- end-to-end pipeline (sec 06) ---------- */
+.pipe{position:relative;border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));padding:26px 18px 22px;overflow:hidden}
+.pipe-track{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:start;position:relative;z-index:2}
+.stage{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.stage .blk{width:100%;min-height:64px;border:1px solid var(--line2);border-radius:9px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;background:radial-gradient(circle at 50% 0%,#12222800,#0a1115);
+  padding:10px 8px}
+.stage .blk .si{font-size:19px;color:var(--cs,var(--phos))}
+.stage .blk b{font-family:var(--disp);font-size:10.5px;color:var(--ink);letter-spacing:.02em}
+.stage small{color:var(--dim);font-size:10px;line-height:1.45}
+.pipe-line{position:absolute;left:9%;right:9%;top:48px;height:2px;z-index:1;
+  background:repeating-linear-gradient(90deg,var(--phos-dim) 0 8px,transparent 8px 16px);opacity:.5}
+.pipe-pulse{position:absolute;top:48px;width:7px;height:7px;border-radius:50%;margin-top:-3px;left:9%;
+  background:var(--phos);box-shadow:0 0 12px var(--phos);z-index:2;animation:pipeflow 4.4s cubic-bezier(.6,0,.4,1) infinite}
+@keyframes pipeflow{0%{left:9%;opacity:0}6%{opacity:1}94%{opacity:1}100%{left:91%;opacity:0}}
+@media(max-width:680px){.pipe-track{grid-template-columns:1fr;gap:18px}.pipe-line,.pipe-pulse{display:none}
+  .stage{flex-direction:row;text-align:left;gap:12px}.stage .blk{min-height:0;flex-direction:row;gap:10px;justify-content:flex-start}}
+
+/* ---------- footer ---------- */
+.foot{border-top:1px solid var(--line);margin-top:30px;padding:26px;text-align:center;color:var(--faint);font-size:10.5px;letter-spacing:.08em}
+.foot b{color:var(--dim)}
+.foot a{color:var(--phos-dim)}
+.foot a:hover{color:var(--phos)}
+</style>
+</head>
+<body>
+<div class="grain"></div><div class="scan"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◍</span>
+    <div>
+      <h1>WHOOP<span class="sep">·</span>DECODE</h1>
+      <p class="tag">device link · architecture</p>
+    </div>
+  </div>
+  <a class="back" href="/">← datastore dashboard</a>
+</header>
+
+<div class="hero">
+  <div class="kicker reveal">how we get data off the strap</div>
+  <h2 class="reveal">A one-way radio link, drained <em>in order</em>, on a schedule.</h2>
+  <p class="reveal">The WHOOP 4.0 strap has no display and no internet. It quietly records your body about
+  once a second into a two-week memory — even with no phone nearby. Everything below is how our app
+  reaches across Bluetooth, pulls that history off, and turns it into the charts on the dashboard.
+  No phone, no problem; the strap just keeps a buffer until we catch up.</p>
+  <div class="tocrow reveal">
+    <a href="#link">01 · the link</a>
+    <a href="#connect">02 · connect</a>
+    <a href="#data">03 · what we get</a>
+    <a href="#offload">04 · the offload</a>
+    <a href="#cadence">05 · cadence</a>
+    <a href="#path">06 · data path</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 01 — THE LINK -->
+  <section class="block" id="link">
+    <div class="sec-head reveal"><span class="sec-num">01</span><h3>THE LINK</h3></div>
+    <p class="sec-sub reveal">The phone and the strap talk over <b>Bluetooth Low Energy</b>. The phone is the
+    “central” that opens the connection; the strap is the “peripheral.” Once paired, the link stays bonded so it
+    can silently reconnect in the background. Information travels on a handful of dedicated channels — each one
+    carries a different kind of traffic, in a fixed direction.</p>
+
+    <div class="link-stage reveal">
+      <div class="link-grid">
+        <div class="node phone">
+          <div class="glyph">▤</div>
+          <div class="name">PHONE</div>
+          <div class="role">central · our app</div>
+        </div>
+
+        <div class="channels">
+          <div class="chan" style="--cw:var(--c-cmd)">
+            <span class="wire"></span><span class="pulse" style="--dur:2.4s;--d:0s"></span>
+            <span class="dir">→</span>
+            <span class="lbl"><b>Commands</b><span>“set your clock”, “send me history”, “quiet down”</span></span>
+            <span class="tagk">phone → strap</span>
+          </div>
+          <div class="chan rev" style="--cw:var(--phos)">
+            <span class="wire"></span><span class="pulse" style="--dur:2.6s;--d:.4s"></span>
+            <span class="dir">←</span>
+            <span class="lbl"><b>Responses</b><span>acknowledgements + answers to commands</span></span>
+            <span class="tagk">strap → phone</span>
+          </div>
+          <div class="chan rev" style="--cw:var(--c-event)">
+            <span class="wire"></span><span class="pulse" style="--dur:3.4s;--d:1.1s"></span>
+            <span class="dir">←</span>
+            <span class="lbl"><b>Events</b><span>strap speaks up: booted, wrist on/off, clock set…</span></span>
+            <span class="tagk">strap → phone</span>
+          </div>
+          <div class="chan rev" style="--cw:var(--c-ppg)">
+            <span class="wire"></span><span class="pulse" style="--dur:1.6s;--d:0s"></span><span class="pulse" style="--dur:1.6s;--d:.8s"></span>
+            <span class="dir">←</span>
+            <span class="lbl"><b>Bulk data</b><span>the firehose: history records + live samples</span></span>
+            <span class="tagk">strap → phone</span>
+          </div>
+          <div class="chan rev" style="--cw:var(--c-hr)">
+            <span class="wire"></span><span class="pulse" style="--dur:2.9s;--d:.6s"></span>
+            <span class="dir">←</span>
+            <span class="lbl"><b>Heart rate + battery</b><span>standard Bluetooth profiles, read any time</span></span>
+            <span class="tagk">strap → phone</span>
+          </div>
+        </div>
+
+        <div class="node strap">
+          <div class="glyph">⌾</div>
+          <div class="name">STRAP</div>
+          <div class="role">peripheral · 4.0</div>
+        </div>
+      </div>
+      <div class="link-foot">One bonded connection, <b>five lanes of traffic</b> — we send a few short commands, the strap streams back everything else.</div>
+    </div>
+  </section>
+
+  <!-- 02 — CONNECT -->
+  <section class="block" id="connect">
+    <div class="sec-head reveal"><span class="sec-num">02</span><h3>THE CONNECT HANDSHAKE</h3></div>
+    <p class="sec-sub reveal">Every time the phone reaches the strap, it runs the same short opening sequence —
+    <b>exactly once per connection</b> — to wake the link, agree on the time, and line up the history transfer.
+    It mirrors what WHOOP’s own app does. Running it more than once (an early bug) jams the strap, so it’s
+    strictly one pass, then the data flows.</p>
+
+    <div class="life reveal">
+      <div class="step"><div class="dot">1</div><div class="body"><b>Discover &amp; connect</b><span>find the strap’s radio and open the BLE link.</span></div></div>
+      <div class="step"><div class="dot">2</div><div class="body"><b>Bond</b><span>a confirmed handshake write — proves the secure pairing and unlocks the private channels.</span></div></div>
+      <div class="step"><div class="dot">3</div><div class="body"><b>Subscribe</b><span>tell the strap we want to listen on the responses, events, and bulk-data channels.</span></div></div>
+      <div class="step minor"><div class="dot">4</div><div class="body"><b>Say hello</b><span>a small identity exchange the strap expects before it’ll cooperate.</span></div></div>
+      <div class="step minor"><div class="dot">5</div><div class="body"><b>Set the clock</b><span>push the current time so every record the strap logs is stamped correctly.</span></div></div>
+      <div class="step minor"><div class="dot">6</div><div class="body"><b>Quiet the firehose</b><span>turn off the raw high-rate research stream so it doesn’t hog the radio.</span></div></div>
+      <div class="step minor"><div class="dot">7</div><div class="body"><b>Read the range</b><span>ask how much unsynced history is waiting in the strap’s memory.</span></div></div>
+      <div class="step"><div class="dot">↓</div><div class="body"><b>Begin offload</b><span class="">stream the stored history across — see section 04.</span><span class="once" style="margin-left:0;margin-top:6px">handshake runs once · then data flows</span></div></div>
+    </div>
+  </section>
+
+  <!-- 03 — WHAT WE GET -->
+  <section class="block" id="data">
+    <div class="sec-head reveal"><span class="sec-num">03</span><h3>WHAT WE GET</h3></div>
+    <p class="sec-sub reveal">Two kinds of information come off the strap. <b>Live</b> readings are streamed in the moment
+    (only when you ask for them). The <b>stored history</b> — the real prize — is a two-week, roughly one-per-second
+    log of your biometrics that the strap keeps whether or not a phone is around. Plus housekeeping: events, battery,
+    and firmware info.</p>
+
+    <div class="cards">
+      <div class="card primary wide reveal" style="--ca:var(--phos)">
+        <div class="ico">⤓</div>
+        <h4>The 14-day biometric store &nbsp;·&nbsp; primary source</h4>
+        <p>The strap records ~1 sample/second into a rolling two-week memory, on-wrist, offline. On every sync we
+        offload this log. It’s the backbone of everything on the dashboard. Each record carries:</p>
+        <div class="subgrid">
+          <span class="chip" style="--cd:var(--c-hr)"><i></i>Heart rate</span>
+          <span class="chip" style="--cd:var(--c-rr)"><i></i>Heart-rate variability</span>
+          <span class="chip" style="--cd:var(--c-ppg)"><i></i>Blood oxygen (SpO₂)</span>
+          <span class="chip" style="--cd:var(--c-battery)"><i></i>Skin temperature</span>
+          <span class="chip" style="--cd:var(--c-event)"><i></i>Respiratory rate</span>
+          <span class="chip" style="--cd:var(--c-accel)"><i></i>Motion / gravity</span>
+        </div>
+        <div class="freq">logged continuously · ~1 Hz · retained ~14 days</div>
+      </div>
+
+      <div class="card reveal" style="--ca:var(--c-hr)">
+        <div class="ico">♥</div>
+        <h4>Live heart rate</h4>
+        <p>Real-time beats-per-minute plus beat-to-beat timing, streamed as it happens.</p>
+        <div class="freq">opt-in · on demand</div>
+      </div>
+      <div class="card reveal" style="--ca:var(--c-event)">
+        <div class="ico">⚑</div>
+        <h4>Events</h4>
+        <p>The strap announces moments: boot, clock set, wrist on/off, and other state changes.</p>
+        <div class="freq">pushed when they happen</div>
+      </div>
+      <div class="card reveal" style="--ca:var(--c-battery)">
+        <div class="ico">▮</div>
+        <h4>Battery &amp; firmware</h4>
+        <p>Charge level, charging state, and the strap’s hardware / firmware version.</p>
+        <div class="freq">read on connect</div>
+      </div>
+      <div class="card reveal" style="--ca:var(--c-meta)">
+        <div class="ico">∿</div>
+        <h4>Derived on the server</h4>
+        <p>Sleep, recovery, strain and daily summaries are computed from the stored signals after they land.</p>
+        <div class="freq">computed after sync</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — THE OFFLOAD -->
+  <section class="block" id="offload">
+    <div class="sec-head reveal"><span class="sec-num">04</span><h3>THE OFFLOAD — READ IN ORDER</h3></div>
+    <p class="sec-sub reveal">The history transfer is a strict, in-order drain. We ask once; the strap streams its
+    log oldest-first in chunks. The crucial detail: the strap only lets go of a chunk once we <b>acknowledge</b> it,
+    and that acknowledgement moves a one-way <b>read cursor</b> forward — records behind it are considered delivered
+    and can’t be served again. So the golden rule is <b>save first, acknowledge second</b>.</p>
+
+    <div class="loop reveal">
+      <div class="loop-flow">
+        <div class="frame-row">
+          <span class="tok start">HISTORY&nbsp;START</span><span class="arrowm">→</span>
+          <span class="tok rec">records</span><span class="arrowm">→</span>
+          <span class="tok end">CHUNK&nbsp;END</span><span class="arrowm">↺</span>
+          <span class="tok rec">records</span><span class="arrowm">→</span>
+          <span class="tok end">CHUNK&nbsp;END</span><span class="arrowm">→</span>
+          <span class="tok done">COMPLETE</span>
+        </div>
+        <div class="loopstep"><span class="k">A</span><div><b>Request</b><span>one “send history” command kicks it off.</span></div></div>
+        <div class="loopstep"><span class="k">B</span><div><b>Stream</b><span>the strap pours records down the bulk channel, closing a chunk every so often.</span></div></div>
+        <div class="loopstep"><span class="k">C</span><div><b>Decode &amp; save</b><span>the phone unpacks each chunk and writes it to local storage.</span></div></div>
+        <div class="loopstep"><span class="k">D</span><div><b>Acknowledge → trim</b><span>only now do we ack — which advances the strap’s read cursor past that chunk.</span></div></div>
+        <div class="loopstep"><span class="k">E</span><div><b>Repeat → COMPLETE</b><span>loop until the strap signals it’s caught up.</span></div></div>
+      </div>
+      <div class="guard">
+        <div class="big">save → then<br>acknowledge</div>
+        <p>The cursor is one-way: once a chunk is acked, the strap drops it for good. We never ack a chunk we
+        haven’t durably stored.</p>
+        <div class="rule">Break that order and the cursor races past data that was never kept — <b>a permanent gap</b>. Keeping it is what makes the sync lossless.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 — CADENCE -->
+  <section class="block" id="cadence">
+    <div class="sec-head reveal"><span class="sec-num">05</span><h3>CADENCE &amp; SCHEDULING</h3></div>
+    <p class="sec-sub reveal">We don’t sync constantly — that would drain both batteries. Instead a sync is <b>triggered</b>
+    by a few events, each rate-limited by a cooldown so bursts don’t pile up. The strap keeps logging the whole time,
+    so whenever the next sync fires, the two-week buffer has us covered.</p>
+
+    <div class="cadence">
+      <div class="trigger reveal" style="--ct:var(--phos)">
+        <span class="bar"></span>
+        <h4><span class="ic">⇄</span> On connect</h4>
+        <p>Each time the phone (re)reaches the strap, it offloads whatever piled up.</p>
+        <span class="floor">first connect always runs</span>
+      </div>
+      <div class="trigger reveal" style="--ct:var(--cyan)">
+        <span class="bar"></span>
+        <h4><span class="ic">◷</span> Periodic timer</h4>
+        <p>While connected, a background timer kicks a routine catch-up.</p>
+        <span class="floor">~15 min floor</span>
+      </div>
+      <div class="trigger reveal" style="--ct:var(--c-event)">
+        <span class="bar"></span>
+        <h4><span class="ic">▦</span> App foreground</h4>
+        <p>Opening the app nudges a fresh sync so you see current data.</p>
+        <span class="floor">~90 s cooldown</span>
+      </div>
+      <div class="trigger reveal" style="--ct:var(--c-meta)">
+        <span class="bar"></span>
+        <h4><span class="ic">⚑</span> Strap event</h4>
+        <p>The strap can prompt its own sync by pushing an event.</p>
+        <span class="floor">~90 s cooldown</span>
+      </div>
+      <div class="trigger reveal" style="--ct:var(--amber)">
+        <span class="bar"></span>
+        <h4><span class="ic">⤓</span> Manual “sync now”</h4>
+        <p>A tap forces an immediate offload, no cooldown.</p>
+        <span class="floor">on demand</span>
+      </div>
+      <div class="trigger reveal" style="--ct:var(--c-hr)">
+        <span class="bar"></span>
+        <h4><span class="ic">♥</span> Live HR</h4>
+        <p>Real-time streaming runs only while you explicitly keep it on.</p>
+        <span class="floor">opt-in only</span>
+      </div>
+    </div>
+
+    <div class="always reveal">
+      <span class="pill">◉ always-on</span>
+      <span>The strap logs <b>~1 sample/second to its 14-day memory regardless of the phone</b> — uploads to the
+      server then happen opportunistically and on a timer during each session. Miss a day? The next sync simply
+      drains the backlog in order.</span>
+    </div>
+  </section>
+
+  <!-- 06 — DATA PATH -->
+  <section class="block" id="path">
+    <div class="sec-head reveal"><span class="sec-num">06</span><h3>END-TO-END DATA PATH</h3></div>
+    <p class="sec-sub reveal">Following a single reading from your wrist to this dashboard:</p>
+
+    <div class="pipe reveal">
+      <div class="pipe-line"></div>
+      <span class="pipe-pulse" style="animation-delay:0s"></span>
+      <span class="pipe-pulse" style="animation-delay:1.5s"></span>
+      <span class="pipe-pulse" style="animation-delay:3s"></span>
+      <div class="pipe-track">
+        <div class="stage"><div class="blk" style="--cs:var(--cyan)"><span class="si">⌾</span><b>STRAP</b></div><small>logs to 14-day flash, ~1 Hz, offline</small></div>
+        <div class="stage"><div class="blk" style="--cs:var(--c-ppg)"><span class="si">📶</span><b>BLE OFFLOAD</b></div><small>chunked &amp; acked, in order</small></div>
+        <div class="stage"><div class="blk" style="--cs:var(--phos)"><span class="si">▤</span><b>PHONE</b></div><small>decodes + saves to local store</small></div>
+        <div class="stage"><div class="blk" style="--cs:var(--c-battery)"><span class="si">⛁</span><b>SERVER</b></div><small>uploaded to the datastore</small></div>
+        <div class="stage"><div class="blk" style="--cs:var(--c-meta)"><span class="si">◍</span><b>DASHBOARD</b></div><small>charts + derived insights</small></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="foot">
+  <b>WHOOP·DECODE</b> — independent reverse-engineered client · device link architecture &nbsp;·&nbsp;
+  <a href="/">back to the datastore →</a>
+</div>
+
+<script>
+// Enable the hidden-until-revealed state only when JS runs (progressive enhancement).
+document.documentElement.classList.add('js');
+// staggered reveal-on-scroll
+const io = new IntersectionObserver((es)=>{
+  es.forEach((e)=>{ if(e.isIntersecting){ const els=[...e.target.parentElement.querySelectorAll('.reveal')];
+    e.target.style.transitionDelay = (els.indexOf(e.target)%4 * 70)+'ms'; e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:.08, rootMargin:'0px 0px -6% 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+// Failsafe: anything still hidden shortly after load (observer edge cases, no scroll) reveals anyway.
+addEventListener('load',()=>setTimeout(()=>document.querySelectorAll('.reveal:not(.in)').forEach(el=>el.classList.add('in')),1500));
+</script>
+</body>
+</html>

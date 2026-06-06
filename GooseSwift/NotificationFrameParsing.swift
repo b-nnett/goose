@@ -153,7 +153,7 @@ struct ParsedNotificationFrameDispatch {
   let batchTiming: NotificationFrameBatchTiming?
 }
 
-struct NotificationParseContext {
+struct NotificationParseContext: @unchecked Sendable {
   let deviceType: String
   let healthCaptureActive: Bool
   let overnightGuardActive: Bool

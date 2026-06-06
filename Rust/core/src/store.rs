@@ -8,6 +8,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     GooseError, GooseResult,
     protocol::{DeviceType, ParsedFrame},
+    validation_labels::OFFICIAL_WHOOP_LABEL_POLICY,
 };
 
 pub const CURRENT_SCHEMA_VERSION: i64 = 14;
@@ -2007,6 +2008,28 @@ impl GooseStore {
                 input.active_device_id,
                 input.provenance_json,
             ],
+        )?;
+        Ok(changed > 0)
+    }
+
+    /// Writes `active_device_id` to a capture session that currently has a NULL device id.
+    /// If the session already has an `active_device_id` the row is not modified (idempotent).
+    /// Returns `true` when the row was updated, `false` when it was already set or not found.
+    pub fn set_capture_session_device_id(
+        &self,
+        session_id: &str,
+        active_device_id: &str,
+    ) -> GooseResult<bool> {
+        validate_required("session_id", session_id)?;
+        validate_required("active_device_id", active_device_id)?;
+        let changed = self.conn.execute(
+            r#"
+            UPDATE capture_sessions
+            SET active_device_id = ?2
+            WHERE session_id = ?1
+              AND active_device_id IS NULL
+            "#,
+            params![session_id, active_device_id],
         )?;
         Ok(changed > 0)
     }
@@ -6448,6 +6471,13 @@ fn value_contains_official_whoop_label_marker(value: &Value) -> bool {
 
 fn is_official_whoop_label_token(value: &str) -> bool {
     let normalized = normalized_marker(value);
+    // The official-label compliance policy declaration explicitly documents that
+    // official WHOOP values are validation labels, never metric inputs. It is
+    // compliance metadata, not a source-identity claim, so it must not trip the
+    // marker guard even though it shares the `official_whoop_` prefix.
+    if normalized == normalized_marker(OFFICIAL_WHOOP_LABEL_POLICY) {
+        return false;
+    }
     matches!(
         normalized.as_str(),
         "whoop"
@@ -6599,21 +6629,21 @@ fn validate_optional_non_negative_i64(name: &str, value: Option<i64>) -> GooseRe
 }
 
 fn validate_optional_finite_f64(name: &str, value: Option<f64>) -> GooseResult<()> {
-    if let Some(value) = value {
-        if !value.is_finite() {
-            return Err(GooseError::message(format!("{name} must be finite")));
-        }
+    if let Some(value) = value
+        && !value.is_finite()
+    {
+        return Err(GooseError::message(format!("{name} must be finite")));
     }
     Ok(())
 }
 
 fn validate_optional_non_negative_f64(name: &str, value: Option<f64>) -> GooseResult<()> {
-    if let Some(value) = value {
-        if !value.is_finite() || value < 0.0 {
-            return Err(GooseError::message(format!(
-                "{name} must be finite and non-negative",
-            )));
-        }
+    if let Some(value) = value
+        && (!value.is_finite() || value < 0.0)
+    {
+        return Err(GooseError::message(format!(
+            "{name} must be finite and non-negative",
+        )));
     }
     Ok(())
 }
@@ -7538,6 +7568,7 @@ fn device_type_name(device_type: DeviceType) -> &'static str {
         DeviceType::Maverick => "MAVERICK",
         DeviceType::Puffin => "PUFFIN",
         DeviceType::Goose => "GOOSE",
+        DeviceType::HrMonitor => "HR_MONITOR",
     }
 }
 

@@ -152,10 +152,10 @@ pub fn observability_timeline_from_rows(
         .iter()
         .map(observability_row_from_debug_event)
         .collect::<GooseResult<Vec<_>>>()?
+        .into_iter()
+        .flatten()
     {
-        if let Some(row) = row {
-            rows.push(row);
-        }
+        rows.push(row);
     }
 
     rows.sort_by(|left, right| {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @AppStorage(OnboardingStorage.onboardingComplete) private var onboardingComplete = false
   @AppStorage(OnboardingStorage.onboardingRedoRequested) private var onboardingRedoRequested = false
 
@@ -43,13 +43,10 @@ struct RootView: View {
     guard !onboardingComplete, !onboardingRedoRequested else {
       return
     }
-    guard
-      let state = OnboardingProfilePersistence.restoreIntoDefaultsIfAvailable(restoreCompletion: true),
-      state.onboardingComplete
-    else {
-      return
-    }
-    onboardingComplete = true
+    // Restore profile data (name, height, weight, etc.) from Keychain so fields are
+    // pre-filled — but do NOT restore onboardingComplete. Keychain survives app deletion,
+    // so a reinstall should show onboarding again with pre-filled data, not skip it.
+    _ = OnboardingProfilePersistence.restoreIntoDefaultsIfAvailable(restoreCompletion: false)
   }
 
   private func syncModelOnboardingState() {
@@ -61,9 +58,10 @@ struct RootView: View {
 }
 
 private struct SyncToastHost: View {
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
 
   var body: some View {
+    @Bindable var ble = ble
     VStack {
       if let toast = ble.syncToast {
         Button {

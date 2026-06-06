@@ -23,9 +23,9 @@ extension GooseBLEClient {
       failHistoricalSync("Historical sync can only start from the ready state. Current connection state: \(connectionState).")
       return
     }
-    guard supportsV5HistoricalSync else {
+    guard supportsHistoricalSync else {
       let characteristic = commandCharacteristic?.uuid.uuidString ?? "missing"
-      failHistoricalSync("Historical sync currently supports the Goose V5 fd4b command characteristic. Active command characteristic: \(characteristic).")
+      failHistoricalSync("Historical sync needs command characteristic. Active command characteristic: \(characteristic).")
       return
     }
 

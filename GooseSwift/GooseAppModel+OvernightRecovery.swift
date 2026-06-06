@@ -4,13 +4,19 @@ import UIKit
 
 extension GooseAppModel {
   func recoverUncleanOvernightGuardSessionIfNeeded() {
-    guard !overnightGuardActive, overnightGuardSession == nil else {
-      return
+    guard !overnightGuardActive, overnightGuardSession == nil else { return }
+    // Dispatch the slow file-system scan (contentsOfDirectory + JSONL line counts) to a
+    // background queue; callback to main actor to apply state mutations.
+    rustStartupQueue.async { [weak self] in
+      guard let recovered = Self.latestRecoverableOvernightGuardSession() else { return }
+      DispatchQueue.main.async { [weak self] in
+        self?.applyUncleanSessionRecovery(recovered)
+      }
     }
-    guard let recovered = Self.latestRecoverableOvernightGuardSession() else {
-      return
-    }
+  }
 
+  private func applyUncleanSessionRecovery(_ recovered: OvernightGuardRecoveredSession) {
+    guard !overnightGuardActive, overnightGuardSession == nil else { return }
     do {
       let snapshot = try overnightRawSpool.resume(
         sessionID: recovered.id,
@@ -146,7 +152,9 @@ extension GooseAppModel {
     writeOvernightGuardStatus(reason: "resume_streams_ready_\(reason)")
   }
 
-  static func latestRecoverableOvernightGuardSession() -> OvernightGuardRecoveredSession? {
+  nonisolated static func latestRecoverableOvernightGuardSession() -> OvernightGuardRecoveredSession? {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     let rootURL = overnightGuardRootDirectoryURL()
     let fileManager = FileManager.default
     guard let sessions = try? fileManager.contentsOfDirectory(
@@ -202,16 +210,16 @@ extension GooseAppModel {
         ?? overnightGuardIntValue(statusValues["event_log_count"])
         ?? overnightGuardIntValue(manifest["event_log_count"])
         ?? 0
-      let startedAt = (manifest["started_at"] as? String).flatMap { captureTimestampFormatter.date(from: $0) }
+      let startedAt = (manifest["started_at"] as? String).flatMap { formatter.date(from: $0) }
         ?? (try? sessionURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)
         ?? Date()
       let lastNotificationAt = (statusValues["last_notification_at"])
-        .flatMap { $0 == "none" ? nil : captureTimestampFormatter.date(from: $0) }
-        ?? (manifest["last_notification_at"] as? String).flatMap { captureTimestampFormatter.date(from: $0) }
+        .flatMap { $0 == "none" ? nil : formatter.date(from: $0) }
+        ?? (manifest["last_notification_at"] as? String).flatMap { formatter.date(from: $0) }
       let lastStatusAt = (statusValues["heartbeat_at"] ?? statusValues["timestamp"])
-        .flatMap { captureTimestampFormatter.date(from: $0) }
-        ?? (crashMarker?["last_status_at"] as? String).flatMap { captureTimestampFormatter.date(from: $0) }
-        ?? (manifest["last_status_at"] as? String).flatMap { captureTimestampFormatter.date(from: $0) }
+        .flatMap { formatter.date(from: $0) }
+        ?? (crashMarker?["last_status_at"] as? String).flatMap { formatter.date(from: $0) }
+        ?? (manifest["last_status_at"] as? String).flatMap { formatter.date(from: $0) }
       let modifiedAt = (try? statusURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)
         ?? (try? manifestURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)
         ?? startedAt
@@ -245,7 +253,7 @@ extension GooseAppModel {
     }.first
   }
 
-  static func readJSONObject(at url: URL) -> [String: Any]? {
+  nonisolated static func readJSONObject(at url: URL) -> [String: Any]? {
     guard let data = try? Data(contentsOf: url),
           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
       return nil
@@ -253,12 +261,12 @@ extension GooseAppModel {
     return object
   }
 
-  static func fileSize(at url: URL) -> Int {
+  nonisolated static func fileSize(at url: URL) -> Int {
     let byteCount = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
     return max(byteCount, 0)
   }
 
-  static func readStatusValues(at url: URL) -> [String: String] {
+  nonisolated static func readStatusValues(at url: URL) -> [String: String] {
     guard let text = try? String(contentsOf: url, encoding: .utf8) else {
       return [:]
     }
@@ -274,7 +282,7 @@ extension GooseAppModel {
     return values
   }
 
-  static func countSuccessfulHistoricalRangePolls(at url: URL) -> Int {
+  nonisolated static func countSuccessfulHistoricalRangePolls(at url: URL) -> Int {
     guard let text = try? String(contentsOf: url, encoding: .utf8) else {
       return 0
     }
@@ -290,7 +298,7 @@ extension GooseAppModel {
     return count
   }
 
-  static func countJSONLRecords(at url: URL) -> Int? {
+  nonisolated static func countJSONLRecords(at url: URL) -> Int? {
     guard let handle = try? FileHandle(forReadingFrom: url) else {
       return nil
     }
@@ -563,7 +571,7 @@ extension GooseAppModel {
     }
   }
 
-  static func overnightGuardIntValue(_ value: Any?) -> Int? {
+  nonisolated static func overnightGuardIntValue(_ value: Any?) -> Int? {
     if let value = value as? Int {
       return value
     }
@@ -596,7 +604,7 @@ extension GooseAppModel {
     return nil
   }
 
-  static func overnightGuardTargetCounts(from summary: String?) -> OvernightGuardTargetCounts {
+  nonisolated static func overnightGuardTargetCounts(from summary: String?) -> OvernightGuardTargetCounts {
     var counts = OvernightGuardTargetCounts()
     guard let summary else {
       return counts

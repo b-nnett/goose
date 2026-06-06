@@ -1,9 +1,8 @@
 import SwiftUI
 
 struct AppShellView: View {
-  @EnvironmentObject private var model: GooseAppModel
   @EnvironmentObject private var router: AppRouter
-  @StateObject private var healthStore = HealthDataStore()
+  @State private var healthStore = HealthDataStore()
   @State private var homeHealthPath: [HealthRoute] = []
   @State private var homeSelectedDate = Date()
 
@@ -28,7 +27,6 @@ struct AppShellView: View {
         return
       }
       router.selectedTab = newTab
-      model.recordUIAction("tab.selected", detail: newTab.title)
     }
   }
 
@@ -75,7 +73,9 @@ struct AppShellView: View {
   }
 
   private func openHomeHealthRoute(_ route: HealthRoute) {
-    homeHealthPath = [route]
+    Task { @MainActor in
+      homeHealthPath = [route]
+    }
   }
 }
 
@@ -89,10 +89,10 @@ enum GooseAppTab: String, CaseIterable, Identifiable {
 
   var title: String {
     switch self {
-    case .home: "Home"
-    case .health: "Health"
-    case .coach: "Coach"
-    case .more: "More"
+    case .home: String(localized: "Home")
+    case .health: String(localized: "Health")
+    case .coach: String(localized: "Coach")
+    case .more: String(localized: "More")
     }
   }
 

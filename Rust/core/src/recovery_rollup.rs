@@ -1187,13 +1187,12 @@ fn rolling_average(
                 .map(|value| (row.daily_metric_id.as_str(), value))
         })
         .collect::<Vec<_>>();
-    if let Some(current) = current {
-        if !values
+    if let Some(current) = current
+        && !values
             .iter()
             .any(|(metric_id, _)| *metric_id == current.metric_id)
-        {
-            values.push((current.metric_id.as_str(), current.resting_hr_bpm));
-        }
+    {
+        values.push((current.metric_id.as_str(), current.resting_hr_bpm));
     }
     let sample_count = values.len();
     let average_bpm = if values.is_empty() {
@@ -1362,12 +1361,12 @@ fn validate_rhr_validation_options(
     if !options.tolerance_bpm.is_finite() || options.tolerance_bpm < 0.0 {
         return Err(GooseError::message("tolerance_bpm must be nonnegative"));
     }
-    if let Some(value) = options.official_whoop_resting_hr_bpm {
-        if !value.is_finite() || value <= 0.0 {
-            return Err(GooseError::message(
-                "official_whoop_resting_hr_bpm must be positive",
-            ));
-        }
+    if let Some(value) = options.official_whoop_resting_hr_bpm
+        && (!value.is_finite() || value <= 0.0)
+    {
+        return Err(GooseError::message(
+            "official_whoop_resting_hr_bpm must be positive",
+        ));
     }
     Ok(())
 }
@@ -1408,7 +1407,7 @@ fn round_1(value: f64) -> f64 {
 fn median_f64(mut values: Vec<f64>) -> f64 {
     values.sort_by(|left, right| left.total_cmp(right));
     let mid = values.len() / 2;
-    if values.len() % 2 == 0 {
+    if values.len().is_multiple_of(2) {
         (values[mid - 1] + values[mid]) / 2.0
     } else {
         values[mid]

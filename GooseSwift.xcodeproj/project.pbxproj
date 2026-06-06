@@ -3,8 +3,179 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* GooseSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* GooseSwiftApp.swift */; };
+		A10000000000000000000002 /* GooseAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* GooseAppModel.swift */; };
+		A10000000000000000000003 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* RootView.swift */; };
+		A10000000000000000000004 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* OnboardingView.swift */; };
+		A10000000000000000000005 /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* ConnectionView.swift */; };
+		A10000000000000000000006 /* GooseRustBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* GooseRustBridge.swift */; };
+		A10000000000000000000007 /* GooseHello.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* GooseHello.swift */; };
+		A10000000000000000000008 /* GooseBLEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* GooseBLEClient.swift */; };
+		A10000000000000000000009 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CoreBluetooth.framework */; };
+		A1000000000000000000000A /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* DeviceView.swift */; };
+		A1000000000000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* Assets.xcassets */; };
+		A1000000000000000000000C /* AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* AppShellView.swift */; };
+		A1000000000000000000000D /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* LiveActivityView.swift */; };
+		A1000000000000000000000E /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* CoreLocation.framework */; };
+		A1000000000000000000000F /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* MapKit.framework */; };
+		A10000000000000000000010 /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* HealthView.swift */; };
+		A10000000000000000000011 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* AppRouter.swift */; };
+		A10000000000000000000012 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* HealthKit.framework */; };
+		A10000000000000000000013 /* CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* CoachView.swift */; };
+		A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* HealthKitSleepImporter.swift */; };
+		A10000000000000000000019 /* OnboardingPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* OnboardingPersistence.swift */; };
+		A1000000000000000000001A /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* MoreView.swift */; };
+		A1000000000000000000001B /* CodexEmbeddedAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* CodexEmbeddedAuth.swift */; };
+		A10000000000000000000023 /* GooseTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* GooseTheme.swift */; };
+		A10000000000000000000025 /* CodexCoachSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* CodexCoachSupport.swift */; };
+		A10000000000000000000026 /* OpenAICoachChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* OpenAICoachChat.swift */; };
+		A10000000000000000000027 /* CoachTips.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* CoachTips.swift */; };
+		A10000000000000000000028 /* CoachSignInScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* CoachSignInScreen.swift */; };
+		A10000000000000000000029 /* CoachChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* CoachChatScreen.swift */; };
+		A1000000000000000000002A /* CoachMessageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* CoachMessageViews.swift */; };
+		A1000000000000000000002B /* CoachComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* CoachComposer.swift */; };
+		A1000000000000000000002C /* CoachChatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002C /* CoachChatTypes.swift */; };
+		A1000000000000000000002D /* OpenAICoachResponsesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002D /* OpenAICoachResponsesClient.swift */; };
+		A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* CoachLocalToolContext.swift */; };
+		A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000041 /* HealthKitFullImporter.swift */; };
+		B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
+		B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* WorkoutLiveActivityController.swift */; };
+		B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */; };
+		B10000000000000000000004 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
+		B10000000000000000000005 /* GooseWorkoutLiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C10000000000000000000001 /* HealthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* HealthModels.swift */; };
+		C10000000000000000000002 /* HealthScoreDateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000002 /* HealthScoreDateViews.swift */; };
+		C10000000000000000000003 /* HealthDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* HealthDataTypes.swift */; };
+		C10000000000000000000004 /* HealthDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* HealthDataStore.swift */; };
+		C10000000000000000000005 /* HealthDashboardViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000005 /* HealthDashboardViews.swift */; };
+		C10000000000000000000006 /* HealthRecoveryStressViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000006 /* HealthRecoveryStressViews.swift */; };
+		C10000000000000000000007 /* HealthMetricFamilyStrainViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */; };
+		C10000000000000000000008 /* HealthRecoveryWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000008 /* HealthRecoveryWidgets.swift */; };
+		C10000000000000000000009 /* HealthSleepOverviewViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000009 /* HealthSleepOverviewViews.swift */; };
+		C1000000000000000000000A /* HealthSleepTrendViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000A /* HealthSleepTrendViews.swift */; };
+		C1000000000000000000000B /* HealthSleepSheetsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000B /* HealthSleepSheetsViews.swift */; };
+		C1000000000000000000000C /* HealthCardioViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000C /* HealthCardioViews.swift */; };
+		C1000000000000000000000D /* HealthSupplementalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000D /* HealthSupplementalViews.swift */; };
+		C1000000000000000000000E /* HealthPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000E /* HealthPreviews.swift */; };
+		C10000000000000000000101 /* HealthDataStore+PacketInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */; };
+		C10000000000000000000102 /* HealthDataStore+Snapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000102 /* HealthDataStore+Snapshots.swift */; };
+		C10000000000000000000103 /* HealthDataStore+StressEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */; };
+		C10000000000000000000104 /* HealthDataStore+Vitals.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000104 /* HealthDataStore+Vitals.swift */; };
+		C10000000000000000000105 /* HealthDataStore+Trends.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000105 /* HealthDataStore+Trends.swift */; };
+		C10000000000000000000106 /* HealthDataStore+CoachSummaries.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */; };
+		C10000000000000000000107 /* HealthDataStore+Cardio.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000107 /* HealthDataStore+Cardio.swift */; };
+		C10000000000000000000108 /* HealthDataStore+Sleep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000108 /* HealthDataStore+Sleep.swift */; };
+		C10000000000000000000109 /* HealthDataStore+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000109 /* HealthDataStore+Utilities.swift */; };
+		C1000000000000000000010A /* HealthDataStore+StaticSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */; };
+		D10000000000000000000001 /* MoreRouteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* MoreRouteModels.swift */; };
+		D10000000000000000000002 /* MoreProfileViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000002 /* MoreProfileViews.swift */; };
+		D10000000000000000000003 /* MoreDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000003 /* MoreDataStore.swift */; };
+		D10000000000000000000004 /* GooseLocalDataExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000004 /* GooseLocalDataExporter.swift */; };
+		D10000000000000000000005 /* MoreCaptureViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000005 /* MoreCaptureViews.swift */; };
+		D10000000000000000000006 /* MoreRawExportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000006 /* MoreRawExportViews.swift */; };
+		D10000000000000000000007 /* MoreDebugViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000007 /* MoreDebugViews.swift */; };
+		D10000000000000000000008 /* MoreInfoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000008 /* MoreInfoViews.swift */; };
+		D10000000000000000000009 /* OnboardingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000009 /* OnboardingModels.swift */; };
+		D1000000000000000000000A /* OnboardingPermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000A /* OnboardingPermissions.swift */; };
+		D1000000000000000000000B /* OnboardingStepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000B /* OnboardingStepViews.swift */; };
+		D1000000000000000000000C /* OnboardingKeyboardDismiss.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000C /* OnboardingKeyboardDismiss.swift */; };
+		D1000000000000000000000D /* ActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000D /* ActivityModels.swift */; };
+		D1000000000000000000000E /* ActivitySessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000E /* ActivitySessionModel.swift */; };
+		D1000000000000000000000F /* ActivityLocationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000F /* ActivityLocationTracker.swift */; };
+		D10000000000000000000010 /* LiveActivityContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000010 /* LiveActivityContentView.swift */; };
+		D10000000000000000000011 /* FitnessLiveWorkoutViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000011 /* FitnessLiveWorkoutViews.swift */; };
+		D10000000000000000000012 /* FitnessControlViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000012 /* FitnessControlViews.swift */; };
+		D10000000000000000000013 /* FitnessSummaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000013 /* FitnessSummaryViews.swift */; };
+		D10000000000000000000014 /* FitnessFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000014 /* FitnessFormatting.swift */; };
+		D10000000000000000000017 /* NotificationFrameParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000017 /* NotificationFrameParsing.swift */; };
+		D10000000000000000000018 /* CaptureFrameWriteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000018 /* CaptureFrameWriteQueue.swift */; };
+		D10000000000000000000019 /* OvernightSQLiteMirrorQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */; };
+		D1000000000000000000001A /* OvernightRawNotificationSpool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001A /* OvernightRawNotificationSpool.swift */; };
+		D1000000000000000000001B /* HeartRateSeriesStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001B /* HeartRateSeriesStores.swift */; };
+		D1000000000000000000001C /* ActivityPersistenceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001C /* ActivityPersistenceTypes.swift */; };
+		D1000000000000000000001D /* HealthPacketCaptureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001D /* HealthPacketCaptureTypes.swift */; };
+		D1000000000000000000001E /* WhoopEventSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001E /* WhoopEventSamples.swift */; };
+		D1000000000000000000001F /* HistoryCandidateSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001F /* HistoryCandidateSamples.swift */; };
+		D10000000000000000000020 /* MovementPacketSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000020 /* MovementPacketSamples.swift */; };
+		D10000000000000000000021 /* PassiveActivityDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000021 /* PassiveActivityDetector.swift */; };
+		D10000000000000000000022 /* HomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000022 /* HomeDashboardView.swift */; };
+		D10000000000000000000023 /* HomeScoreViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000023 /* HomeScoreViews.swift */; };
+		D10000000000000000000024 /* HomeHealthMonitorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000024 /* HomeHealthMonitorViews.swift */; };
+		D10000000000000000000025 /* HomeTimelineViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000025 /* HomeTimelineViews.swift */; };
+		D10000000000000000000026 /* HomeFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000026 /* HomeFormatting.swift */; };
+		D10000000000000000000027 /* SleepV2PaletteViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000027 /* SleepV2PaletteViews.swift */; };
+		D10000000000000000000028 /* SleepV2InsightViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000028 /* SleepV2InsightViews.swift */; };
+		D10000000000000000000029 /* SleepV2ScheduleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000029 /* SleepV2ScheduleViews.swift */; };
+		D1000000000000000000002A /* SleepV2TimelineViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002A /* SleepV2TimelineViews.swift */; };
+		D1000000000000000000002B /* SleepV2TrendPresentationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */; };
+		D1000000000000000000002C /* SleepBridgeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002C /* SleepBridgeViews.swift */; };
+		D1000000000000000000002D /* SleepDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002D /* SleepDetailViews.swift */; };
+		D1000000000000000000002E /* HealthChartPrimitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002E /* HealthChartPrimitives.swift */; };
+		D1000000000000000000002F /* HealthStressCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002F /* HealthStressCharts.swift */; };
+		D10000000000000000000030 /* SleepV2BevelTrendViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000030 /* SleepV2BevelTrendViews.swift */; };
+		D10000000000000000000031 /* SleepV2BevelAnalysisViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */; };
+		D10000000000000000000032 /* GooseBLETypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000032 /* GooseBLETypes.swift */; };
+		D10000000000000000000033 /* GooseBLEClient+UserActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000033 /* GooseBLEClient+UserActions.swift */; };
+		D10000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift */; };
+		D10000000000000000000035 /* GooseBLEClient+Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000035 /* GooseBLEClient+Commands.swift */; };
+		D10000000000000000000036 /* GooseBLEClient+DebugAndSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000036 /* GooseBLEClient+DebugAndSync.swift */; };
+		D10000000000000000000037 /* GooseBLEClient+Parsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000037 /* GooseBLEClient+Parsing.swift */; };
+		D10000000000000000000038 /* GooseBLEClient+CentralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */; };
+		D10000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */; };
+		D1000000000000000000003A /* GooseAppModel+Lifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */; };
+		D1000000000000000000003B /* GooseAppModel+OvernightRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */; };
+		D1000000000000000000003C /* GooseAppModel+OvernightState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003C /* GooseAppModel+OvernightState.swift */; };
+		D1000000000000000000003D /* GooseAppModel+OvernightRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */; };
+		D1000000000000000000003E /* GooseAppModel+HealthCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */; };
+		D1000000000000000000003F /* GooseAppModel+ActivityRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */; };
+		D10000000000000000000040 /* PacketUIStateAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000040 /* PacketUIStateAggregator.swift */; };
+		D10000000000000000000041 /* GooseAppModel+NotificationPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */; };
+		D10000000000000000000042 /* GooseAppModel+PacketPublishing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */; };
+		D10000000000000000000043 /* GooseAppModel+ActivityTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */; };
+		D10000000000000000000044 /* GooseLocalDataExporter+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */; };
+		D10000000000000000000045 /* GooseLocalDataExporter+Metrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */; };
+		D10000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */; };
+		D10000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift */; };
+		D10000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift */; };
+		D10000000000000000000049 /* MoreDataStore+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000049 /* MoreDataStore+Validation.swift */; };
+		D1000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift */; };
+		D10000000000000000000050 /* WhoopDataSignalPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000050 /* WhoopDataSignalPipeline.swift */; };
+		D10000000000000000000051 /* BLEUIStateAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000051 /* BLEUIStateAggregator.swift */; };
+		D10000000000000000000052 /* PacketMonitorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000052 /* PacketMonitorModel.swift */; };
+		D10000000000000000000053 /* GooseMessageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000053 /* GooseMessageStore.swift */; };
+		D10000000000000000000054 /* GooseUploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000054 /* GooseUploadService.swift */; };
+		D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000055 /* RemoteServerPersistence.swift */; };
+		D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000056 /* MoreRemoteServerViews.swift */; };
+		D10000000000000000000057 /* GooseAppModel+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000057 /* GooseAppModel+Upload.swift */; };
+		D10000000000000000000058 /* GooseBLEClient+HRMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000058 /* GooseBLEClient+HRMonitor.swift */; };
+		D10000000000000000000059 /* GooseBLEReconnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000059 /* GooseBLEReconnect.swift */; };
+		D1000000000000000000005A /* HRMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005A /* HRMonitorView.swift */; };
+		D1000000000000000000005B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005B /* Localizable.xcstrings */; };
+		D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000005C /* LocalizedStatusStrings.swift */; };
+		E1000000000000000000001 /* CoachProviderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000001 /* CoachProviderProtocol.swift */; };
+		E1000000000000000000002 /* CoachChatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000002 /* CoachChatModel.swift */; };
+		E1000000000000000000003 /* ChatGPTCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003 /* ChatGPTCoachProvider.swift */; };
+		E1000000000000000000004 /* ClaudeCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000004 /* ClaudeCoachProvider.swift */; };
+		E1000000000000000000005 /* CustomEndpointCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000005 /* CustomEndpointCoachProvider.swift */; };
+		E1000000000000000000006 /* GeminiCoachProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000006 /* GeminiCoachProvider.swift */; };
+		E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000007 /* GeminiOAuthWebView.swift */; };
+		E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000008 /* CoachSettingsSheet.swift */; };
+		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
+		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
+		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
+		T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000006 /* GooseUploadServiceTests.swift */; };
+		T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000007 /* HRMonitorStateTests.swift */; };
+		T10000000000000000000006 /* CoachProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000008 /* CoachProviderTests.swift */; };
+		T10000000000000000000007 /* CoachProviderRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000009 /* CoachProviderRegistryTests.swift */; };
+		T10000000000000000000008 /* CoachKeychainTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000A /* CoachKeychainTests.swift */; };
+		T10000000000000000000009 /* ClaudeProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000B /* ClaudeProviderTests.swift */; };
+		T1000000000000000000000A /* CustomEndpointProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000C /* CustomEndpointProviderTests.swift */; };
+		T1000000000000000000000B /* GeminiProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000D /* GeminiProviderTests.swift */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		B70000000000000000000001 /* PBXContainerItemProxy */ = {
@@ -17,209 +188,28 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		B60000000000000000000003 /* Embed App Extensions */ = {
+		B60000000000000000000003 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				B10000000000000000000005 /* GooseWorkoutLiveActivityExtension.appex in Embed App Extensions */,
+				B10000000000000000000005 /* GooseWorkoutLiveActivityExtension.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
-/* Begin PBXBuildFile section */
-		A10000000000000000000001 /* GooseSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* GooseSwiftApp.swift */; };
-		A10000000000000000000002 /* GooseAppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* GooseAppModel.swift */; };
-			D1000000000000000000003A /* GooseAppModel+Lifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */; };
-			D1000000000000000000003B /* GooseAppModel+OvernightRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */; };
-			D1000000000000000000003C /* GooseAppModel+OvernightState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003C /* GooseAppModel+OvernightState.swift */; };
-			D1000000000000000000003D /* GooseAppModel+OvernightRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */; };
-			D1000000000000000000003E /* GooseAppModel+HealthCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */; };
-			D1000000000000000000003F /* GooseAppModel+ActivityRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */; };
-			D10000000000000000000041 /* GooseAppModel+NotificationPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */; };
-			D10000000000000000000042 /* GooseAppModel+PacketPublishing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */; };
-			D10000000000000000000043 /* GooseAppModel+ActivityTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */; };
-			D10000000000000000000017 /* NotificationFrameParsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000017 /* NotificationFrameParsing.swift */; };
-			D10000000000000000000018 /* CaptureFrameWriteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000018 /* CaptureFrameWriteQueue.swift */; };
-			D10000000000000000000019 /* OvernightSQLiteMirrorQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */; };
-			D1000000000000000000001A /* OvernightRawNotificationSpool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001A /* OvernightRawNotificationSpool.swift */; };
-			D1000000000000000000001B /* HeartRateSeriesStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001B /* HeartRateSeriesStores.swift */; };
-			D10000000000000000000040 /* PacketUIStateAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000040 /* PacketUIStateAggregator.swift */; };
-			D10000000000000000000051 /* BLEUIStateAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000051 /* BLEUIStateAggregator.swift */; };
-			D10000000000000000000050 /* WhoopDataSignalPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000050 /* WhoopDataSignalPipeline.swift */; };
-			D10000000000000000000052 /* PacketMonitorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000052 /* PacketMonitorModel.swift */; };
-			D10000000000000000000053 /* GooseMessageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000053 /* GooseMessageStore.swift */; };
-			D1000000000000000000001C /* ActivityPersistenceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001C /* ActivityPersistenceTypes.swift */; };
-			D1000000000000000000001D /* HealthPacketCaptureTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001D /* HealthPacketCaptureTypes.swift */; };
-			D1000000000000000000001E /* WhoopEventSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001E /* WhoopEventSamples.swift */; };
-			D1000000000000000000001F /* HistoryCandidateSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000001F /* HistoryCandidateSamples.swift */; };
-			D10000000000000000000020 /* MovementPacketSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000020 /* MovementPacketSamples.swift */; };
-			D10000000000000000000021 /* PassiveActivityDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000021 /* PassiveActivityDetector.swift */; };
-		A10000000000000000000003 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* RootView.swift */; };
-		A10000000000000000000004 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* OnboardingView.swift */; };
-			D10000000000000000000009 /* OnboardingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000009 /* OnboardingModels.swift */; };
-			D1000000000000000000000A /* OnboardingPermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000A /* OnboardingPermissions.swift */; };
-			D1000000000000000000000B /* OnboardingStepViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000B /* OnboardingStepViews.swift */; };
-			D1000000000000000000000C /* OnboardingKeyboardDismiss.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000C /* OnboardingKeyboardDismiss.swift */; };
-		A10000000000000000000005 /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* ConnectionView.swift */; };
-		A10000000000000000000006 /* GooseRustBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* GooseRustBridge.swift */; };
-		A10000000000000000000007 /* GooseHello.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* GooseHello.swift */; };
-		A10000000000000000000008 /* GooseBLEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* GooseBLEClient.swift */; };
-			D10000000000000000000032 /* GooseBLETypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000032 /* GooseBLETypes.swift */; };
-			D10000000000000000000033 /* GooseBLEClient+UserActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000033 /* GooseBLEClient+UserActions.swift */; };
-			D10000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift */; };
-			D10000000000000000000035 /* GooseBLEClient+Commands.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000035 /* GooseBLEClient+Commands.swift */; };
-			D10000000000000000000036 /* GooseBLEClient+DebugAndSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000036 /* GooseBLEClient+DebugAndSync.swift */; };
-			D10000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift */; };
-			D10000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift */; };
-			D10000000000000000000037 /* GooseBLEClient+Parsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000037 /* GooseBLEClient+Parsing.swift */; };
-			D10000000000000000000038 /* GooseBLEClient+CentralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */; };
-			D10000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */; };
-		A10000000000000000000009 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CoreBluetooth.framework */; };
-		A1000000000000000000000A /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* DeviceView.swift */; };
-		A1000000000000000000000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* Assets.xcassets */; };
-		A1000000000000000000000C /* AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* AppShellView.swift */; };
-			D10000000000000000000022 /* HomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000022 /* HomeDashboardView.swift */; };
-			D10000000000000000000023 /* HomeScoreViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000023 /* HomeScoreViews.swift */; };
-			D10000000000000000000024 /* HomeHealthMonitorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000024 /* HomeHealthMonitorViews.swift */; };
-			D10000000000000000000025 /* HomeTimelineViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000025 /* HomeTimelineViews.swift */; };
-			D10000000000000000000026 /* HomeFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000026 /* HomeFormatting.swift */; };
-		A1000000000000000000000D /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* LiveActivityView.swift */; };
-			D1000000000000000000000D /* ActivityModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000D /* ActivityModels.swift */; };
-			D1000000000000000000000E /* ActivitySessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000E /* ActivitySessionModel.swift */; };
-			D1000000000000000000000F /* ActivityLocationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000000F /* ActivityLocationTracker.swift */; };
-			D10000000000000000000010 /* LiveActivityContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000010 /* LiveActivityContentView.swift */; };
-			D10000000000000000000011 /* FitnessLiveWorkoutViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000011 /* FitnessLiveWorkoutViews.swift */; };
-			D10000000000000000000012 /* FitnessControlViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000012 /* FitnessControlViews.swift */; };
-			D10000000000000000000013 /* FitnessSummaryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000013 /* FitnessSummaryViews.swift */; };
-			D10000000000000000000014 /* FitnessFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000014 /* FitnessFormatting.swift */; };
-		A10000000000000000000010 /* HealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* HealthView.swift */; };
-		A1000000000000000000000E /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* CoreLocation.framework */; };
-		A1000000000000000000000F /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* MapKit.framework */; };
-		A10000000000000000000011 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* AppRouter.swift */; };
-		A10000000000000000000012 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* HealthKit.framework */; };
-			A10000000000000000000013 /* CoachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* CoachView.swift */; };
-			A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* HealthKitSleepImporter.swift */; };
-			A10000000000000000000019 /* OnboardingPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* OnboardingPersistence.swift */; };
-			A1000000000000000000001A /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* MoreView.swift */; };
-			D10000000000000000000001 /* MoreRouteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* MoreRouteModels.swift */; };
-			D10000000000000000000002 /* MoreProfileViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000002 /* MoreProfileViews.swift */; };
-			D10000000000000000000003 /* MoreDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000003 /* MoreDataStore.swift */; };
-			D10000000000000000000049 /* MoreDataStore+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000049 /* MoreDataStore+Validation.swift */; };
-			D1000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift */; };
-			D10000000000000000000004 /* GooseLocalDataExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000004 /* GooseLocalDataExporter.swift */; };
-			D10000000000000000000044 /* GooseLocalDataExporter+Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */; };
-			D10000000000000000000045 /* GooseLocalDataExporter+Metrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */; };
-			D10000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */; };
-			D10000000000000000000005 /* MoreCaptureViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000005 /* MoreCaptureViews.swift */; };
-			D10000000000000000000006 /* MoreRawExportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000006 /* MoreRawExportViews.swift */; };
-			D10000000000000000000007 /* MoreDebugViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000007 /* MoreDebugViews.swift */; };
-			D10000000000000000000008 /* MoreInfoViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000008 /* MoreInfoViews.swift */; };
-			A1000000000000000000001B /* CodexEmbeddedAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* CodexEmbeddedAuth.swift */; };
-			A10000000000000000000023 /* GooseTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* GooseTheme.swift */; };
-			A10000000000000000000025 /* CodexCoachSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* CodexCoachSupport.swift */; };
-			A10000000000000000000026 /* OpenAICoachChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* OpenAICoachChat.swift */; };
-			A10000000000000000000027 /* CoachTips.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* CoachTips.swift */; };
-			A10000000000000000000028 /* CoachSignInScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* CoachSignInScreen.swift */; };
-			A10000000000000000000029 /* CoachChatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* CoachChatScreen.swift */; };
-			A1000000000000000000002A /* CoachMessageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* CoachMessageViews.swift */; };
-			A1000000000000000000002B /* CoachComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* CoachComposer.swift */; };
-			A1000000000000000000002C /* CoachChatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002C /* CoachChatTypes.swift */; };
-			A1000000000000000000002D /* OpenAICoachResponsesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002D /* OpenAICoachResponsesClient.swift */; };
-			A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* CoachLocalToolContext.swift */; };
-				B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
-			B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* WorkoutLiveActivityController.swift */; };
-			B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */; };
-			B10000000000000000000004 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */; };
-			B10000000000000000000005 /* GooseWorkoutLiveActivityExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-			C10000000000000000000001 /* HealthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* HealthModels.swift */; };
-			C10000000000000000000002 /* HealthScoreDateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000002 /* HealthScoreDateViews.swift */; };
-			C10000000000000000000003 /* HealthDataTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* HealthDataTypes.swift */; };
-			C10000000000000000000004 /* HealthDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* HealthDataStore.swift */; };
-			C10000000000000000000005 /* HealthDashboardViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000005 /* HealthDashboardViews.swift */; };
-			C10000000000000000000006 /* HealthRecoveryStressViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000006 /* HealthRecoveryStressViews.swift */; };
-			C10000000000000000000007 /* HealthMetricFamilyStrainViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */; };
-			C10000000000000000000008 /* HealthRecoveryWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000008 /* HealthRecoveryWidgets.swift */; };
-			C10000000000000000000009 /* HealthSleepOverviewViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000009 /* HealthSleepOverviewViews.swift */; };
-			D10000000000000000000027 /* SleepV2PaletteViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000027 /* SleepV2PaletteViews.swift */; };
-			D10000000000000000000028 /* SleepV2InsightViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000028 /* SleepV2InsightViews.swift */; };
-			D10000000000000000000029 /* SleepV2ScheduleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000029 /* SleepV2ScheduleViews.swift */; };
-			D1000000000000000000002A /* SleepV2TimelineViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002A /* SleepV2TimelineViews.swift */; };
-			D1000000000000000000002B /* SleepV2TrendPresentationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */; };
-			D1000000000000000000002C /* SleepBridgeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002C /* SleepBridgeViews.swift */; };
-			D1000000000000000000002D /* SleepDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002D /* SleepDetailViews.swift */; };
-			D1000000000000000000002E /* HealthChartPrimitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002E /* HealthChartPrimitives.swift */; };
-			D1000000000000000000002F /* HealthStressCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2000000000000000000002F /* HealthStressCharts.swift */; };
-			D10000000000000000000030 /* SleepV2BevelTrendViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000030 /* SleepV2BevelTrendViews.swift */; };
-			D10000000000000000000031 /* SleepV2BevelAnalysisViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */; };
-			C1000000000000000000000A /* HealthSleepTrendViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000A /* HealthSleepTrendViews.swift */; };
-			C1000000000000000000000B /* HealthSleepSheetsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000B /* HealthSleepSheetsViews.swift */; };
-			C1000000000000000000000C /* HealthCardioViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000C /* HealthCardioViews.swift */; };
-			C1000000000000000000000D /* HealthSupplementalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000D /* HealthSupplementalViews.swift */; };
-			C1000000000000000000000E /* HealthPreviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000E /* HealthPreviews.swift */; };
-				C10000000000000000000101 /* HealthDataStore+PacketInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */; };
-			C10000000000000000000102 /* HealthDataStore+Snapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000102 /* HealthDataStore+Snapshots.swift */; };
-			C10000000000000000000103 /* HealthDataStore+StressEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */; };
-			C10000000000000000000104 /* HealthDataStore+Vitals.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000104 /* HealthDataStore+Vitals.swift */; };
-			C10000000000000000000105 /* HealthDataStore+Trends.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000105 /* HealthDataStore+Trends.swift */; };
-			C10000000000000000000106 /* HealthDataStore+CoachSummaries.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */; };
-			C10000000000000000000107 /* HealthDataStore+Cardio.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000107 /* HealthDataStore+Cardio.swift */; };
-			C10000000000000000000108 /* HealthDataStore+Sleep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000108 /* HealthDataStore+Sleep.swift */; };
-			C10000000000000000000109 /* HealthDataStore+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000109 /* HealthDataStore+Utilities.swift */; };
-			C1000000000000000000010A /* HealthDataStore+StaticSnapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */; };
-	/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* GooseSwiftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseSwiftApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* GooseAppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseAppModel.swift; sourceTree = "<group>"; };
-			D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+Lifecycle.swift"; sourceTree = "<group>"; };
-			D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRecovery.swift"; sourceTree = "<group>"; };
-			D2000000000000000000003C /* GooseAppModel+OvernightState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightState.swift"; sourceTree = "<group>"; };
-			D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRun.swift"; sourceTree = "<group>"; };
-			D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+HealthCapture.swift"; sourceTree = "<group>"; };
-			D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityRecording.swift"; sourceTree = "<group>"; };
-			D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+NotificationPipeline.swift"; sourceTree = "<group>"; };
-			D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+PacketPublishing.swift"; sourceTree = "<group>"; };
-			D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityTimeline.swift"; sourceTree = "<group>"; };
-			D20000000000000000000017 /* NotificationFrameParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFrameParsing.swift; sourceTree = "<group>"; };
-			D20000000000000000000018 /* CaptureFrameWriteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFrameWriteQueue.swift; sourceTree = "<group>"; };
-			D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightSQLiteMirrorQueue.swift; sourceTree = "<group>"; };
-			D2000000000000000000001A /* OvernightRawNotificationSpool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightRawNotificationSpool.swift; sourceTree = "<group>"; };
-			D2000000000000000000001B /* HeartRateSeriesStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSeriesStores.swift; sourceTree = "<group>"; };
-			D20000000000000000000040 /* PacketUIStateAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketUIStateAggregator.swift; sourceTree = "<group>"; };
-			D20000000000000000000051 /* BLEUIStateAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEUIStateAggregator.swift; sourceTree = "<group>"; };
-			D20000000000000000000050 /* WhoopDataSignalPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDataSignalPipeline.swift; sourceTree = "<group>"; };
-			D20000000000000000000052 /* PacketMonitorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketMonitorModel.swift; sourceTree = "<group>"; };
-			D20000000000000000000053 /* GooseMessageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseMessageStore.swift; sourceTree = "<group>"; };
-			D2000000000000000000001C /* ActivityPersistenceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPersistenceTypes.swift; sourceTree = "<group>"; };
-			D2000000000000000000001D /* HealthPacketCaptureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPacketCaptureTypes.swift; sourceTree = "<group>"; };
-			D2000000000000000000001E /* WhoopEventSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopEventSamples.swift; sourceTree = "<group>"; };
-			D2000000000000000000001F /* HistoryCandidateSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCandidateSamples.swift; sourceTree = "<group>"; };
-			D20000000000000000000020 /* MovementPacketSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementPacketSamples.swift; sourceTree = "<group>"; };
-			D20000000000000000000021 /* PassiveActivityDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassiveActivityDetector.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-			D20000000000000000000009 /* OnboardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingModels.swift; sourceTree = "<group>"; };
-			D2000000000000000000000A /* OnboardingPermissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPermissions.swift; sourceTree = "<group>"; };
-			D2000000000000000000000B /* OnboardingStepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStepViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000000C /* OnboardingKeyboardDismiss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingKeyboardDismiss.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* GooseRustBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseRustBridge.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* GooseHello.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseHello.swift; sourceTree = "<group>"; };
 		A20000000000000000000008 /* GooseBLEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEClient.swift; sourceTree = "<group>"; };
-			D20000000000000000000032 /* GooseBLETypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypes.swift; sourceTree = "<group>"; };
-			D20000000000000000000033 /* GooseBLEClient+UserActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+UserActions.swift"; sourceTree = "<group>"; };
-			D20000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+VitalsAndLogging.swift"; sourceTree = "<group>"; };
-			D20000000000000000000035 /* GooseBLEClient+Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+Commands.swift"; sourceTree = "<group>"; };
-			D20000000000000000000036 /* GooseBLEClient+DebugAndSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+DebugAndSync.swift"; sourceTree = "<group>"; };
-			D20000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HistoricalCommands.swift"; sourceTree = "<group>"; };
-			D20000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HistoricalHandlers.swift"; sourceTree = "<group>"; };
-			D20000000000000000000037 /* GooseBLEClient+Parsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+Parsing.swift"; sourceTree = "<group>"; };
-			D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+CentralDelegate.swift"; sourceTree = "<group>"; };
-			D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+PeripheralDelegate.swift"; sourceTree = "<group>"; };
 		A20000000000000000000009 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		A2000000000000000000000A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000B /* GooseSwift-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GooseSwift-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -228,96 +218,166 @@
 		A2000000000000000000000E /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000010 /* AppShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShellView.swift; sourceTree = "<group>"; };
-			D20000000000000000000022 /* HomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardView.swift; sourceTree = "<group>"; };
-			D20000000000000000000023 /* HomeScoreViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScoreViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000024 /* HomeHealthMonitorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHealthMonitorViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000025 /* HomeTimelineViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTimelineViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000026 /* HomeFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFormatting.swift; sourceTree = "<group>"; };
 		A20000000000000000000011 /* LiveActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityView.swift; sourceTree = "<group>"; };
-			D2000000000000000000000D /* ActivityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityModels.swift; sourceTree = "<group>"; };
-			D2000000000000000000000E /* ActivitySessionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySessionModel.swift; sourceTree = "<group>"; };
-			D2000000000000000000000F /* ActivityLocationTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLocationTracker.swift; sourceTree = "<group>"; };
-			D20000000000000000000010 /* LiveActivityContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityContentView.swift; sourceTree = "<group>"; };
-			D20000000000000000000011 /* FitnessLiveWorkoutViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessLiveWorkoutViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000012 /* FitnessControlViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessControlViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000013 /* FitnessSummaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessSummaryViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000014 /* FitnessFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessFormatting.swift; sourceTree = "<group>"; };
-		A20000000000000000000014 /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		A20000000000000000000013 /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		A20000000000000000000014 /* HealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthView.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		A20000000000000000000017 /* GooseSwift.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GooseSwift.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000018 /* CoachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachView.swift; sourceTree = "<group>"; };
-			A2000000000000000000001B /* HealthKitSleepImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepImporter.swift; sourceTree = "<group>"; };
-			A2000000000000000000001F /* OnboardingPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPersistence.swift; sourceTree = "<group>"; };
-			A20000000000000000000020 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
-			D20000000000000000000001 /* MoreRouteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRouteModels.swift; sourceTree = "<group>"; };
-			D20000000000000000000002 /* MoreProfileViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreProfileViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000003 /* MoreDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreDataStore.swift; sourceTree = "<group>"; };
-			D20000000000000000000049 /* MoreDataStore+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MoreDataStore+Validation.swift"; sourceTree = "<group>"; };
-			D2000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+ActivitySnapshots.swift"; sourceTree = "<group>"; };
-			D20000000000000000000004 /* GooseLocalDataExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseLocalDataExporter.swift; sourceTree = "<group>"; };
-			D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Validation.swift"; sourceTree = "<group>"; };
-			D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Metrics.swift"; sourceTree = "<group>"; };
-			D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+FileSystem.swift"; sourceTree = "<group>"; };
-			D20000000000000000000005 /* MoreCaptureViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreCaptureViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000006 /* MoreRawExportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRawExportViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000007 /* MoreDebugViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreDebugViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000008 /* MoreInfoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreInfoViews.swift; sourceTree = "<group>"; };
-			A20000000000000000000021 /* CodexEmbeddedAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexEmbeddedAuth.swift; sourceTree = "<group>"; };
-			A20000000000000000000023 /* GooseTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseTheme.swift; sourceTree = "<group>"; };
-			A20000000000000000000025 /* CodexCoachSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexCoachSupport.swift; sourceTree = "<group>"; };
-			A20000000000000000000026 /* OpenAICoachChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICoachChat.swift; sourceTree = "<group>"; };
-			A20000000000000000000027 /* CoachTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTips.swift; sourceTree = "<group>"; };
-			A20000000000000000000028 /* CoachSignInScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSignInScreen.swift; sourceTree = "<group>"; };
-			A20000000000000000000029 /* CoachChatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatScreen.swift; sourceTree = "<group>"; };
-			A2000000000000000000002A /* CoachMessageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachMessageViews.swift; sourceTree = "<group>"; };
-			A2000000000000000000002B /* CoachComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachComposer.swift; sourceTree = "<group>"; };
-			A2000000000000000000002C /* CoachChatTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatTypes.swift; sourceTree = "<group>"; };
-			A2000000000000000000002D /* OpenAICoachResponsesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICoachResponsesClient.swift; sourceTree = "<group>"; };
-			A20000000000000000000040 /* CoachLocalToolContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLocalToolContext.swift; sourceTree = "<group>"; };
-				B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityAttributes.swift; sourceTree = "<group>"; };
-			B20000000000000000000002 /* WorkoutLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityController.swift; sourceTree = "<group>"; };
-			B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseWorkoutLiveActivityWidget.swift; sourceTree = "<group>"; };
-			B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = GooseWorkoutLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-			B20000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-			C20000000000000000000001 /* HealthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthModels.swift; sourceTree = "<group>"; };
-			C20000000000000000000002 /* HealthScoreDateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthScoreDateViews.swift; sourceTree = "<group>"; };
-			C20000000000000000000003 /* HealthDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataTypes.swift; sourceTree = "<group>"; };
-			C20000000000000000000004 /* HealthDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataStore.swift; sourceTree = "<group>"; };
-			C20000000000000000000005 /* HealthDashboardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardViews.swift; sourceTree = "<group>"; };
-			C20000000000000000000006 /* HealthRecoveryStressViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthRecoveryStressViews.swift; sourceTree = "<group>"; };
-			C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetricFamilyStrainViews.swift; sourceTree = "<group>"; };
-			C20000000000000000000008 /* HealthRecoveryWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthRecoveryWidgets.swift; sourceTree = "<group>"; };
-			C20000000000000000000009 /* HealthSleepOverviewViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepOverviewViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000027 /* SleepV2PaletteViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2PaletteViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000028 /* SleepV2InsightViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2InsightViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000029 /* SleepV2ScheduleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2ScheduleViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000002A /* SleepV2TimelineViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2TimelineViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2TrendPresentationViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000002C /* SleepBridgeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepBridgeViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000002D /* SleepDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDetailViews.swift; sourceTree = "<group>"; };
-			D2000000000000000000002E /* HealthChartPrimitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthChartPrimitives.swift; sourceTree = "<group>"; };
-			D2000000000000000000002F /* HealthStressCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthStressCharts.swift; sourceTree = "<group>"; };
-			D20000000000000000000030 /* SleepV2BevelTrendViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2BevelTrendViews.swift; sourceTree = "<group>"; };
-			D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2BevelAnalysisViews.swift; sourceTree = "<group>"; };
-			C2000000000000000000000A /* HealthSleepTrendViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepTrendViews.swift; sourceTree = "<group>"; };
-			C2000000000000000000000B /* HealthSleepSheetsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepSheetsViews.swift; sourceTree = "<group>"; };
-			C2000000000000000000000C /* HealthCardioViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardioViews.swift; sourceTree = "<group>"; };
-			C2000000000000000000000D /* HealthSupplementalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSupplementalViews.swift; sourceTree = "<group>"; };
-			C2000000000000000000000E /* HealthPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPreviews.swift; sourceTree = "<group>"; };
-				C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+PacketInputs.swift"; sourceTree = "<group>"; };
-			C20000000000000000000102 /* HealthDataStore+Snapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Snapshots.swift"; sourceTree = "<group>"; };
-			C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+StressEnergy.swift"; sourceTree = "<group>"; };
-			C20000000000000000000104 /* HealthDataStore+Vitals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Vitals.swift"; sourceTree = "<group>"; };
-			C20000000000000000000105 /* HealthDataStore+Trends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Trends.swift"; sourceTree = "<group>"; };
-			C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+CoachSummaries.swift"; sourceTree = "<group>"; };
-			C20000000000000000000107 /* HealthDataStore+Cardio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Cardio.swift"; sourceTree = "<group>"; };
-			C20000000000000000000108 /* HealthDataStore+Sleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Sleep.swift"; sourceTree = "<group>"; };
-			C20000000000000000000109 /* HealthDataStore+Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Utilities.swift"; sourceTree = "<group>"; };
-			C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+StaticSnapshots.swift"; sourceTree = "<group>"; };
-	/* End PBXFileReference section */
+		A2000000000000000000001B /* HealthKitSleepImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitSleepImporter.swift; sourceTree = "<group>"; };
+		A2000000000000000000001F /* OnboardingPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPersistence.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* CodexEmbeddedAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexEmbeddedAuth.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* GooseTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseTheme.swift; sourceTree = "<group>"; };
+		A20000000000000000000025 /* CodexCoachSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexCoachSupport.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* OpenAICoachChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICoachChat.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* CoachTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTips.swift; sourceTree = "<group>"; };
+		A20000000000000000000028 /* CoachSignInScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSignInScreen.swift; sourceTree = "<group>"; };
+		A20000000000000000000029 /* CoachChatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatScreen.swift; sourceTree = "<group>"; };
+		A2000000000000000000002A /* CoachMessageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachMessageViews.swift; sourceTree = "<group>"; };
+		A2000000000000000000002B /* CoachComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachComposer.swift; sourceTree = "<group>"; };
+		A2000000000000000000002C /* CoachChatTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatTypes.swift; sourceTree = "<group>"; };
+		A2000000000000000000002D /* OpenAICoachResponsesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICoachResponsesClient.swift; sourceTree = "<group>"; };
+		A20000000000000000000040 /* CoachLocalToolContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLocalToolContext.swift; sourceTree = "<group>"; };
+		A20000000000000000000041 /* HealthKitFullImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitFullImporter.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityAttributes.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* WorkoutLiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityController.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseWorkoutLiveActivityWidget.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GooseWorkoutLiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C20000000000000000000001 /* HealthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthModels.swift; sourceTree = "<group>"; };
+		C20000000000000000000002 /* HealthScoreDateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthScoreDateViews.swift; sourceTree = "<group>"; };
+		C20000000000000000000003 /* HealthDataTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataTypes.swift; sourceTree = "<group>"; };
+		C20000000000000000000004 /* HealthDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDataStore.swift; sourceTree = "<group>"; };
+		C20000000000000000000005 /* HealthDashboardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardViews.swift; sourceTree = "<group>"; };
+		C20000000000000000000006 /* HealthRecoveryStressViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthRecoveryStressViews.swift; sourceTree = "<group>"; };
+		C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetricFamilyStrainViews.swift; sourceTree = "<group>"; };
+		C20000000000000000000008 /* HealthRecoveryWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthRecoveryWidgets.swift; sourceTree = "<group>"; };
+		C20000000000000000000009 /* HealthSleepOverviewViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepOverviewViews.swift; sourceTree = "<group>"; };
+		C2000000000000000000000A /* HealthSleepTrendViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepTrendViews.swift; sourceTree = "<group>"; };
+		C2000000000000000000000B /* HealthSleepSheetsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSleepSheetsViews.swift; sourceTree = "<group>"; };
+		C2000000000000000000000C /* HealthCardioViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardioViews.swift; sourceTree = "<group>"; };
+		C2000000000000000000000D /* HealthSupplementalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSupplementalViews.swift; sourceTree = "<group>"; };
+		C2000000000000000000000E /* HealthPreviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPreviews.swift; sourceTree = "<group>"; };
+		C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+PacketInputs.swift"; sourceTree = "<group>"; };
+		C20000000000000000000102 /* HealthDataStore+Snapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Snapshots.swift"; sourceTree = "<group>"; };
+		C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+StressEnergy.swift"; sourceTree = "<group>"; };
+		C20000000000000000000104 /* HealthDataStore+Vitals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Vitals.swift"; sourceTree = "<group>"; };
+		C20000000000000000000105 /* HealthDataStore+Trends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Trends.swift"; sourceTree = "<group>"; };
+		C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+CoachSummaries.swift"; sourceTree = "<group>"; };
+		C20000000000000000000107 /* HealthDataStore+Cardio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Cardio.swift"; sourceTree = "<group>"; };
+		C20000000000000000000108 /* HealthDataStore+Sleep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Sleep.swift"; sourceTree = "<group>"; };
+		C20000000000000000000109 /* HealthDataStore+Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+Utilities.swift"; sourceTree = "<group>"; };
+		C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+StaticSnapshots.swift"; sourceTree = "<group>"; };
+		D20000000000000000000001 /* MoreRouteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRouteModels.swift; sourceTree = "<group>"; };
+		D20000000000000000000002 /* MoreProfileViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreProfileViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000003 /* MoreDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreDataStore.swift; sourceTree = "<group>"; };
+		D20000000000000000000004 /* GooseLocalDataExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseLocalDataExporter.swift; sourceTree = "<group>"; };
+		D20000000000000000000005 /* MoreCaptureViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreCaptureViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000006 /* MoreRawExportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRawExportViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000007 /* MoreDebugViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreDebugViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000008 /* MoreInfoViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreInfoViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000009 /* OnboardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingModels.swift; sourceTree = "<group>"; };
+		D2000000000000000000000A /* OnboardingPermissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPermissions.swift; sourceTree = "<group>"; };
+		D2000000000000000000000B /* OnboardingStepViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStepViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000000C /* OnboardingKeyboardDismiss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingKeyboardDismiss.swift; sourceTree = "<group>"; };
+		D2000000000000000000000D /* ActivityModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityModels.swift; sourceTree = "<group>"; };
+		D2000000000000000000000E /* ActivitySessionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySessionModel.swift; sourceTree = "<group>"; };
+		D2000000000000000000000F /* ActivityLocationTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLocationTracker.swift; sourceTree = "<group>"; };
+		D20000000000000000000010 /* LiveActivityContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityContentView.swift; sourceTree = "<group>"; };
+		D20000000000000000000011 /* FitnessLiveWorkoutViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessLiveWorkoutViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000012 /* FitnessControlViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessControlViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000013 /* FitnessSummaryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessSummaryViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000014 /* FitnessFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessFormatting.swift; sourceTree = "<group>"; };
+		D20000000000000000000017 /* NotificationFrameParsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationFrameParsing.swift; sourceTree = "<group>"; };
+		D20000000000000000000018 /* CaptureFrameWriteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureFrameWriteQueue.swift; sourceTree = "<group>"; };
+		D20000000000000000000019 /* OvernightSQLiteMirrorQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightSQLiteMirrorQueue.swift; sourceTree = "<group>"; };
+		D2000000000000000000001A /* OvernightRawNotificationSpool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightRawNotificationSpool.swift; sourceTree = "<group>"; };
+		D2000000000000000000001B /* HeartRateSeriesStores.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSeriesStores.swift; sourceTree = "<group>"; };
+		D2000000000000000000001C /* ActivityPersistenceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityPersistenceTypes.swift; sourceTree = "<group>"; };
+		D2000000000000000000001D /* HealthPacketCaptureTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthPacketCaptureTypes.swift; sourceTree = "<group>"; };
+		D2000000000000000000001E /* WhoopEventSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopEventSamples.swift; sourceTree = "<group>"; };
+		D2000000000000000000001F /* HistoryCandidateSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCandidateSamples.swift; sourceTree = "<group>"; };
+		D20000000000000000000020 /* MovementPacketSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementPacketSamples.swift; sourceTree = "<group>"; };
+		D20000000000000000000021 /* PassiveActivityDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassiveActivityDetector.swift; sourceTree = "<group>"; };
+		D20000000000000000000022 /* HomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardView.swift; sourceTree = "<group>"; };
+		D20000000000000000000023 /* HomeScoreViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScoreViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000024 /* HomeHealthMonitorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHealthMonitorViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000025 /* HomeTimelineViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTimelineViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000026 /* HomeFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFormatting.swift; sourceTree = "<group>"; };
+		D20000000000000000000027 /* SleepV2PaletteViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2PaletteViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000028 /* SleepV2InsightViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2InsightViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000029 /* SleepV2ScheduleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2ScheduleViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000002A /* SleepV2TimelineViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2TimelineViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2TrendPresentationViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000002C /* SleepBridgeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepBridgeViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000002D /* SleepDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDetailViews.swift; sourceTree = "<group>"; };
+		D2000000000000000000002E /* HealthChartPrimitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthChartPrimitives.swift; sourceTree = "<group>"; };
+		D2000000000000000000002F /* HealthStressCharts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthStressCharts.swift; sourceTree = "<group>"; };
+		D20000000000000000000030 /* SleepV2BevelTrendViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2BevelTrendViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepV2BevelAnalysisViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000032 /* GooseBLETypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypes.swift; sourceTree = "<group>"; };
+		D20000000000000000000033 /* GooseBLEClient+UserActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+UserActions.swift"; sourceTree = "<group>"; };
+		D20000000000000000000034 /* GooseBLEClient+VitalsAndLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+VitalsAndLogging.swift"; sourceTree = "<group>"; };
+		D20000000000000000000035 /* GooseBLEClient+Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+Commands.swift"; sourceTree = "<group>"; };
+		D20000000000000000000036 /* GooseBLEClient+DebugAndSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+DebugAndSync.swift"; sourceTree = "<group>"; };
+		D20000000000000000000037 /* GooseBLEClient+Parsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+Parsing.swift"; sourceTree = "<group>"; };
+		D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+CentralDelegate.swift"; sourceTree = "<group>"; };
+		D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+PeripheralDelegate.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003A /* GooseAppModel+Lifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+Lifecycle.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003B /* GooseAppModel+OvernightRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRecovery.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003C /* GooseAppModel+OvernightState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightState.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003D /* GooseAppModel+OvernightRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+OvernightRun.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003E /* GooseAppModel+HealthCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+HealthCapture.swift"; sourceTree = "<group>"; };
+		D2000000000000000000003F /* GooseAppModel+ActivityRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityRecording.swift"; sourceTree = "<group>"; };
+		D20000000000000000000040 /* PacketUIStateAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketUIStateAggregator.swift; sourceTree = "<group>"; };
+		D20000000000000000000041 /* GooseAppModel+NotificationPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+NotificationPipeline.swift"; sourceTree = "<group>"; };
+		D20000000000000000000042 /* GooseAppModel+PacketPublishing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+PacketPublishing.swift"; sourceTree = "<group>"; };
+		D20000000000000000000043 /* GooseAppModel+ActivityTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+ActivityTimeline.swift"; sourceTree = "<group>"; };
+		D20000000000000000000044 /* GooseLocalDataExporter+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Validation.swift"; sourceTree = "<group>"; };
+		D20000000000000000000045 /* GooseLocalDataExporter+Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+Metrics.swift"; sourceTree = "<group>"; };
+		D20000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseLocalDataExporter+FileSystem.swift"; sourceTree = "<group>"; };
+		D20000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HistoricalCommands.swift"; sourceTree = "<group>"; };
+		D20000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HistoricalHandlers.swift"; sourceTree = "<group>"; };
+		D20000000000000000000049 /* MoreDataStore+Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MoreDataStore+Validation.swift"; sourceTree = "<group>"; };
+		D2000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthDataStore+ActivitySnapshots.swift"; sourceTree = "<group>"; };
+		D20000000000000000000050 /* WhoopDataSignalPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhoopDataSignalPipeline.swift; sourceTree = "<group>"; };
+		D20000000000000000000051 /* BLEUIStateAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEUIStateAggregator.swift; sourceTree = "<group>"; };
+		D20000000000000000000052 /* PacketMonitorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketMonitorModel.swift; sourceTree = "<group>"; };
+		D20000000000000000000053 /* GooseMessageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseMessageStore.swift; sourceTree = "<group>"; };
+		D20000000000000000000054 /* GooseUploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadService.swift; sourceTree = "<group>"; };
+		D20000000000000000000055 /* RemoteServerPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteServerPersistence.swift; sourceTree = "<group>"; };
+		D20000000000000000000056 /* MoreRemoteServerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreRemoteServerViews.swift; sourceTree = "<group>"; };
+		D20000000000000000000057 /* GooseAppModel+Upload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseAppModel+Upload.swift"; sourceTree = "<group>"; };
+		D20000000000000000000058 /* GooseBLEClient+HRMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GooseBLEClient+HRMonitor.swift"; sourceTree = "<group>"; };
+		D20000000000000000000059 /* GooseBLEReconnect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEReconnect.swift; sourceTree = "<group>"; };
+		D2000000000000000000005A /* HRMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorView.swift; sourceTree = "<group>"; };
+		D2000000000000000000005B /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		D2000000000000000000005C /* LocalizedStatusStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStatusStrings.swift; sourceTree = "<group>"; };
+		E2000000000000000000001 /* CoachProviderProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderProtocol.swift; sourceTree = "<group>"; };
+		E2000000000000000000002 /* CoachChatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachChatModel.swift; sourceTree = "<group>"; };
+		E2000000000000000000003 /* ChatGPTCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatGPTCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000004 /* ClaudeCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000005 /* CustomEndpointCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000006 /* GeminiCoachProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiCoachProvider.swift; sourceTree = "<group>"; };
+		E2000000000000000000007 /* GeminiOAuthWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiOAuthWebView.swift; sourceTree = "<group>"; };
+		E2000000000000000000008 /* CoachSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsSheet.swift; sourceTree = "<group>"; };
+		T20000000000000000000001 /* GooseSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GooseSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		T20000000000000000000002 /* WearableDescriptorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearableDescriptorTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000003 /* GooseBLETypesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLETypesTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		T20000000000000000000005 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Xcode/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		T20000000000000000000006 /* GooseUploadServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadServiceTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000007 /* HRMonitorStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HRMonitorStateTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000008 /* CoachProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000009 /* CoachProviderRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachProviderRegistryTests.swift; sourceTree = "<group>"; };
+		T2000000000000000000000A /* CoachKeychainTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachKeychainTests.swift; sourceTree = "<group>"; };
+		T2000000000000000000000B /* ClaudeProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProviderTests.swift; sourceTree = "<group>"; };
+		T2000000000000000000000C /* CustomEndpointProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointProviderTests.swift; sourceTree = "<group>"; };
+		T2000000000000000000000D /* GeminiProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiProviderTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A30000000000000000000001 /* Frameworks */ = {
@@ -338,17 +398,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		T60000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				T10000000000000000000003 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0BEACF3F2FD21DF100BEF3F4 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				T20000000000000000000005 /* XCTest.framework */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		A40000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000002 /* GooseSwift */,
 				B40000000000000000000001 /* GooseWorkoutLiveActivityExtension */,
+				T40000000000000000000001 /* GooseSwiftTests */,
 				A40000000000000000000003 /* Scripts */,
 				A40000000000000000000004 /* Frameworks */,
 				A40000000000000000000005 /* Products */,
+				0BEACF3F2FD21DF100BEF3F4 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -376,6 +454,10 @@
 				D20000000000000000000050 /* WhoopDataSignalPipeline.swift */,
 				D20000000000000000000052 /* PacketMonitorModel.swift */,
 				D20000000000000000000053 /* GooseMessageStore.swift */,
+				D20000000000000000000054 /* GooseUploadService.swift */,
+				D20000000000000000000055 /* RemoteServerPersistence.swift */,
+				D20000000000000000000056 /* MoreRemoteServerViews.swift */,
+				D20000000000000000000057 /* GooseAppModel+Upload.swift */,
 				D2000000000000000000001C /* ActivityPersistenceTypes.swift */,
 				D2000000000000000000001D /* HealthPacketCaptureTypes.swift */,
 				D2000000000000000000001E /* WhoopEventSamples.swift */,
@@ -413,12 +495,12 @@
 				D20000000000000000000007 /* MoreDebugViews.swift */,
 				D20000000000000000000008 /* MoreInfoViews.swift */,
 				A20000000000000000000018 /* CoachView.swift */,
-					A20000000000000000000028 /* CoachSignInScreen.swift */,
-					A20000000000000000000029 /* CoachChatScreen.swift */,
-					A2000000000000000000002A /* CoachMessageViews.swift */,
-					A2000000000000000000002B /* CoachComposer.swift */,
+				A20000000000000000000028 /* CoachSignInScreen.swift */,
+				A20000000000000000000029 /* CoachChatScreen.swift */,
+				A2000000000000000000002A /* CoachMessageViews.swift */,
+				A2000000000000000000002B /* CoachComposer.swift */,
 				A20000000000000000000015 /* AppRouter.swift */,
-						A20000000000000000000011 /* LiveActivityView.swift */,
+				A20000000000000000000011 /* LiveActivityView.swift */,
 				D2000000000000000000000D /* ActivityModels.swift */,
 				D2000000000000000000000E /* ActivitySessionModel.swift */,
 				D2000000000000000000000F /* ActivityLocationTracker.swift */,
@@ -427,52 +509,53 @@
 				D20000000000000000000012 /* FitnessControlViews.swift */,
 				D20000000000000000000013 /* FitnessSummaryViews.swift */,
 				D20000000000000000000014 /* FitnessFormatting.swift */,
-						A20000000000000000000014 /* HealthView.swift */,
-					C20000000000000000000001 /* HealthModels.swift */,
-					C20000000000000000000002 /* HealthScoreDateViews.swift */,
-					C20000000000000000000003 /* HealthDataTypes.swift */,
-					C20000000000000000000004 /* HealthDataStore.swift */,
-					C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */,
-					C20000000000000000000102 /* HealthDataStore+Snapshots.swift */,
-					C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */,
-					C20000000000000000000104 /* HealthDataStore+Vitals.swift */,
-					C20000000000000000000105 /* HealthDataStore+Trends.swift */,
-					C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */,
-					C20000000000000000000107 /* HealthDataStore+Cardio.swift */,
-					C20000000000000000000108 /* HealthDataStore+Sleep.swift */,
-					C20000000000000000000109 /* HealthDataStore+Utilities.swift */,
-					C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */,
-					C20000000000000000000005 /* HealthDashboardViews.swift */,
-					C20000000000000000000006 /* HealthRecoveryStressViews.swift */,
-					C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */,
-					C20000000000000000000008 /* HealthRecoveryWidgets.swift */,
-					C20000000000000000000009 /* HealthSleepOverviewViews.swift */,
-					D20000000000000000000027 /* SleepV2PaletteViews.swift */,
-					D20000000000000000000028 /* SleepV2InsightViews.swift */,
-					D20000000000000000000029 /* SleepV2ScheduleViews.swift */,
-					D2000000000000000000002A /* SleepV2TimelineViews.swift */,
-					D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */,
-					C2000000000000000000000A /* HealthSleepTrendViews.swift */,
-					D20000000000000000000030 /* SleepV2BevelTrendViews.swift */,
-					D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */,
-					C2000000000000000000000B /* HealthSleepSheetsViews.swift */,
-					C2000000000000000000000C /* HealthCardioViews.swift */,
-					C2000000000000000000000D /* HealthSupplementalViews.swift */,
-					D2000000000000000000002C /* SleepBridgeViews.swift */,
-					D2000000000000000000002D /* SleepDetailViews.swift */,
-					D2000000000000000000002E /* HealthChartPrimitives.swift */,
-					D2000000000000000000002F /* HealthStressCharts.swift */,
-					C2000000000000000000000E /* HealthPreviews.swift */,
-						A2000000000000000000001B /* HealthKitSleepImporter.swift */,
-						A20000000000000000000025 /* CodexCoachSupport.swift */,
-					A20000000000000000000021 /* CodexEmbeddedAuth.swift */,
-					A2000000000000000000002C /* CoachChatTypes.swift */,
-					A20000000000000000000026 /* OpenAICoachChat.swift */,
-					A2000000000000000000002D /* OpenAICoachResponsesClient.swift */,
-					A20000000000000000000040 /* CoachLocalToolContext.swift */,
-					A20000000000000000000027 /* CoachTips.swift */,
-					B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */,
-					B20000000000000000000002 /* WorkoutLiveActivityController.swift */,
+				A20000000000000000000014 /* HealthView.swift */,
+				C20000000000000000000001 /* HealthModels.swift */,
+				C20000000000000000000002 /* HealthScoreDateViews.swift */,
+				C20000000000000000000003 /* HealthDataTypes.swift */,
+				C20000000000000000000004 /* HealthDataStore.swift */,
+				C20000000000000000000101 /* HealthDataStore+PacketInputs.swift */,
+				C20000000000000000000102 /* HealthDataStore+Snapshots.swift */,
+				C20000000000000000000103 /* HealthDataStore+StressEnergy.swift */,
+				C20000000000000000000104 /* HealthDataStore+Vitals.swift */,
+				C20000000000000000000105 /* HealthDataStore+Trends.swift */,
+				C20000000000000000000106 /* HealthDataStore+CoachSummaries.swift */,
+				C20000000000000000000107 /* HealthDataStore+Cardio.swift */,
+				C20000000000000000000108 /* HealthDataStore+Sleep.swift */,
+				C20000000000000000000109 /* HealthDataStore+Utilities.swift */,
+				C2000000000000000000010A /* HealthDataStore+StaticSnapshots.swift */,
+				C20000000000000000000005 /* HealthDashboardViews.swift */,
+				C20000000000000000000006 /* HealthRecoveryStressViews.swift */,
+				C20000000000000000000007 /* HealthMetricFamilyStrainViews.swift */,
+				C20000000000000000000008 /* HealthRecoveryWidgets.swift */,
+				C20000000000000000000009 /* HealthSleepOverviewViews.swift */,
+				D20000000000000000000027 /* SleepV2PaletteViews.swift */,
+				D20000000000000000000028 /* SleepV2InsightViews.swift */,
+				D20000000000000000000029 /* SleepV2ScheduleViews.swift */,
+				D2000000000000000000002A /* SleepV2TimelineViews.swift */,
+				D2000000000000000000002B /* SleepV2TrendPresentationViews.swift */,
+				C2000000000000000000000A /* HealthSleepTrendViews.swift */,
+				D20000000000000000000030 /* SleepV2BevelTrendViews.swift */,
+				D20000000000000000000031 /* SleepV2BevelAnalysisViews.swift */,
+				C2000000000000000000000B /* HealthSleepSheetsViews.swift */,
+				C2000000000000000000000C /* HealthCardioViews.swift */,
+				C2000000000000000000000D /* HealthSupplementalViews.swift */,
+				D2000000000000000000002C /* SleepBridgeViews.swift */,
+				D2000000000000000000002D /* SleepDetailViews.swift */,
+				D2000000000000000000002E /* HealthChartPrimitives.swift */,
+				D2000000000000000000002F /* HealthStressCharts.swift */,
+				C2000000000000000000000E /* HealthPreviews.swift */,
+				A2000000000000000000001B /* HealthKitSleepImporter.swift */,
+				A20000000000000000000041 /* HealthKitFullImporter.swift */,
+				A20000000000000000000025 /* CodexCoachSupport.swift */,
+				A20000000000000000000021 /* CodexEmbeddedAuth.swift */,
+				A2000000000000000000002C /* CoachChatTypes.swift */,
+				A20000000000000000000026 /* OpenAICoachChat.swift */,
+				A2000000000000000000002D /* OpenAICoachResponsesClient.swift */,
+				A20000000000000000000040 /* CoachLocalToolContext.swift */,
+				A20000000000000000000027 /* CoachTips.swift */,
+				B20000000000000000000001 /* WorkoutLiveActivityAttributes.swift */,
+				B20000000000000000000002 /* WorkoutLiveActivityController.swift */,
 				A20000000000000000000006 /* GooseRustBridge.swift */,
 				A20000000000000000000007 /* GooseHello.swift */,
 				A20000000000000000000008 /* GooseBLEClient.swift */,
@@ -483,6 +566,18 @@
 				D20000000000000000000036 /* GooseBLEClient+DebugAndSync.swift */,
 				D20000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift */,
 				D20000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift */,
+				D20000000000000000000058 /* GooseBLEClient+HRMonitor.swift */,
+				D20000000000000000000059 /* GooseBLEReconnect.swift */,
+				D2000000000000000000005A /* HRMonitorView.swift */,
+				D2000000000000000000005C /* LocalizedStatusStrings.swift */,
+				E2000000000000000000001 /* CoachProviderProtocol.swift */,
+				E2000000000000000000002 /* CoachChatModel.swift */,
+				E2000000000000000000003 /* ChatGPTCoachProvider.swift */,
+				E2000000000000000000004 /* ClaudeCoachProvider.swift */,
+				E2000000000000000000005 /* CustomEndpointCoachProvider.swift */,
+				E2000000000000000000006 /* GeminiCoachProvider.swift */,
+				E2000000000000000000007 /* GeminiOAuthWebView.swift */,
+				E2000000000000000000008 /* CoachSettingsSheet.swift */,
 				D20000000000000000000037 /* GooseBLEClient+Parsing.swift */,
 				D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */,
 				D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */,
@@ -490,17 +585,9 @@
 				A2000000000000000000000A /* Info.plist */,
 				A20000000000000000000017 /* GooseSwift.entitlements */,
 				A2000000000000000000000F /* Assets.xcassets */,
+				D2000000000000000000005B /* Localizable.xcstrings */,
 			);
 			path = GooseSwift;
-			sourceTree = "<group>";
-		};
-		B40000000000000000000001 /* GooseWorkoutLiveActivityExtension */ = {
-			isa = PBXGroup;
-			children = (
-				B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */,
-				B20000000000000000000005 /* Info.plist */,
-			);
-			path = GooseWorkoutLiveActivityExtension;
 			sourceTree = "<group>";
 		};
 		A40000000000000000000003 /* Scripts */ = {
@@ -527,8 +614,36 @@
 			children = (
 				A2000000000000000000000D /* GooseSwift.app */,
 				B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */,
+				T20000000000000000000001 /* GooseSwiftTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000001 /* GooseWorkoutLiveActivityExtension */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift */,
+				B20000000000000000000005 /* Info.plist */,
+			);
+			path = GooseWorkoutLiveActivityExtension;
+			sourceTree = "<group>";
+		};
+		T40000000000000000000001 /* GooseSwiftTests */ = {
+			isa = PBXGroup;
+			children = (
+				T20000000000000000000002 /* WearableDescriptorTests.swift */,
+				T20000000000000000000003 /* GooseBLETypesTests.swift */,
+				T20000000000000000000006 /* GooseUploadServiceTests.swift */,
+				T20000000000000000000007 /* HRMonitorStateTests.swift */,
+				T20000000000000000000008 /* CoachProviderTests.swift */,
+				T20000000000000000000009 /* CoachProviderRegistryTests.swift */,
+				T2000000000000000000000A /* CoachKeychainTests.swift */,
+				T2000000000000000000000B /* ClaudeProviderTests.swift */,
+				T2000000000000000000000C /* CustomEndpointProviderTests.swift */,
+				T2000000000000000000000D /* GeminiProviderTests.swift */,
+				T20000000000000000000004 /* Info.plist */,
+			);
+			path = GooseSwiftTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -537,12 +652,12 @@
 		A50000000000000000000001 /* GooseSwift */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A90000000000000000000002 /* Build configuration list for PBXNativeTarget "GooseSwift" */;
-				buildPhases = (
-					A60000000000000000000004 /* Build Rust Core */,
+			buildPhases = (
+				A60000000000000000000004 /* Build Rust Core */,
 				A60000000000000000000001 /* Sources */,
 				A30000000000000000000001 /* Frameworks */,
 				A60000000000000000000002 /* Resources */,
-				B60000000000000000000003 /* Embed App Extensions */,
+				B60000000000000000000003 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -571,6 +686,22 @@
 			productReference = B20000000000000000000004 /* GooseWorkoutLiveActivityExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		T50000000000000000000001 /* GooseSwiftTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = T90000000000000000000001 /* Build configuration list for PBXNativeTarget "GooseSwiftTests" */;
+			buildPhases = (
+				T60000000000000000000002 /* Sources */,
+				T60000000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GooseSwiftTests;
+			productName = GooseSwiftTests;
+			productReference = T20000000000000000000001 /* GooseSwiftTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -579,7 +710,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					A50000000000000000000001 = {
 						CreatedOnToolsVersion = 26.0;
@@ -601,6 +732,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"pt-PT",
 			);
 			mainGroup = A40000000000000000000001;
 			productRefGroup = A40000000000000000000005 /* Products */;
@@ -609,6 +741,7 @@
 			targets = (
 				A50000000000000000000001 /* GooseSwift */,
 				B50000000000000000000001 /* GooseWorkoutLiveActivityExtension */,
+				T50000000000000000000001 /* GooseSwiftTests */,
 			);
 		};
 /* End PBXProject section */
@@ -619,6 +752,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000000B /* Assets.xcassets in Resources */,
+				D1000000000000000000005B /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -632,7 +766,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-			A60000000000000000000004 /* Build Rust Core */ = {
+		A60000000000000000000004 /* Build Rust Core */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -651,8 +785,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-				shellScript = "Scripts/build_ios_rust.sh\n";
-			};
+			shellScript = "Scripts/build_ios_rust.sh\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -681,6 +815,10 @@
 				D10000000000000000000050 /* WhoopDataSignalPipeline.swift in Sources */,
 				D10000000000000000000052 /* PacketMonitorModel.swift in Sources */,
 				D10000000000000000000053 /* GooseMessageStore.swift in Sources */,
+				D10000000000000000000054 /* GooseUploadService.swift in Sources */,
+				D10000000000000000000055 /* RemoteServerPersistence.swift in Sources */,
+				D10000000000000000000056 /* MoreRemoteServerViews.swift in Sources */,
+				D10000000000000000000057 /* GooseAppModel+Upload.swift in Sources */,
 				D1000000000000000000001C /* ActivityPersistenceTypes.swift in Sources */,
 				D1000000000000000000001D /* HealthPacketCaptureTypes.swift in Sources */,
 				D1000000000000000000001E /* WhoopEventSamples.swift in Sources */,
@@ -695,13 +833,13 @@
 				D1000000000000000000000C /* OnboardingKeyboardDismiss.swift in Sources */,
 				A10000000000000000000005 /* ConnectionView.swift in Sources */,
 				A1000000000000000000000A /* DeviceView.swift in Sources */,
-					A1000000000000000000000C /* AppShellView.swift in Sources */,
+				A1000000000000000000000C /* AppShellView.swift in Sources */,
 				D10000000000000000000022 /* HomeDashboardView.swift in Sources */,
 				D10000000000000000000023 /* HomeScoreViews.swift in Sources */,
 				D10000000000000000000024 /* HomeHealthMonitorViews.swift in Sources */,
 				D10000000000000000000025 /* HomeTimelineViews.swift in Sources */,
 				D10000000000000000000026 /* HomeFormatting.swift in Sources */,
-					A1000000000000000000000D /* LiveActivityView.swift in Sources */,
+				A1000000000000000000000D /* LiveActivityView.swift in Sources */,
 				D1000000000000000000000D /* ActivityModels.swift in Sources */,
 				D1000000000000000000000E /* ActivitySessionModel.swift in Sources */,
 				D1000000000000000000000F /* ActivityLocationTracker.swift in Sources */,
@@ -710,75 +848,84 @@
 				D10000000000000000000012 /* FitnessControlViews.swift in Sources */,
 				D10000000000000000000013 /* FitnessSummaryViews.swift in Sources */,
 				D10000000000000000000014 /* FitnessFormatting.swift in Sources */,
-					A10000000000000000000010 /* HealthView.swift in Sources */,
-					C10000000000000000000001 /* HealthModels.swift in Sources */,
-					C10000000000000000000002 /* HealthScoreDateViews.swift in Sources */,
-					C10000000000000000000003 /* HealthDataTypes.swift in Sources */,
-					C10000000000000000000004 /* HealthDataStore.swift in Sources */,
-					C10000000000000000000101 /* HealthDataStore+PacketInputs.swift in Sources */,
-					C10000000000000000000102 /* HealthDataStore+Snapshots.swift in Sources */,
-					C10000000000000000000103 /* HealthDataStore+StressEnergy.swift in Sources */,
-					C10000000000000000000104 /* HealthDataStore+Vitals.swift in Sources */,
-					C10000000000000000000105 /* HealthDataStore+Trends.swift in Sources */,
-					C10000000000000000000106 /* HealthDataStore+CoachSummaries.swift in Sources */,
-					C10000000000000000000107 /* HealthDataStore+Cardio.swift in Sources */,
-					C10000000000000000000108 /* HealthDataStore+Sleep.swift in Sources */,
-					C10000000000000000000109 /* HealthDataStore+Utilities.swift in Sources */,
-					C1000000000000000000010A /* HealthDataStore+StaticSnapshots.swift in Sources */,
-					C10000000000000000000005 /* HealthDashboardViews.swift in Sources */,
-					C10000000000000000000006 /* HealthRecoveryStressViews.swift in Sources */,
-					C10000000000000000000007 /* HealthMetricFamilyStrainViews.swift in Sources */,
-					C10000000000000000000008 /* HealthRecoveryWidgets.swift in Sources */,
-					C10000000000000000000009 /* HealthSleepOverviewViews.swift in Sources */,
-					D10000000000000000000027 /* SleepV2PaletteViews.swift in Sources */,
-					D10000000000000000000028 /* SleepV2InsightViews.swift in Sources */,
-					D10000000000000000000029 /* SleepV2ScheduleViews.swift in Sources */,
-					D1000000000000000000002A /* SleepV2TimelineViews.swift in Sources */,
-					D1000000000000000000002B /* SleepV2TrendPresentationViews.swift in Sources */,
-					D1000000000000000000002C /* SleepBridgeViews.swift in Sources */,
-					D1000000000000000000002D /* SleepDetailViews.swift in Sources */,
-					D1000000000000000000002E /* HealthChartPrimitives.swift in Sources */,
-					D1000000000000000000002F /* HealthStressCharts.swift in Sources */,
-					D10000000000000000000030 /* SleepV2BevelTrendViews.swift in Sources */,
-					D10000000000000000000031 /* SleepV2BevelAnalysisViews.swift in Sources */,
-					C1000000000000000000000A /* HealthSleepTrendViews.swift in Sources */,
-					C1000000000000000000000B /* HealthSleepSheetsViews.swift in Sources */,
-					C1000000000000000000000C /* HealthCardioViews.swift in Sources */,
-					C1000000000000000000000D /* HealthSupplementalViews.swift in Sources */,
-					C1000000000000000000000E /* HealthPreviews.swift in Sources */,
-					A10000000000000000000011 /* AppRouter.swift in Sources */,
-					A10000000000000000000013 /* CoachView.swift in Sources */,
-					A10000000000000000000028 /* CoachSignInScreen.swift in Sources */,
-					A10000000000000000000029 /* CoachChatScreen.swift in Sources */,
-					A1000000000000000000002A /* CoachMessageViews.swift in Sources */,
-					A1000000000000000000002B /* CoachComposer.swift in Sources */,
-					A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */,
-					A10000000000000000000019 /* OnboardingPersistence.swift in Sources */,
-					A1000000000000000000001A /* MoreView.swift in Sources */,
-					D10000000000000000000001 /* MoreRouteModels.swift in Sources */,
-					D10000000000000000000002 /* MoreProfileViews.swift in Sources */,
-					D10000000000000000000003 /* MoreDataStore.swift in Sources */,
+				A10000000000000000000010 /* HealthView.swift in Sources */,
+				C10000000000000000000001 /* HealthModels.swift in Sources */,
+				C10000000000000000000002 /* HealthScoreDateViews.swift in Sources */,
+				C10000000000000000000003 /* HealthDataTypes.swift in Sources */,
+				C10000000000000000000004 /* HealthDataStore.swift in Sources */,
+				C10000000000000000000101 /* HealthDataStore+PacketInputs.swift in Sources */,
+				C10000000000000000000102 /* HealthDataStore+Snapshots.swift in Sources */,
+				C10000000000000000000103 /* HealthDataStore+StressEnergy.swift in Sources */,
+				C10000000000000000000104 /* HealthDataStore+Vitals.swift in Sources */,
+				C10000000000000000000105 /* HealthDataStore+Trends.swift in Sources */,
+				C10000000000000000000106 /* HealthDataStore+CoachSummaries.swift in Sources */,
+				C10000000000000000000107 /* HealthDataStore+Cardio.swift in Sources */,
+				C10000000000000000000108 /* HealthDataStore+Sleep.swift in Sources */,
+				C10000000000000000000109 /* HealthDataStore+Utilities.swift in Sources */,
+				C1000000000000000000010A /* HealthDataStore+StaticSnapshots.swift in Sources */,
+				C10000000000000000000005 /* HealthDashboardViews.swift in Sources */,
+				C10000000000000000000006 /* HealthRecoveryStressViews.swift in Sources */,
+				C10000000000000000000007 /* HealthMetricFamilyStrainViews.swift in Sources */,
+				C10000000000000000000008 /* HealthRecoveryWidgets.swift in Sources */,
+				C10000000000000000000009 /* HealthSleepOverviewViews.swift in Sources */,
+				D10000000000000000000027 /* SleepV2PaletteViews.swift in Sources */,
+				D10000000000000000000028 /* SleepV2InsightViews.swift in Sources */,
+				D10000000000000000000029 /* SleepV2ScheduleViews.swift in Sources */,
+				D1000000000000000000002A /* SleepV2TimelineViews.swift in Sources */,
+				D1000000000000000000002B /* SleepV2TrendPresentationViews.swift in Sources */,
+				D1000000000000000000002C /* SleepBridgeViews.swift in Sources */,
+				D1000000000000000000002D /* SleepDetailViews.swift in Sources */,
+				D1000000000000000000002E /* HealthChartPrimitives.swift in Sources */,
+				D1000000000000000000002F /* HealthStressCharts.swift in Sources */,
+				D10000000000000000000030 /* SleepV2BevelTrendViews.swift in Sources */,
+				D10000000000000000000031 /* SleepV2BevelAnalysisViews.swift in Sources */,
+				C1000000000000000000000A /* HealthSleepTrendViews.swift in Sources */,
+				C1000000000000000000000B /* HealthSleepSheetsViews.swift in Sources */,
+				C1000000000000000000000C /* HealthCardioViews.swift in Sources */,
+				C1000000000000000000000D /* HealthSupplementalViews.swift in Sources */,
+				C1000000000000000000000E /* HealthPreviews.swift in Sources */,
+				A10000000000000000000011 /* AppRouter.swift in Sources */,
+				A10000000000000000000013 /* CoachView.swift in Sources */,
+				A10000000000000000000028 /* CoachSignInScreen.swift in Sources */,
+				A10000000000000000000029 /* CoachChatScreen.swift in Sources */,
+				A1000000000000000000002A /* CoachMessageViews.swift in Sources */,
+				A1000000000000000000002B /* CoachComposer.swift in Sources */,
+				A10000000000000000000015 /* HealthKitSleepImporter.swift in Sources */,
+				A10000000000000000000041 /* HealthKitFullImporter.swift in Sources */,
+				A10000000000000000000019 /* OnboardingPersistence.swift in Sources */,
+				A1000000000000000000001A /* MoreView.swift in Sources */,
+				D10000000000000000000001 /* MoreRouteModels.swift in Sources */,
+				D10000000000000000000002 /* MoreProfileViews.swift in Sources */,
+				D10000000000000000000003 /* MoreDataStore.swift in Sources */,
 				D10000000000000000000049 /* MoreDataStore+Validation.swift in Sources */,
 				D1000000000000000000004A /* HealthDataStore+ActivitySnapshots.swift in Sources */,
-					D10000000000000000000004 /* GooseLocalDataExporter.swift in Sources */,
+				D10000000000000000000004 /* GooseLocalDataExporter.swift in Sources */,
 				D10000000000000000000044 /* GooseLocalDataExporter+Validation.swift in Sources */,
 				D10000000000000000000045 /* GooseLocalDataExporter+Metrics.swift in Sources */,
 				D10000000000000000000046 /* GooseLocalDataExporter+FileSystem.swift in Sources */,
-					D10000000000000000000005 /* MoreCaptureViews.swift in Sources */,
-					D10000000000000000000006 /* MoreRawExportViews.swift in Sources */,
-					D10000000000000000000007 /* MoreDebugViews.swift in Sources */,
-					D10000000000000000000008 /* MoreInfoViews.swift in Sources */,
-					A10000000000000000000025 /* CodexCoachSupport.swift in Sources */,
-					A1000000000000000000001B /* CodexEmbeddedAuth.swift in Sources */,
-					A1000000000000000000002C /* CoachChatTypes.swift in Sources */,
-					A10000000000000000000026 /* OpenAICoachChat.swift in Sources */,
-					A1000000000000000000002D /* OpenAICoachResponsesClient.swift in Sources */,
-					A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */,
-					A10000000000000000000027 /* CoachTips.swift in Sources */,
-						A10000000000000000000023 /* GooseTheme.swift in Sources */,
-						B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */,
-					B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */,
-					A10000000000000000000006 /* GooseRustBridge.swift in Sources */,
+				D10000000000000000000005 /* MoreCaptureViews.swift in Sources */,
+				D10000000000000000000006 /* MoreRawExportViews.swift in Sources */,
+				D10000000000000000000007 /* MoreDebugViews.swift in Sources */,
+				D10000000000000000000008 /* MoreInfoViews.swift in Sources */,
+				A10000000000000000000025 /* CodexCoachSupport.swift in Sources */,
+				A1000000000000000000001B /* CodexEmbeddedAuth.swift in Sources */,
+				A1000000000000000000002C /* CoachChatTypes.swift in Sources */,
+				A10000000000000000000026 /* OpenAICoachChat.swift in Sources */,
+				E1000000000000000000001 /* CoachProviderProtocol.swift in Sources */,
+				E1000000000000000000002 /* CoachChatModel.swift in Sources */,
+				E1000000000000000000003 /* ChatGPTCoachProvider.swift in Sources */,
+				E1000000000000000000004 /* ClaudeCoachProvider.swift in Sources */,
+				E1000000000000000000005 /* CustomEndpointCoachProvider.swift in Sources */,
+				E1000000000000000000006 /* GeminiCoachProvider.swift in Sources */,
+				E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */,
+				E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */,
+				A1000000000000000000002D /* OpenAICoachResponsesClient.swift in Sources */,
+				A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */,
+				A10000000000000000000027 /* CoachTips.swift in Sources */,
+				A10000000000000000000023 /* GooseTheme.swift in Sources */,
+				B10000000000000000000001 /* WorkoutLiveActivityAttributes.swift in Sources */,
+				B10000000000000000000002 /* WorkoutLiveActivityController.swift in Sources */,
+				A10000000000000000000006 /* GooseRustBridge.swift in Sources */,
 				A10000000000000000000007 /* GooseHello.swift in Sources */,
 				A10000000000000000000008 /* GooseBLEClient.swift in Sources */,
 				D10000000000000000000032 /* GooseBLETypes.swift in Sources */,
@@ -788,6 +935,10 @@
 				D10000000000000000000036 /* GooseBLEClient+DebugAndSync.swift in Sources */,
 				D10000000000000000000047 /* GooseBLEClient+HistoricalCommands.swift in Sources */,
 				D10000000000000000000048 /* GooseBLEClient+HistoricalHandlers.swift in Sources */,
+				D10000000000000000000058 /* GooseBLEClient+HRMonitor.swift in Sources */,
+				D10000000000000000000059 /* GooseBLEReconnect.swift in Sources */,
+				D1000000000000000000005A /* HRMonitorView.swift in Sources */,
+				D1000000000000000000005C /* LocalizedStatusStrings.swift in Sources */,
 				D10000000000000000000037 /* GooseBLEClient+Parsing.swift in Sources */,
 				D10000000000000000000038 /* GooseBLEClient+CentralDelegate.swift in Sources */,
 				D10000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift in Sources */,
@@ -800,6 +951,23 @@
 			files = (
 				B10000000000000000000003 /* GooseWorkoutLiveActivityWidget.swift in Sources */,
 				B10000000000000000000004 /* WorkoutLiveActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		T60000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */,
+				T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */,
+				T10000000000000000000004 /* GooseUploadServiceTests.swift in Sources */,
+				T10000000000000000000005 /* HRMonitorStateTests.swift in Sources */,
+				T10000000000000000000006 /* CoachProviderTests.swift in Sources */,
+				T10000000000000000000007 /* CoachProviderRegistryTests.swift in Sources */,
+				T10000000000000000000008 /* CoachKeychainTests.swift in Sources */,
+				T10000000000000000000009 /* ClaudeProviderTests.swift in Sources */,
+				T1000000000000000000000A /* CustomEndpointProviderTests.swift in Sources */,
+				T1000000000000000000000B /* GeminiProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -818,6 +986,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -848,6 +1018,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 26594BLKQ8;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -870,6 +1041,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -879,6 +1051,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -909,6 +1083,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 26594BLKQ8;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -924,6 +1099,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -932,9 +1108,8 @@
 		A80000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = GooseSwift/GooseSwift.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -961,7 +1136,7 @@
 					"-force_load",
 					"$(SRCROOT)/Rust/$(PLATFORM_NAME)/libgoose_core.a",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.goose.swift;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -975,9 +1150,8 @@
 		A80000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = GooseSwift/GooseSwift.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -1004,7 +1178,7 @@
 					"-force_load",
 					"$(SRCROOT)/Rust/$(PLATFORM_NAME)/libgoose_core.a",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.goose.swift;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1019,7 +1193,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				ARCHS = arm64;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1033,7 +1206,7 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goose.swift.WorkoutLiveActivityExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.WorkoutLiveActivityExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1048,7 +1221,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				ARCHS = arm64;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1061,13 +1233,67 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goose.swift.WorkoutLiveActivityExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.WorkoutLiveActivityExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = Release;
+		};
+		T80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Rust/core/include",
+				);
+				INFOPLIST_FILE = GooseSwiftTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GooseSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GooseSwift";
+				VALID_ARCHS = arm64;
+			};
+			name = Debug;
+		};
+		T80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Rust/core/include",
+				);
+				INFOPLIST_FILE = GooseSwiftTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tigercraft4.goose.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GooseSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GooseSwift";
 				VALID_ARCHS = arm64;
 			};
 			name = Release;
@@ -1098,6 +1324,15 @@
 			buildConfigurations = (
 				B80000000000000000000001 /* Debug */,
 				B80000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		T90000000000000000000001 /* Build configuration list for PBXNativeTarget "GooseSwiftTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				T80000000000000000000001 /* Debug */,
+				T80000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,0 +1,99 @@
+name: CodeQL
+
+# Static analysis for security vulnerabilities in application source code.
+#
+# Coverage:
+#   * swift  - GooseSwift/ — data flow analysis, injection patterns, insecure iOS
+#               API usage (CoreBluetooth, Keychain, URLSession).
+#   * python - server/    — SQL injection, path traversal, insecure deserialization,
+#               weak cryptography patterns (FastAPI + TimescaleDB stack).
+#
+# Rust is excluded: CodeQL support is experimental and cargo-audit already covers
+# known advisories via the RustSec database (see security.yml).
+#
+# Swift job runs on macos-26 (Xcode 26.4.1 default, iOS 26.x SDKs available)
+# to match the project's IPHONEOS_DEPLOYMENT_TARGET = 26.0.
+# Python job runs on ubuntu-latest (no build step needed).
+#
+# Runs on every push/PR to main (no path filter — code changes always warrant a
+# scan), on a weekly schedule (Monday 08:00 UTC, staggered 1 h after security.yml),
+# and on demand via workflow_dispatch.
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "0 8 * * 1" # Mondays at 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # required to upload SARIF results to GitHub Security tab
+  actions: read           # required by github/codeql-action in private repositories
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ matrix.language == 'swift' && 'macos-26' || 'ubuntu-latest' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [swift, python]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      # Swift: CodeQL requires a real compilation pass to trace data flow accurately.
+      # CODE_SIGNING_ALLOWED=NO avoids certificate requirements on CI runners.
+      # GOOSE_SKIP_RUST_CORE_BUILD=1 skips the Xcode build phase that cross-compiles
+      # Rust for iOS — CodeQL only needs the Swift source to be compiled, not a
+      # production-ready binary. A minimal stub libgoose_core.a satisfies the linker.
+      - name: Create stub libgoose_core.a for CodeQL (Swift only)
+        if: matrix.language == 'swift'
+        run: |
+          mkdir -p Rust/iphonesimulator Rust/iphoneos
+          # The stub must export the exact C symbols that GooseRustBridge.swift
+          # references via the bridging header: goose_bridge_handle_json and
+          # goose_bridge_free_string. A missing symbol causes an "Undefined
+          # symbols for architecture" linker error even in CodeQL builds.
+          cat > /tmp/goose_stub.c << 'EOF'
+          #include <stddef.h>
+          /* Stub FFI symbols — no-ops; CodeQL only needs Swift source compiled. */
+          const char *goose_bridge_handle_json(const char *request_json) { return NULL; }
+          void goose_bridge_free_string(char *value) { (void)value; }
+          const char *goose_core_version_json(void) { return NULL; }
+          EOF
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          clang -target arm64-apple-ios-simulator \
+            -isysroot "$SDK" \
+            -c /tmp/goose_stub.c -o /tmp/goose_stub.o
+          ar rcs Rust/iphonesimulator/libgoose_core.a /tmp/goose_stub.o
+          ar rcs Rust/iphoneos/libgoose_core.a /tmp/goose_stub.o
+
+      - name: Build Swift target (Swift only)
+        if: matrix.language == 'swift'
+        run: |
+          xcodebuild \
+            -project GooseSwift.xcodeproj \
+            -scheme GooseSwift \
+            -destination 'generic/platform=iOS Simulator' \
+            build \
+            CODE_SIGNING_ALLOWED=NO \
+            GOOSE_SKIP_RUST_CORE_BUILD=1
+
+      # Python: CodeQL analyses Python without a build step.
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

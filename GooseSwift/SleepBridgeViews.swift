@@ -4,14 +4,14 @@ import SwiftUI
 import UIKit
 
 struct SleepDataBridgeSection: View {
-  @ObservedObject var store: HealthDataStore
-  @ObservedObject var ble: GooseBLEClient
+  var store: HealthDataStore
+  var ble: GooseBLEClient
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HealthSectionTitle("Sleep Data")
       VStack(spacing: 8) {
-        HealthInfoRow(row: HealthSummaryRow("Band history", value: "\(ble.historicalSyncStatus) | \(packetText)", source: .live("WHOOP historical sync"), systemImage: "antenna.radiowaves.left.and.right"))
+        HealthInfoRow(row: HealthSummaryRow("Band history", value: "\(ble.historicalSyncStatus.localizedHistoricalSyncStatus) | \(packetText)", source: .live("WHOOP historical sync"), systemImage: "antenna.radiowaves.left.and.right"))
         HealthInfoRow(row: HealthSummaryRow("Band sleep import", value: store.bandSleepImportStatus, source: .bridge("band historical packets"), systemImage: "square.stack.3d.up"))
         HealthInfoRow(row: HealthSummaryRow("Goose sleep score", value: store.sleepFeatureScoreSummary(), source: store.packetScoreSource("metrics.sleep_score_from_features"), systemImage: "bed.double"))
       }
@@ -88,7 +88,7 @@ enum SleepAlarmConfirmation: Identifiable {
 }
 
 struct SleepAlarmBridgeSection: View {
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   @State private var alarmTime = defaultWakeTime()
   @State private var pendingConfirmation: SleepAlarmConfirmation?
   private let alarmID = 1

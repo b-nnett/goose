@@ -50,6 +50,7 @@ fn metric_input_readiness_marks_motion_ready_after_trusted_extraction_exists() {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -221,6 +222,7 @@ fn metric_input_readiness_keeps_hrv_blocked_until_r17_interval_scale_is_validate
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();
@@ -616,6 +618,7 @@ fn trusted_motion_correlation() -> goose_core::capture_correlation::CaptureCorre
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/test",
+            active_device_id: None,
         },
     )
     .unwrap();

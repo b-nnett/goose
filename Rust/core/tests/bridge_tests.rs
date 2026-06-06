@@ -406,6 +406,102 @@ fn bridge_parses_frame_hex_for_app_import_flow() {
 }
 
 #[test]
+fn bridge_accepts_gen4_device_type_string_without_underscore() {
+    // Verifies that the Swift runtime sends "GEN4" (no underscore) and the Rust bridge
+    // correctly routes it to DeviceType::Gen4. This was a silent bug: Swift sends "GEN4"
+    // but Rust only accepted "GEN_4" prior to the Phase 6 fix.
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "gen4-device-type-1",
+        "method": "protocol.parse_frame_hex",
+        "args": {
+            "device_type": "GEN4",
+            "frame_hex": GET_HELLO_FRAME
+        }
+    }));
+    // GET_HELLO_FRAME is a Goose/Gen5 frame — it may parse or fail due to protocol differences,
+    // but "GEN4" MUST NOT produce an "unsupported device_type" error.
+    if !response.ok {
+        let error = response
+            .error
+            .as_ref()
+            .map(|e| e.message.as_str())
+            .unwrap_or("");
+        assert!(
+            !error.contains("unsupported device_type"),
+            "\"GEN4\" should be a recognized device_type, got error: {error}"
+        );
+    }
+}
+
+#[test]
+fn bridge_gen4_device_type_aliases_all_accepted() {
+    // Verify all known Gen4 device_type aliases are accepted
+    for alias in &["GEN4", "GEN_4", "Gen4", "gen4"] {
+        let response = request(serde_json::json!({
+            "schema": "goose.bridge.request.v1",
+            "request_id": format!("gen4-alias-{alias}"),
+            "method": "protocol.parse_frame_hex",
+            "args": {
+                "device_type": alias,
+                "frame_hex": GET_HELLO_FRAME
+            }
+        }));
+        if !response.ok {
+            let error = response
+                .error
+                .as_ref()
+                .map(|e| e.message.as_str())
+                .unwrap_or("");
+            assert!(
+                !error.contains("unsupported device_type"),
+                "device_type \"{alias}\" should be a recognized Gen4 alias, got: {error}"
+            );
+        }
+    }
+}
+
+#[test]
+fn bridge_gen4_upload_device_generation_field_is_set_correctly() {
+    // Verifies that "GEN4" is a valid device_type for capture.import_frame_batch.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "gen4-capture-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-gen4",
+            "frames": [
+                {
+                    "evidence_id": "gen4-capture-1",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-06-03T12:00:00Z",
+                    "device_model": "WHOOP 4.0",
+                    "frame_hex": GET_HELLO_FRAME,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "GEN4"
+                }
+            ]
+        }
+    }));
+
+    assert!(
+        response.ok,
+        "GEN4 capture.import_frame_batch should succeed: {:?}",
+        response.error
+    );
+    let result = response.result.unwrap();
+    assert_eq!(
+        result["raw_inserted"], 1,
+        "Should insert 1 raw frame for GEN4 device_type"
+    );
+}
+
+#[test]
 fn bridge_exposes_algorithm_registry_and_score_methods() {
     let registry = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
@@ -916,6 +1012,20 @@ fn bridge_exposes_command_definitions_for_device_and_debug_controls() {
 
 #[test]
 fn bridge_runs_ui_coverage_audit_for_debug_coverage_surface() {
+    // The UI coverage audit reads the Android APK UI inventory, an external
+    // reference artifact that is not committed to this repository. Skip the
+    // audit assertions when that inventory is absent so the suite stays green
+    // in checkouts (and CI) that do not vendor the APK UI inventory.
+    let coverage_map = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../apk-ui-inventory/coverage-map.json");
+    if !coverage_map.exists() {
+        eprintln!(
+            "skipping bridge_runs_ui_coverage_audit_for_debug_coverage_surface: {} not present",
+            coverage_map.display()
+        );
+        return;
+    }
+
     let response = request(serde_json::json!({
         "schema": "goose.bridge.request.v1",
         "request_id": "ui-coverage-1",
@@ -8406,6 +8516,138 @@ fn c_abi_bridge_roundtrips_json_and_allows_freeing_results() {
     unsafe { goose_bridge_free_string(null_response_ptr) };
 }
 
+#[test]
+fn bridge_panic_catch_returns_error_json_and_normal_requests_still_succeed() {
+    // FIX-04: panic triggered via the deterministic test.panic bridge method.
+    // Route through goose_bridge_handle_json so catch_unwind is exercised end-to-end.
+    let panic_request =
+        std::ffi::CString::new(r#"{"schema":"goose.bridge.request.v1","request_id":"panic-test","method":"test.panic","args":{}}"#)
+        .unwrap();
+    let panic_ptr = unsafe { goose_bridge_handle_json(panic_request.as_ptr()) };
+    assert!(!panic_ptr.is_null(), "expected non-null response pointer");
+    let panic_json = unsafe { std::ffi::CStr::from_ptr(panic_ptr) }
+        .to_str()
+        .unwrap()
+        .to_owned();
+    unsafe { goose_bridge_free_string(panic_ptr) };
+
+    let panic_response: serde_json::Value = serde_json::from_str(&panic_json).unwrap();
+    assert_eq!(
+        panic_response["ok"], false,
+        "expected ok=false for panicking call, got: {panic_json}"
+    );
+    assert_eq!(
+        panic_response["error"]["code"], "panic",
+        "expected error.code=panic, got: {panic_json}"
+    );
+
+    // Regression: normal requests must still succeed after the catch_unwind wrap.
+    let ok_request =
+        std::ffi::CString::new(r#"{"schema":"goose.bridge.request.v1","request_id":"ok-test","method":"core.version","args":{}}"#)
+        .unwrap();
+    let ok_ptr = unsafe { goose_bridge_handle_json(ok_request.as_ptr()) };
+    assert!(
+        !ok_ptr.is_null(),
+        "expected non-null response pointer for core.version"
+    );
+    let ok_json = unsafe { std::ffi::CStr::from_ptr(ok_ptr) }
+        .to_str()
+        .unwrap()
+        .to_owned();
+    unsafe { goose_bridge_free_string(ok_ptr) };
+
+    let ok_response: serde_json::Value = serde_json::from_str(&ok_json).unwrap();
+    assert_eq!(
+        ok_response["ok"], true,
+        "expected ok=true for core.version after catch_unwind wrap, got: {ok_json}"
+    );
+}
+
+#[test]
+fn bridge_compact_raw_evidence_reduces_storage_and_is_noop_when_already_below_limit() {
+    // FIX-05: storage.compact_raw_evidence wires compact_raw_evidence_payloads_to_limit.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Seed the database with raw_evidence rows whose total payload_hex exceeds a small limit.
+    // Each row has 16 bytes of payload_hex (8 hex chars per byte → "aa" * 16 = 32 chars = 16 bytes).
+    // Insert 10 rows → 160 bytes total. We will compact to a limit of 50 bytes.
+    let store = GooseStore::open(&db).unwrap();
+    for i in 0..10i32 {
+        store
+            .insert_raw_evidence(RawEvidenceInput {
+                evidence_id: &format!("compact-test-{i}"),
+                source: "synthetic.compact",
+                captured_at: &format!("2026-01-0{:02}T00:00:00Z", i + 1),
+                device_model: "WHOOP 5.0 Goose",
+                payload: &vec![0xaa_u8; 16],
+                sensitivity: "synthetic",
+                capture_session_id: None,
+            })
+            .unwrap();
+    }
+    drop(store);
+
+    // First call: limit_bytes = 50; should compact rows (160 bytes > 50 bytes).
+    let compact_limit: i64 = 50;
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "compact-1",
+        "method": "storage.compact_raw_evidence",
+        "args": {
+            "database_path": db_path,
+            "limit_bytes": compact_limit
+        }
+    }));
+    assert!(response.ok, "compact call 1 failed: {:?}", response.error);
+    let result = response.result.unwrap();
+    assert!(
+        result.get("before_bytes").is_some(),
+        "missing before_bytes: {result}"
+    );
+    assert!(
+        result.get("after_bytes").is_some(),
+        "missing after_bytes: {result}"
+    );
+    assert!(
+        result.get("compacted_rows").is_some(),
+        "missing compacted_rows: {result}"
+    );
+    assert!(
+        result.get("freed_bytes").is_some(),
+        "missing freed_bytes: {result}"
+    );
+    let compacted_rows = result["compacted_rows"].as_i64().unwrap();
+    assert!(
+        compacted_rows > 0,
+        "expected compacted_rows > 0 when over limit, got: {compacted_rows}"
+    );
+    let after_bytes = result["after_bytes"].as_i64().unwrap();
+    assert!(
+        after_bytes <= compact_limit,
+        "expected after_bytes <= {compact_limit}, got: {after_bytes}"
+    );
+
+    // Second call: already at or below limit → no-op (compacted_rows == 0).
+    let response2 = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "compact-2",
+        "method": "storage.compact_raw_evidence",
+        "args": {
+            "database_path": db_path,
+            "limit_bytes": compact_limit
+        }
+    }));
+    assert!(response2.ok, "compact call 2 failed: {:?}", response2.error);
+    let result2 = response2.result.unwrap();
+    let compacted_rows2 = result2["compacted_rows"].as_i64().unwrap();
+    assert_eq!(
+        compacted_rows2, 0,
+        "expected compacted_rows == 0 on no-op second pass, got: {compacted_rows2}"
+    );
+}
+
 fn request(value: serde_json::Value) -> BridgeResponse {
     serde_json::from_str(&handle_bridge_request_json(&value.to_string())).unwrap()
 }
@@ -8716,4 +8958,218 @@ fn put_u16(bytes: &mut [u8], offset: usize, value: u16) {
 
 fn put_i16(bytes: &mut [u8], offset: usize, value: i16) {
     bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+}
+
+// HR monitor upload stream integration tests (WEAR-01/WEAR-03, CR-02)
+// flags=0x10: 8-bit HR, RR intervals present; HR=72 bpm; RR=0x0400 LE (1024 raw = 1000.0 ms)
+const HR_MONITOR_GATT_BYTES_WITH_RR: &str = "10480004";
+// flags=0x00: 8-bit HR only, no RR intervals; HR=72 bpm
+const HR_MONITOR_GATT_BYTES_NO_RR: &str = "0048";
+
+#[test]
+fn bridge_hr_monitor_upload_stream_contains_bpm_and_rr() {
+    // RED: import an HR monitor frame then call upload.get_recent_decoded_streams
+    // and assert the hr stream is populated with bpm and rr_intervals entries.
+    // This test fails until bridge.rs upload bridge adds the HR monitor branch.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import an HR monitor frame via capture.import_frame_batch
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-1",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [{
+                "evidence_id": "hr-mon-ev-1",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2020-06-04T10:00:00.000Z",
+                "device_model": "HR-Monitor-Test",
+                "frame_hex": HR_MONITOR_GATT_BYTES_WITH_RR,
+                "sensitivity": "user-owned-capture",
+                "device_type": "HR_MONITOR"
+            }]
+        }
+    }));
+    assert!(
+        import_resp.ok,
+        "HR monitor import should succeed: {:?}",
+        import_resp.error
+    );
+    assert_eq!(
+        import_resp.result.as_ref().unwrap()["raw_inserted"],
+        1,
+        "Should insert 1 raw evidence row"
+    );
+    assert_eq!(
+        import_resp.result.as_ref().unwrap()["frames_inserted"],
+        1,
+        "Should insert 1 decoded_frames row for HR monitor"
+    );
+
+    // Query upload.get_recent_decoded_streams — hr stream must be non-empty
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-1",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams should succeed: {:?}",
+        streams_resp.error
+    );
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(hr.len(), 1, "hr stream should have 1 entry, got: {:?}", hr);
+    assert_eq!(hr[0]["bpm"], 72, "bpm should be 72");
+    let rr = hr[0]["rr_intervals"]
+        .as_array()
+        .expect("rr_intervals must be array");
+    assert_eq!(rr.len(), 1, "should have 1 RR interval");
+    // 1024 raw units * 1000 / 1024 = 1000.0 ms
+    let rr_ms = rr[0].as_f64().expect("rr value must be f64");
+    assert!(
+        (rr_ms - 1000.0).abs() < 1.0,
+        "RR interval should be ~1000ms, got {rr_ms}"
+    );
+
+    // HR monitor RR data must NOT appear in the top-level rr stream (D-02)
+    let rr_top = result["rr"].as_array().expect("rr must be an array");
+    assert!(
+        rr_top.is_empty(),
+        "top-level rr stream must be empty for HR monitor data (D-02)"
+    );
+}
+
+#[test]
+fn bridge_hr_monitor_upload_stream_no_rr_when_not_present() {
+    // RED: import an HR monitor frame without RR intervals and assert rr_intervals is [].
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-norr",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [{
+                "evidence_id": "hr-mon-ev-norr",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2020-06-04T10:01:00.000Z",
+                "device_model": "HR-Monitor-Test",
+                "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                "sensitivity": "user-owned-capture",
+                "device_type": "HR_MONITOR"
+            }]
+        }
+    }));
+    assert!(
+        import_resp.ok,
+        "HR monitor import (no RR) should succeed: {:?}",
+        import_resp.error
+    );
+
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-norr",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": ""
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams (no RR) should succeed: {:?}",
+        streams_resp.error
+    );
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(hr.len(), 1, "hr stream should have 1 entry for no-RR frame");
+    assert_eq!(hr[0]["bpm"], 72, "bpm should be 72 for no-RR frame");
+    let rr = hr[0]["rr_intervals"]
+        .as_array()
+        .expect("rr_intervals must be array");
+    assert!(
+        rr.is_empty(),
+        "rr_intervals must be [] when RR intervals are absent in GATT payload"
+    );
+}
+
+#[test]
+fn bridge_hr_monitor_upload_stream_device_id_deferred() {
+    // CR-02 per-row device_id filtering is deferred to v3.0 (namespace mismatch between
+    // CoreBluetooth UUID and device_model BLE name). Verifies current behaviour:
+    // all frames in the time window are returned regardless of device_id value.
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let import_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-import-filter",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test-hr-mon",
+            "frames": [
+                {
+                    "evidence_id": "hr-mon-dev-a",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2020-06-04T10:02:00.000Z",
+                    "device_model": "device-A",
+                    "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "HR_MONITOR"
+                },
+                {
+                    "evidence_id": "hr-mon-dev-b",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2020-06-04T10:03:00.000Z",
+                    "device_model": "device-B",
+                    "frame_hex": HR_MONITOR_GATT_BYTES_NO_RR,
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "HR_MONITOR"
+                }
+            ]
+        }
+    }));
+    assert!(import_resp.ok, "import failed: {:?}", import_resp.error);
+
+    // Per-row filter deferred — both frames returned regardless of device_id (UUID namespace)
+    let streams_resp = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "hr-mon-streams-filter",
+        "method": "upload.get_recent_decoded_streams",
+        "args": {
+            "database_path": db_path,
+            "since_ts": 0.0,
+            "device_id": "A1B2C3D4-E5F6-0000-0000-000000000001"
+        }
+    }));
+    assert!(
+        streams_resp.ok,
+        "upload streams failed: {:?}",
+        streams_resp.error
+    );
+    let result = streams_resp.result.unwrap();
+    let hr = result["hr"].as_array().expect("hr must be an array");
+    assert_eq!(
+        hr.len(),
+        2,
+        "both frames returned (per-row filter deferred to v3.0), got: {:?}",
+        hr
+    );
 }

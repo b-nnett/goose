@@ -6141,6 +6141,7 @@ fn seed_sleep_window_motion(store: &GooseStore) {
             &frames,
             CapturedFrameBatchOptions {
                 parser_version: "goose-core/test",
+                active_device_id: None,
             },
         )
         .unwrap();
@@ -6176,6 +6177,7 @@ fn seed_sleep_window_heart_rate(store: &GooseStore) {
             &frames,
             CapturedFrameBatchOptions {
                 parser_version: "goose-core/test",
+                active_device_id: None,
             },
         )
         .unwrap();

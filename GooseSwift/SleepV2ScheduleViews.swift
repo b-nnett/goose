@@ -82,8 +82,8 @@ struct SleepV2SleepWindowCard: View {
 }
 
 struct SleepV2BandSyncCard: View {
-  @ObservedObject var store: HealthDataStore
-  @ObservedObject var ble: GooseBLEClient
+  var store: HealthDataStore
+  var ble: GooseBLEClient
   let palette: SleepV2Palette
   let onSync: () -> Void
 
@@ -113,7 +113,7 @@ struct SleepV2BandSyncCard: View {
         SleepV2BandSyncRow(
           palette: palette,
           title: "History",
-          value: ble.historicalSyncStatus,
+          value: ble.historicalSyncStatus.localizedHistoricalSyncStatus,
           systemImage: "arrow.triangle.2.circlepath"
         )
         Divider().overlay(palette.separator).padding(.leading, 42)

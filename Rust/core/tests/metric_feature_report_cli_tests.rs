@@ -1082,6 +1082,7 @@ fn import_motion_frame(store: &GooseStore) {
         &frames,
         CapturedFrameBatchOptions {
             parser_version: "goose-core/metric-feature-cli-test",
+            active_device_id: None,
         },
     )
     .unwrap();

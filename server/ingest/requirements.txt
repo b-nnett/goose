@@ -1,0 +1,12 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+psycopg[binary]==3.2.3
+zstandard==0.23.0
+# --- metrics-accuracy overhaul (2026-05-26): vetted signal/HRV/stats libraries ---
+neurokit2==0.2.13
+numpy==2.4.6
+scipy==1.17.1
+scikit-learn==1.8.0
+pandas==2.3.3
+# --- whoop official API client (Task 4) ---
+httpx>=0.27

@@ -1969,13 +1969,11 @@ fn parse_rfc3339_utc_unix_ms(value: &str) -> Option<i64> {
     }
 
     let days = days_from_civil(year, month, day);
-    Some(
-        days.checked_mul(86_400_000)?
-            .checked_add(i64::from(hour) * 3_600_000)?
-            .checked_add(i64::from(minute) * 60_000)?
-            .checked_add(i64::from(second) * 1_000)?
-            .checked_add(i64::from(millis))?,
-    )
+    days.checked_mul(86_400_000)?
+        .checked_add(i64::from(hour) * 3_600_000)?
+        .checked_add(i64::from(minute) * 60_000)?
+        .checked_add(i64::from(second) * 1_000)?
+        .checked_add(i64::from(millis))
 }
 
 fn parse_millis_fraction(value: &str) -> Option<u32> {

@@ -368,6 +368,20 @@ extension HealthDataStore {
   func strainSnapshot(base snapshot: HealthMetricSnapshot) -> HealthMetricSnapshot {
     guard let rawScore = currentStrainScore0To21(),
           let scoreText = Self.numberText(Self.strainPercent(rawScore), fractionDigits: 0) else {
+      // HK proxy: active calorie-based strain estimate
+      if let score = hkStrainScore(),
+         let scoreText = Self.numberText(score, fractionDigits: 0) {
+        return replacingHealthMonitorSnapshot(
+          snapshot,
+          value: scoreText,
+          unit: "%",
+          status: Self.strainStatusLabel(score: score),
+          freshness: "From Apple Health",
+          provenance: "apple.health.active_kcal_strain_estimate",
+          source: .local("apple.health"),
+          trend: Self.emptyTrend(from: snapshot.trend, packetCount: 0)
+        )
+      }
       return zeroStrainSnapshot(
         base: snapshot,
         freshness: "No local data",

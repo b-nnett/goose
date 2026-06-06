@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 struct LiveActivityView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
 
   var body: some View {
     LiveActivityContentView(
@@ -12,7 +12,7 @@ struct LiveActivityView: View {
       session: model.activitySession,
       locationTracker: model.activityLocationTracker
     )
-    .environmentObject(model)
+    .environment(model)
   }
 }
 

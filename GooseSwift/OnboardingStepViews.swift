@@ -193,7 +193,7 @@ struct OnboardingPermissionStep: View {
 }
 
 struct OnboardingConnectStep: View {
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
 
   var body: some View {
     VStack(alignment: .leading, spacing: 18) {
@@ -285,7 +285,7 @@ struct OnboardingConnectStep: View {
     if searching {
       return "Keep Bluetooth on and keep the strap close to this phone."
     }
-    return "Take the strap off your wrist, keep it nearby, then start pairing."
+    return "Supports WHOOP 4.0 and WHOOP 5.0. Take the strap off your wrist, keep it nearby, then start pairing."
   }
 
   private var connectStateLabel: String {
@@ -345,7 +345,7 @@ struct OnboardingStandardActionBar: View {
 }
 
 struct OnboardingConnectActionBar: View {
-  @ObservedObject var ble: GooseBLEClient
+  var ble: GooseBLEClient
   let onBack: () -> Void
   let readyTitle: String
   let onComplete: () -> Void
@@ -586,7 +586,7 @@ struct OnboardingDiscoveredStrapRow: View {
           Text(device.name)
             .font(.headline)
             .foregroundStyle(.primary)
-          Text("RSSI \(device.rssi)")
+          Text("\(device.generation == "unknown" ? "" : "Gen \(device.generation.prefix(1)) · ")RSSI \(device.rssi)")
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }

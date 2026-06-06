@@ -3,6 +3,7 @@ import SwiftUI
 enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case profile
   case device
+  case hrMonitor
   case connectionLab
   case capture
   case localStore
@@ -11,6 +12,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case algorithms
   case debug
   case privacy
+  case remoteServer
   case support
   case about
   case developer
@@ -19,37 +21,41 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
 
   var title: String {
     switch self {
-    case .profile: "Profile"
-    case .device: "Device"
-    case .connectionLab: "Connection Lab"
-    case .capture: "Capture"
-    case .localStore: "Local Store"
-    case .healthSync: "Apple Health Profile"
-    case .rawExport: "Raw Export"
-    case .algorithms: "Algorithms"
-    case .debug: "Debug"
-    case .privacy: "Privacy"
-    case .support: "Support"
-    case .about: "About"
-    case .developer: "Developer"
+    case .profile: String(localized: "Profile")
+    case .device: String(localized: "Device")
+    case .hrMonitor: String(localized: "HR Monitor")
+    case .connectionLab: String(localized: "Connection Lab")
+    case .capture: String(localized: "Capture")
+    case .localStore: String(localized: "Local Store")
+    case .healthSync: String(localized: "Apple Health Profile")
+    case .rawExport: String(localized: "Raw Export")
+    case .algorithms: String(localized: "Algorithms")
+    case .debug: String(localized: "Debug")
+    case .privacy: String(localized: "Privacy")
+    case .remoteServer: String(localized: "Remote Server")
+    case .support: String(localized: "Support")
+    case .about: String(localized: "About")
+    case .developer: String(localized: "Developer")
     }
   }
 
   var subtitle: String {
     switch self {
-    case .profile: "Name, birthday, height, weight, and profile basics"
-    case .device: "WHOOP band, connection, battery, and pairing"
-    case .connectionLab: "Low-level Bluetooth, hello, and event diagnostics"
-    case .capture: "Notification capture, imports, and command evidence"
-    case .localStore: "SQLite path, schema, and storage health"
-    case .healthSync: "Profile weight autofill only"
-    case .rawExport: "Bundle windows, data scopes, validation, and lint"
-    case .algorithms: "Operational algorithm preferences"
-    case .debug: "Rust, parser, command groups, and gated controls"
-    case .privacy: "Local data, export, lint, and deletion state"
-    case .support: "Logs, support bundles, and troubleshooting"
-    case .about: "App, Rust core, and licenses"
-    case .developer: "Capture, exports, bridge diagnostics, and debug tools"
+    case .profile: String(localized: "Name, birthday, height, weight, and profile basics")
+    case .device: String(localized: "WHOOP band, connection, battery, and pairing")
+    case .hrMonitor: String(localized: "Connect and view live heart rate from a Bluetooth HR monitor")
+    case .connectionLab: String(localized: "Low-level Bluetooth, hello, and event diagnostics")
+    case .capture: String(localized: "Notification capture, imports, and command evidence")
+    case .localStore: String(localized: "SQLite path, schema, and storage health")
+    case .healthSync: String(localized: "Profile weight autofill only")
+    case .rawExport: String(localized: "Bundle windows, data scopes, validation, and lint")
+    case .algorithms: String(localized: "Operational algorithm preferences")
+    case .debug: String(localized: "Rust, parser, command groups, and gated controls")
+    case .privacy: String(localized: "Local data, export, lint, and deletion state")
+    case .remoteServer: String(localized: "Server URL, API key, and upload toggle")
+    case .support: String(localized: "Logs, support bundles, and troubleshooting")
+    case .about: String(localized: "App, Rust core, and licenses")
+    case .developer: String(localized: "Capture, exports, bridge diagnostics, and debug tools")
     }
   }
 
@@ -57,6 +63,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: "person.crop.circle"
     case .device: "sensor.tag.radiowaves.forward"
+    case .hrMonitor: "heart.circle"
     case .connectionLab: "antenna.radiowaves.left.and.right"
     case .capture: "record.circle"
     case .localStore: "externaldrive"
@@ -65,6 +72,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: "function"
     case .debug: "terminal"
     case .privacy: "hand.raised"
+    case .remoteServer: "network"
     case .support: "lifepreserver"
     case .about: "info.circle"
     case .developer: "hammer"
@@ -75,6 +83,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     switch self {
     case .profile: \.profile
     case .device: \.device
+    case .hrMonitor: \.hrMonitor
     case .connectionLab: \.connectionLab
     case .capture: \.capture
     case .localStore: \.localStore
@@ -83,23 +92,25 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .algorithms: \.algorithms
     case .debug: \.debug
     case .privacy: \.privacy
+    case .remoteServer: \.remoteServer
     case .support: \.support
     case .about: \.about
     case .developer: \.developer
     }
   }
 
-  static let deviceRoutes: [MoreRoute] = [.device]
+  static let deviceRoutes: [MoreRoute] = [.device, .hrMonitor]
   static let appRoutes: [MoreRoute] = [.healthSync]
-  static let settingsRoutes: [MoreRoute] = [.privacy]
+  static let settingsRoutes: [MoreRoute] = [.privacy, .remoteServer]
   static let supportRoutes: [MoreRoute] = [.support, .about]
   static let developerRoutes: [MoreRoute] = [.developer]
   static let developerToolRoutes: [MoreRoute] = [.connectionLab, .capture, .localStore, .rawExport, .algorithms, .debug]
 }
 
-struct MoreRouteStatus {
+struct MoreRouteStatus: Equatable {
   var profile: MoreStatusKind
   var device: MoreStatusKind
+  var hrMonitor: MoreStatusKind
   var connectionLab: MoreStatusKind
   var capture: MoreStatusKind
   var localStore: MoreStatusKind
@@ -108,6 +119,7 @@ struct MoreRouteStatus {
   var algorithms: MoreStatusKind
   var debug: MoreStatusKind
   var privacy: MoreStatusKind
+  var remoteServer: MoreStatusKind
   var support: MoreStatusKind
   var about: MoreStatusKind
   var developer: MoreStatusKind
@@ -121,7 +133,13 @@ enum MoreStatusKind: String, CaseIterable {
   case stale
 
   var title: String {
-    rawValue.capitalized
+    switch self {
+    case .ready:       String(localized: "Pronto")
+    case .pending:     String(localized: "Pendente")
+    case .blocked:     String(localized: "Bloqueado")
+    case .unavailable: String(localized: "Indisponível")
+    case .stale:       String(localized: "Desatualizado")
+    }
   }
 
   var tint: Color {

@@ -32,6 +32,7 @@ extension GooseAppModel {
       ble.record(source: "overnight.guard", title: "lifecycle.flush", body: "phase=\(phase) raw=\(snapshot.notificationCount) range=\(snapshot.historicalRangePollCount) commands=\(snapshot.commandWriteCount) events=\(snapshot.eventLogCount)")
     } else if phase == "active" || phase == "foreground" {
       resumeOvernightGuardStreamsIfReady(reason: "scene_phase_\(phase)")
+      triggerHealthCheckIfNeeded()
     }
     writeOvernightGuardStatus(reason: "scene_phase_\(phase)")
   }
@@ -63,8 +64,25 @@ extension GooseAppModel {
       return true
     }
 
-    ble.record(source: "ui", title: "debug_command.deep_link", body: "\(commandID) payload=\(payloadHex ?? "nil")")
-    _ = ble.sendDebugResearchCommand(id: commandID, payloadHex: payloadHex, source: "deep_link")
+    let normalizedID = commandID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard let command = ble.debugResearchCommands.first(where: { $0.id == normalizedID }) else {
+      ble.setDebugCommandStatus("Unknown debug command: \(commandID)")
+      ble.record(level: .warn, source: "ble.debug_command", title: "deep_link.unknown", body: commandID)
+      return true
+    }
+    guard command.allowsRemoteInvocation else {
+      ble.setDebugCommandStatus("\(command.title) blocked from external deep link")
+      ble.record(
+        level: .warn,
+        source: "ble.debug_command",
+        title: "deep_link.blocked",
+        body: "\(command.id) risk=\(command.risk)"
+      )
+      return true
+    }
+
+    ble.record(source: "ui", title: "debug_command.deep_link", body: "\(command.id) payload=\(payloadHex ?? "nil")")
+    _ = ble.sendDebugResearchCommand(id: command.id, payloadHex: payloadHex, source: "deep_link")
     return true
   }
 
@@ -77,10 +95,38 @@ extension GooseAppModel {
     heartRateStorageStatus = snapshot.status
   }
 
+  func handleHRConnectionStateChange(_ state: String) {
+    switch state {
+    case "connected":
+      ble.record(source: "health.packet_capture", title: "hr_monitor.auto_start", body: state)
+      startHRMonitorCapture(source: "auto.hr_monitor_connected")
+    case "disconnected":
+      ble.record(source: "health.packet_capture", title: "hr_monitor.auto_stop", body: state)
+      stopHRMonitorCapture(reason: "hr_monitor_disconnected")
+    default:
+      break
+    }
+  }
+
   func handleBLEConnectionStateChange(_ state: String) {
+    if state == "ready" {
+      connectedDeviceGeneration = ble.discoveredDevices
+        .first(where: { $0.id == ble.activeDeviceIdentifier })?.generation
+      captureFrameWriteQueue.activeDeviceID = ble.activeDeviceIdentifier?.uuidString
+    } else {
+      // Clear on all non-ready states (connecting, discovering, connect timeout, disconnected, etc.)
+      // to prevent a stale generation label from the previous connection showing during reconnection.
+      connectedDeviceGeneration = nil
+      captureFrameWriteQueue.activeDeviceID = nil
+    }
+
     if overnightGuardActive {
       if state == "ready" {
         resumeOvernightGuardStreamsIfReady(reason: "ble_ready")
+        if ble.canSyncClock {
+          ble.writeClockCommand(.get, syncIfNeeded: true)
+          ble.record(source: "ble.clock", title: "clock.auto_sync.triggered", body: "state=ready overnight_guard=true")
+        }
       } else {
         passiveActivityCaptureWorkItem?.cancel()
         overnightGuardStatus = "Recording overnight guard | connection \(state)"
@@ -98,6 +144,10 @@ extension GooseAppModel {
     refreshOvernightReadiness(reason: "ble_ready")
     schedulePassiveActivityCapture(reason: "ble_ready")
     scheduleAutoStartRespiratoryPacketWatchIfNeeded()
+    if ble.canSyncClock {
+      ble.writeClockCommand(.get, syncIfNeeded: true)
+      ble.record(source: "ble.clock", title: "clock.auto_sync.triggered", body: "state=ready")
+    }
   }
 
   func schedulePassiveActivityCapture(reason: String) {

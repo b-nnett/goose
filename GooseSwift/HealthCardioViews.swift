@@ -5,7 +5,7 @@ import UIKit
 
 struct CardioLoadSheet: View {
   @Environment(\.dismiss) private var dismiss
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     NavigationStack {
@@ -17,7 +17,7 @@ struct CardioLoadSheet: View {
 }
 
 struct CardioLoadView: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     CardioLoadDetailSurface(store: store, closeAction: nil)
@@ -25,7 +25,7 @@ struct CardioLoadView: View {
 }
 
 struct CardioLoadDetailSurface: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
   let closeAction: (() -> Void)?
   @State private var selectedRange = "30D"
   @State private var selectedDayID: String?

@@ -1,14 +1,17 @@
 use std::{
     fs,
-    os::unix::fs::PermissionsExt,
     process::{Command, Stdio},
 };
 
 use goose_core::store::GooseStore;
 
+fn python_cmd() -> &'static str {
+    if cfg!(windows) { "python" } else { "python3" }
+}
+
 #[test]
 fn neurokit_hrv_adapter_emits_external_reference_contract() {
-    let output = Command::new("python3")
+    let output = Command::new(python_cmd())
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .arg("tools/reference/neurokit_hrv.py")
         .arg("--input")
@@ -54,7 +57,7 @@ fn neurokit_hrv_adapter_emits_external_reference_contract() {
 
 #[test]
 fn pyhrv_time_domain_adapter_emits_external_reference_contract() {
-    let output = Command::new("python3")
+    let output = Command::new(python_cmd())
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .arg("tools/reference/pyhrv_time_domain.py")
         .arg("--input")
@@ -101,7 +104,7 @@ fn pyhrv_time_domain_adapter_emits_external_reference_contract() {
 
 #[test]
 fn pyactigraphy_sadeh_adapter_emits_external_reference_contract() {
-    let output = Command::new("python3")
+    let output = Command::new(python_cmd())
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .arg("tools/reference/pyactigraphy_sadeh.py")
         .arg("--input")
@@ -162,7 +165,7 @@ fn pyactigraphy_sadeh_adapter_emits_external_reference_contract() {
 
 #[test]
 fn ggir_sleep_summary_adapter_emits_external_reference_contract() {
-    let output = Command::new("python3")
+    let output = Command::new(python_cmd())
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .arg("tools/reference/ggir_sleep_summary.py")
         .arg("--input")
@@ -233,7 +236,7 @@ fn reference_runner_executes_named_neurokit_hrv_adapter_and_stores_run() {
         .arg("--input")
         .arg("fixtures/synthetic/hrv_goose_v0_hand_derived.json")
         .arg("--external-command")
-        .arg("python3")
+        .arg(python_cmd())
         .arg("--external-arg")
         .arg("tools/reference/neurokit_hrv.py")
         .arg("--external-arg")
@@ -367,7 +370,7 @@ fn reference_runner_executes_named_pyhrv_adapter_and_stores_run() {
         .arg("--input")
         .arg("fixtures/synthetic/hrv_goose_v0_hand_derived.json")
         .arg("--external-command")
-        .arg("python3")
+        .arg(python_cmd())
         .arg("--external-arg")
         .arg("tools/reference/pyhrv_time_domain.py")
         .arg("--external-arg")
@@ -432,7 +435,7 @@ fn reference_runner_executes_named_pyactigraphy_sadeh_adapter_and_stores_run() {
         .arg("--input")
         .arg("fixtures/synthetic/sleep_actigraphy_counts_sadeh_hand_derived.json")
         .arg("--external-command")
-        .arg("python3")
+        .arg(python_cmd())
         .arg("--external-arg")
         .arg("tools/reference/pyactigraphy_sadeh.py")
         .arg("--external-arg")
@@ -497,7 +500,7 @@ fn reference_runner_executes_named_ggir_sleep_adapter_and_stores_run() {
         .arg("--input")
         .arg("fixtures/synthetic/sleep_ggir_summary_hand_derived.json")
         .arg("--external-command")
-        .arg("python3")
+        .arg(python_cmd())
         .arg("--external-arg")
         .arg("tools/reference/ggir_sleep_summary.py")
         .arg("--db")
@@ -545,6 +548,7 @@ fn reference_runner_executes_named_ggir_sleep_adapter_and_stores_run() {
 }
 
 #[test]
+#[cfg(unix)]
 fn reference_runner_executes_external_provider_contract_and_stores_run() {
     let tempdir = tempfile::tempdir().unwrap();
     let script_path = tempdir.path().join("external-neurokit-fixture.sh");
@@ -679,6 +683,7 @@ JSON
 }
 
 #[test]
+#[cfg(unix)]
 fn reference_runner_rejects_external_provider_with_wrong_schema() {
     let tempdir = tempfile::tempdir().unwrap();
     let script_path = tempdir.path().join("bad-external-reference.sh");
@@ -730,6 +735,7 @@ JSON
 }
 
 #[test]
+#[cfg(unix)]
 fn reference_runner_rejects_external_provider_without_output_units() {
     let tempdir = tempfile::tempdir().unwrap();
     let script_path = tempdir.path().join("missing-units-reference.sh");
@@ -780,9 +786,13 @@ JSON
 
 fn write_executable_script(path: &std::path::Path, contents: &str) {
     fs::write(path, contents).unwrap();
-    let mut permissions = fs::metadata(path).unwrap().permissions();
-    permissions.set_mode(0o755);
-    fs::set_permissions(path, permissions).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = fs::metadata(path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(path, permissions).unwrap();
+    }
 }
 
 fn assert_close(actual: f64, expected: f64) {

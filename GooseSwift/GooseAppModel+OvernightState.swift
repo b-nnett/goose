@@ -3,6 +3,7 @@ import UIKit
 
 
 extension GooseAppModel {
+  @discardableResult
   func refreshOvernightPowerState(reason: String, record: Bool = false) -> OvernightPowerState {
     let power = Self.currentOvernightPowerState()
     applyOvernightPowerState(power)

@@ -76,7 +76,7 @@ struct MoreSupportView: View {
 }
 
 struct MoreAboutView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @ObservedObject var store: MoreDataStore
 
   var body: some View {

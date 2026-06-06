@@ -334,6 +334,106 @@ extension GooseAppModel {
     respiratoryPacketWatchStatus = "Sync \(progress.status): \(progress.detail) | packets \(progress.packetCount) | \(counts)"
   }
 
+  func startHRMonitorCapture(source: String = "auto.hr_monitor_connected") {
+    ble.record(source: "health.packet_capture", title: "hr_monitor.start.requested", body: "source=\(source)")
+    guard ble.hrConnectionState == "connected" else {
+      healthPacketCaptureStatus = "HR monitor not connected. State: \(ble.hrConnectionState)"
+      ble.record(level: .warn, source: "health.packet_capture", title: "hr_monitor.start.blocked", body: healthPacketCaptureStatus)
+      return
+    }
+    guard activeHealthPacketCapture == nil else {
+      ble.record(level: .debug, source: "health.packet_capture", title: "hr_monitor.start.skipped", body: "capture already active mode=\(activeHealthPacketCapture?.mode.rawValue ?? "?")")
+      return
+    }
+
+    let sessionID = "ios.health-packet-capture.\(UUID().uuidString)"
+    let startedAt = Date()
+
+    var args: [String: Any] = [
+      "database_path": HealthDataStore.defaultDatabasePath(),
+      "session_id": sessionID,
+      "source": "ios.health_packet_capture",
+      "started_at_unix_ms": unixMilliseconds(startedAt),
+      "device_model": ble.activeDeviceName,
+      "active_device_id": ble.activeDeviceIdentifier?.uuidString ?? NSNull(),
+      "provenance": [
+        "surface": "HRMonitor",
+        "capture_mode": HealthPacketCaptureMode.hrMonitor.rawValue,
+        "purpose": HealthPacketCaptureMode.hrMonitor.purpose,
+        "target_families": HealthPacketCaptureMode.hrMonitor.targetFamilies,
+        "connection_state": ble.hrConnectionState,
+        "started_by": source,
+      ],
+    ]
+
+    if let modelNumber = ble.modelNumber {
+      args["device_model"] = modelNumber
+    }
+
+    do {
+      _ = try rust.request(method: "capture.start_session", args: args)
+      healthPacketCaptureTimeoutWorkItem?.cancel()
+      activeHealthPacketCapture = ActiveHealthPacketCapture(
+        sessionID: sessionID,
+        startedAt: startedAt,
+        mode: .hrMonitor,
+        importedFrameCount: 0
+      )
+      healthPacketCaptureSessionID = sessionID
+      healthPacketCaptureStartedAt = startedAt
+      healthPacketCaptureFrameCount = 0
+      healthPacketCaptureFamilyRowsByID.removeAll()
+      healthPacketCaptureFamilyRows = []
+      healthPacketCaptureFamilyAggregator.reset()
+      pendingHealthPacketCaptureLastPacketSummary = nil
+      lastRestingHeartRateFrameWriteAt = .distantPast
+      healthPacketCaptureUIUpdateWorkItem?.cancel()
+      healthPacketCaptureUIUpdateWorkItem = nil
+      lastHealthPacketCaptureUIUpdatedAt = Date.distantPast
+      healthPacketCaptureTargetSummary = HealthPacketCaptureMode.hrMonitor.initialTargetSummary
+      healthPacketCaptureLastPacketSummary = "Waiting for packets"
+      healthPacketCaptureStatus = "\(HealthPacketCaptureMode.hrMonitor.statusPrefix) — \(ble.activeDeviceName)"
+      ble.record(source: "health.packet_capture", title: "hr_monitor.start.ok", body: "\(sessionID) mode=hr_monitor source=\(source)")
+    } catch {
+      healthPacketCaptureStatus = "HR monitor start failed: \(String(describing: error))"
+      healthPacketCaptureSessionID = nil
+      healthPacketCaptureStartedAt = nil
+      ble.record(level: .error, source: "health.packet_capture", title: "hr_monitor.start.failed", body: String(describing: error))
+    }
+  }
+
+  func stopHRMonitorCapture(reason: String = "hr_monitor_disconnected") {
+    healthPacketCaptureTimeoutWorkItem?.cancel()
+    flushCaptureFrameEnqueueUpdates()
+    guard let capture = activeHealthPacketCapture, capture.mode == .hrMonitor else {
+      ble.record(level: .debug, source: "health.packet_capture", title: "hr_monitor.stop.skipped", body: reason)
+      return
+    }
+
+    do {
+      _ = try rust.request(
+        method: "capture.finish_session",
+        args: [
+          "database_path": HealthDataStore.defaultDatabasePath(),
+          "session_id": capture.sessionID,
+          "ended_at_unix_ms": unixMilliseconds(Date()),
+          "frame_count": capture.importedFrameCount,
+        ]
+      )
+      activeHealthPacketCapture = nil
+      healthPacketCaptureSessionID = nil
+      healthPacketCaptureStartedAt = nil
+      healthPacketCaptureFrameCount = capture.importedFrameCount
+      healthPacketCaptureStatus = "Stopped \(capture.importedFrameCount) HR monitor frames (\(reason))"
+      publishHealthPacketCaptureUIUpdate()
+      publishPacketImportRevision()
+      ble.record(source: "health.packet_capture", title: "hr_monitor.finish.ok", body: "\(capture.sessionID) frames=\(capture.importedFrameCount) reason=\(reason)")
+    } catch {
+      healthPacketCaptureStatus = "HR monitor finish failed: \(String(describing: error))"
+      ble.record(level: .error, source: "health.packet_capture", title: "hr_monitor.finish.failed", body: String(describing: error))
+    }
+  }
+
   func requestStreamsForActiveCapture(reason: String) {
     guard let capture = activeHealthPacketCapture else {
       return
@@ -346,6 +446,8 @@ extension GooseAppModel {
       requestTemperatureHistoryForActiveCapture(reason: reason)
     case .physiology:
       requestPhysiologyStreamForActiveCapture(reason: reason)
+    case .hrMonitor:
+      break
     }
   }
 

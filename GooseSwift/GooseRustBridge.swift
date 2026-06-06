@@ -19,7 +19,7 @@ struct GooseRustBridgeTiming {
   }
 }
 
-final class GooseRustBridge {
+final class GooseRustBridge: @unchecked Sendable {
   private var counter = 0
   private(set) var lastTiming: GooseRustBridgeTiming?
 

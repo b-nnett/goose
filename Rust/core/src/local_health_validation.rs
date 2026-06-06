@@ -1015,11 +1015,7 @@ fn manifest_review_acceptance_evidence_cases(
         };
         let missing_manual_label_fields = manual_label_fields
             .iter()
-            .filter(|field| {
-                !case_object
-                    .get(*field)
-                    .is_some_and(|value| !value.is_null())
-            })
+            .filter(|field| case_object.get(*field).is_none_or(|value| value.is_null()))
             .cloned()
             .collect::<Vec<_>>();
         let placeholder_fields = null_fields
@@ -1692,13 +1688,12 @@ fn append_runbook_capture_session_binding(markdown: &mut String, cases: Option<&
         };
         let _ = writeln!(
             markdown,
-            "| {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | Add `capture_session_id` or `capture_session_ids` |",
             markdown_table_cell(&case_id),
             markdown_table_cell(&report),
             markdown_table_cell(&normalized_report),
             markdown_table_cell(&suggested_sessions),
-            markdown_table_cell(&required_families),
-            "Add `capture_session_id` or `capture_session_ids`"
+            markdown_table_cell(&required_families)
         );
     }
 }
@@ -1915,15 +1910,14 @@ fn append_runbook_capture_session_unresolved_row(markdown: &mut String, case: &V
         .unwrap_or_default();
     let _ = writeln!(
         markdown,
-        "| {} | {} | {} | {} | {} | {} | {} | {} |",
+        "| {} | {} | {} | {} | {} | {} | {} | Use an observed/imported `capture_session_id` |",
         markdown_table_cell(&case_id),
         markdown_table_cell(&report),
         markdown_table_cell(&normalized_report),
         markdown_table_cell(&source),
         markdown_table_cell(&manifest_review_join_or_dash(&declared_sessions)),
         markdown_table_cell(&manifest_review_join_or_dash(&missing_sessions)),
-        markdown_table_cell(&manifest_review_join_or_dash(&known_sessions)),
-        "Use an observed/imported `capture_session_id`"
+        markdown_table_cell(&manifest_review_join_or_dash(&known_sessions))
     );
 }
 
@@ -2028,14 +2022,13 @@ fn append_runbook_capture_session_packet_families(markdown: &mut String, review:
         );
         let _ = writeln!(
             markdown,
-            "| {} | {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | {} | Bind to a session with the required packet families |",
             markdown_table_cell(&case_id),
             markdown_table_cell(&report),
             markdown_table_cell(&normalized_report),
             markdown_table_cell(&manifest_review_join_or_dash(&declared_sessions)),
             markdown_table_cell(&manifest_review_join_or_dash(&required_families)),
-            markdown_table_cell(&session_families),
-            "Bind to a session with the required packet families"
+            markdown_table_cell(&session_families)
         );
     }
 }
@@ -2137,14 +2130,13 @@ fn append_runbook_case_window_evidence(markdown: &mut String, review: &Value) {
             .unwrap_or_else(|| "--".to_string());
         let _ = writeln!(
             markdown,
-            "| {} | {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | {} | Adjust `start`/`end` or regenerate the Raw Export bundle |",
             markdown_table_cell(&case_id),
             markdown_table_cell(&report),
             markdown_table_cell(&normalized_report),
             markdown_table_cell(&format!("{case_start} to {case_end}")),
             markdown_table_cell(&evidence_status),
-            markdown_table_cell(&evidence_bounds),
-            "Adjust `start`/`end` or regenerate the Raw Export bundle"
+            markdown_table_cell(&evidence_bounds)
         );
     }
 }
@@ -2489,7 +2481,7 @@ fn manifest_review_join_or_dash(values: &[String]) -> String {
 }
 
 fn markdown_inline(value: &str) -> String {
-    value.replace('\n', " ").replace('\r', " ")
+    value.replace(['\n', '\r'], " ")
 }
 
 fn markdown_table_cell(value: &str) -> String {

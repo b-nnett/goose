@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct CoachChatScreen: View {
-  @ObservedObject var chat: OpenAICoachChatModel
-  @ObservedObject var healthStore: HealthDataStore
-  @ObservedObject var appModel: GooseAppModel
+  var chat: CoachChatModel
+  var healthStore: HealthDataStore
+  var appModel: GooseAppModel
   @Binding var draft: String
   let scrollToBottomRequestID: Int
   @FocusState private var composerFocused: Bool

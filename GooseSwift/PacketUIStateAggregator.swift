@@ -21,7 +21,7 @@ struct PacketUIStateSnapshot {
   let coalescedStatusUpdateSummary: String?
 }
 
-final class PacketUIStateAggregator {
+final class PacketUIStateAggregator: @unchecked Sendable {
   enum Field {
     case lastParsedFrameSummary
     case movementPacketStatus

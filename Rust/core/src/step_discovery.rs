@@ -845,7 +845,7 @@ fn selected_counter_delta(
 }
 
 fn rank_counter_deltas(deltas: &mut [StepCounterDeltaCandidate]) {
-    deltas.sort_by(|left, right| counter_delta_rank_key(left).cmp(&counter_delta_rank_key(right)));
+    deltas.sort_by_key(|left| counter_delta_rank_key(left));
     for (index, delta) in deltas.iter_mut().enumerate() {
         delta.rank = index + 1;
         delta.selected = index == 0;

@@ -17,11 +17,15 @@ extension GooseAppModel {
       }
       let result = self.notificationIngestResult(for: event)
       guard !result.frames.isEmpty else {
-        self.handleEmptyNotificationIngestResult(result)
+        DispatchQueue.main.async { [weak self] in
+          self?.handleEmptyNotificationIngestResult(result)
+        }
         return
       }
       guard captureImportActive else {
-        self.handleNotificationIngestResultWithoutCapture(result, parseContext: parseContext)
+        DispatchQueue.main.async { [weak self] in
+          self?.handleNotificationIngestResultWithoutCapture(result, parseContext: parseContext)
+        }
         return
       }
       DispatchQueue.main.async { [weak self] in
@@ -162,6 +166,7 @@ extension GooseAppModel {
   }
 
   func importCapturedFrames(_ frames: [NotificationFrame], event: GooseNotificationEvent) {
+    lastNotificationEvent = event
     guard activeHealthPacketCapture != nil || activeActivityPersistence != nil else {
       return
     }
@@ -186,6 +191,7 @@ extension GooseAppModel {
         + " | rowQ \(rowBuildQueue.depth) hwm \(rowBuildQueue.highWatermark)"
     )
 
+    let aggregator = captureFrameEnqueueAggregator
     captureFrameRowBuildQueue.async { [weak self] in
       guard let self else {
         return
@@ -195,7 +201,7 @@ extension GooseAppModel {
         self?.handleCaptureFrameWriteResult(result)
       }
       let rowBuildQueue = self.decrementCaptureFrameRowBuildQueueDepth()
-      self.captureFrameEnqueueAggregator.record(
+      aggregator.record(
         enqueueResult,
         capturedAt: event.capturedAt,
         rowQueueDepth: rowBuildQueue.depth,
@@ -294,6 +300,10 @@ extension GooseAppModel {
       title: "capture.import.ok",
       body: "batches \(result.batchCount) | raw \(result.rawInserted) inserted, \(result.rawExisting) existing | decoded \(result.inserted) inserted, \(result.existing) existing | \(result.frameCount) queued\(timingSuffix)"
     )
+    if result.pass, result.errorDescription == nil,
+       let event = lastNotificationEvent {
+      triggerUpload(for: result, deviceEvent: event)
+    }
   }
 
   func shouldWriteCapturedFrame(at capturedAt: Date) -> Bool {
@@ -309,7 +319,7 @@ extension GooseAppModel {
     return true
   }
 
-  static func captureEvidenceID(for frame: NotificationFrame, event: GooseNotificationEvent, index: Int) -> String {
+  nonisolated static func captureEvidenceID(for frame: NotificationFrame, event: GooseNotificationEvent, index: Int) -> String {
     let milliseconds = Int((event.capturedAt.timeIntervalSince1970 * 1000).rounded())
     let prefix = String(frame.hex.prefix(16))
     return "ios.\(event.deviceID.uuidString).\(milliseconds).\(index).\(prefix)"
@@ -431,7 +441,9 @@ extension GooseAppModel {
         batchTiming: batchTiming
       )
       guard !mainResults.isEmpty else {
-        self.handleParsedNotificationFramesWithoutMain(dispatch)
+        DispatchQueue.main.async { [weak self] in
+          self?.handleParsedNotificationFramesWithoutMain(dispatch)
+        }
         return
       }
       DispatchQueue.main.async { [weak self] in
@@ -510,7 +522,7 @@ extension GooseAppModel {
     )
   }
 
-  static func interpretNotificationFrame(
+  nonisolated static func interpretNotificationFrame(
     _ result: NotificationFrameParseResult,
     event: GooseNotificationEvent,
     healthCaptureActive: Bool,
@@ -553,7 +565,7 @@ extension GooseAppModel {
     )
   }
 
-  static func requiresMainParsedFrameHandling(
+  nonisolated static func requiresMainParsedFrameHandling(
     _ interpretation: NotificationFrameInterpretation,
     overnightGuardActive: Bool
   ) -> Bool {
@@ -570,7 +582,7 @@ extension GooseAppModel {
     return false
   }
 
-  static func canHandleDataSignalOffMain(
+  nonisolated static func canHandleDataSignalOffMain(
     _ interpretation: NotificationFrameInterpretation,
     overnightGuardActive: Bool,
     respiratoryPacketWatchActive: Bool
@@ -587,7 +599,7 @@ extension GooseAppModel {
       && interpretation.whoopEvent == nil
   }
 
-  static func recordSkippedParsedFrameMainHandling(
+  nonisolated static func recordSkippedParsedFrameMainHandling(
     _ result: ParsedNotificationFrameResult,
     ble: GooseBLEClient,
     packetUIStateAggregator: PacketUIStateAggregator
@@ -663,7 +675,7 @@ extension GooseAppModel {
     let deviceModel: String
   }
 
-  static func captureFrameRows(for request: CaptureFrameRowBuildRequest) -> [CapturedFrameWriteRow] {
+  nonisolated static func captureFrameRows(for request: CaptureFrameRowBuildRequest) -> [CapturedFrameWriteRow] {
     request.frames.enumerated().map { index, frame in
       let evidenceID = Self.captureEvidenceID(for: frame, event: request.event, index: index)
       return CapturedFrameWriteRow(
@@ -689,7 +701,32 @@ extension GooseAppModel {
     let usedBufferedData: Bool
   }
 
-  func notificationIngestResult(for event: GooseNotificationEvent) -> NotificationIngestResult {
+  nonisolated func notificationIngestResult(for event: GooseNotificationEvent) -> NotificationIngestResult {
+    // HR monitor 0x2A37 payloads are standard GATT bytes, not 0xaa-framed WHOOP frames.
+    // Bypass the WHOOP reassembly path and treat the entire notification value as one frame.
+    // This function is intentionally NOT @MainActor — HR notifications arrive at high frequency
+    // and must stay off the main thread (review MEDIUM-3).
+    if event.rustDeviceType == "HR_MONITOR" {
+      let frameHex = event.value.hexString
+      guard !frameHex.isEmpty else {
+        return NotificationIngestResult(
+          event: event,
+          frames: [],
+          bufferedBytes: 0,
+          expectedBytes: nil,
+          droppedBytes: 0,
+          usedBufferedData: false
+        )
+      }
+      return NotificationIngestResult(
+        event: event,
+        frames: [NotificationFrame(hex: frameHex)],
+        bufferedBytes: 0,
+        expectedBytes: nil,
+        droppedBytes: 0,
+        usedBufferedData: false
+      )
+    }
     let reassembly = gooseFrames(in: event.value, event: event)
     return NotificationIngestResult(
       event: event,
@@ -751,7 +788,7 @@ extension GooseAppModel {
     return snapshot
   }
 
-  func decrementCaptureFrameRowBuildQueueDepth() -> (depth: Int, highWatermark: Int) {
+  nonisolated func decrementCaptureFrameRowBuildQueueDepth() -> (depth: Int, highWatermark: Int) {
     captureFrameRowBuildStateLock.lock()
     captureFrameRowBuildQueueDepth = max(0, captureFrameRowBuildQueueDepth - 1)
     let snapshot = (captureFrameRowBuildQueueDepth, captureFrameRowBuildQueueHighWatermark)
@@ -768,7 +805,7 @@ extension GooseAppModel {
     let usedBufferedData: Bool
   }
 
-  func gooseFrames(in data: Data, event: GooseNotificationEvent) -> FrameReassemblyResult {
+  nonisolated func gooseFrames(in data: Data, event: GooseNotificationEvent) -> FrameReassemblyResult {
     let key = frameReassemblyKey(for: event)
     let hadBufferedData = frameReassemblyBuffers[key]?.isEmpty == false
     var bytes = Array(frameReassemblyBuffers[key] ?? Data())
@@ -827,11 +864,11 @@ extension GooseAppModel {
     )
   }
 
-  func frameReassemblyKey(for event: GooseNotificationEvent) -> String {
+  nonisolated func frameReassemblyKey(for event: GooseNotificationEvent) -> String {
     "\(event.deviceID.uuidString)|\(event.serviceUUID)|\(event.characteristicUUID)|\(event.rustDeviceType)"
   }
 
-  static func frameSummary(_ parsed: [String: Any]) -> String {
+  nonisolated static func frameSummary(_ parsed: [String: Any]) -> String {
     let packet = intString(parsed["packet_type"])
     let packetName = parsed["packet_type_name"] as? String ?? "unknown"
     let sequence = intString(parsed["sequence"])

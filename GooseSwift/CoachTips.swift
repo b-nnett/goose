@@ -121,18 +121,20 @@ enum CoachTipFactory {
       healthStore.recoveryOxygenSaturationDisplayText(),
       healthStore.recoveryWristTemperatureDisplayText(),
     ].joined(separator: " | ")
+    let optimalStrain = healthStore.strainTargetDisplayText()
 
     return CoachInlineTip(
       id: "recovery",
       title: "Recovery Coach",
-      message: sentence(recovery, "HRV: \(hrv)", "Vitals: \(vitals)"),
-      source: "Local recovery, HRV, RHR, and vitals",
+      message: sentence(recovery, "Target strain today: \(optimalStrain)", "HRV: \(hrv)"),
+      source: "Local recovery, HRV, RHR, vitals, and optimal strain",
       prompt: """
-      Explain my recovery page and give one practical next action. Use recovery score, HRV, resting HR, provided vitals, and missing vitals. Cite local tool outputs.
+      Explain my recovery and give one practical next action. Use recovery score, HRV, resting HR, vitals, and the optimal strain target. Cite local tool outputs.
 
       Current local highlights:
       - Recovery snapshot: \(snapshot.displayValue) | \(snapshot.status) | \(snapshot.freshness)
       - Recovery score: \(recovery)
+      - Optimal strain target today: \(optimalStrain) (0–21 scale)
       - HRV: \(hrv)
       - Resting HR: \(restingHeartRate)
       - Provided vitals: \(vitals)
@@ -146,6 +148,7 @@ enum CoachTipFactory {
   private static func strainTip(healthStore: HealthDataStore, appModel: GooseAppModel) -> CoachInlineTip {
     let snapshot = healthStore.snapshot(for: .strain)
     let strain = healthStore.strainFeatureScoreSummary()
+    let target = healthStore.strainTargetDisplayText()
     let motion = healthStore.motionFeatureSummary()
     let activity = appModel.activitySession.statusText
     let nextAction = healthStore.packetDerivedScoreNextActionSummary()
@@ -153,14 +156,15 @@ enum CoachTipFactory {
     return CoachInlineTip(
       id: "strain",
       title: "Strain Coach",
-      message: sentence(strain, "Activity: \(activity)", firstUseful(nextAction, motion)),
-      source: "Local strain, motion, and activity",
+      message: sentence("Current: \(strain)", "Target today: \(target)", firstUseful(nextAction, motion)),
+      source: "Local strain, optimal target, motion, and activity",
       prompt: """
-      Explain my strain page and give one practical training-load next action. Preserve WHOOP's 0-21 strain semantics and cite local tool outputs.
+      Explain my strain page and give one practical training-load next action. Use WHOOP's 0-21 strain scale, today's optimal target, and cite local tool outputs.
 
       Current local highlights:
       - Strain snapshot: \(snapshot.displayValue) | \(snapshot.status) | \(snapshot.freshness)
-      - Strain score: \(strain)
+      - Current strain: \(strain)
+      - Optimal strain target today: \(target) (0–21 scale)
       - Motion: \(motion)
       - Activity session: \(activity)
       - Score next action: \(nextAction)

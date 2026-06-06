@@ -1,26 +1,42 @@
 import Darwin
 import Foundation
+import Observation
 import SwiftUI
 import UIKit
 
-@MainActor
-final class HealthDataStore: ObservableObject {
-  @Published var algorithmDefinitions: [HealthAlgorithmDefinition]
-  @Published var referenceDefinitions: [HealthAlgorithmDefinition]
-  @Published var selectedAlgorithmByFamily: [String: String]
-  @Published var catalogStatus = "Metric catalog not loaded"
-  @Published var catalogSource = HealthDataSource.unavailable("metric registry not loaded")
-  @Published var packetInputStatus = "No run"
-  @Published var packetScoreStatus = "No run"
-  @Published var bandSleepImportStatus = "No band sync yet"
-  @Published var externalSleepImportStatus = "External sleep imports disabled"
-  @Published var referenceRunStatusByFamily: [String: String] = [:]
-  @Published var primarySleepDetail: PrimarySleepDetail?
-  @Published var calibrationTargetFamily = "recovery"
-  @Published var calibrationLabelsImported = false
-  @Published var calibrationRunComplete = false
-  @Published var heartRateHourlyRanges: [HeartRateHourlyRange] = []
-  @Published var heartRateTimelineStatus = "No HR samples stored"
+@MainActor @Observable
+final class HealthDataStore {
+  var algorithmDefinitions: [HealthAlgorithmDefinition]
+  var referenceDefinitions: [HealthAlgorithmDefinition]
+  var selectedAlgorithmByFamily: [String: String]
+  var catalogStatus = "Metric catalog not loaded"
+  var catalogSource = HealthDataSource.unavailable("metric registry not loaded")
+  var packetInputStatus = "No run"
+  var packetScoreStatus = "No run"
+  var bandSleepImportStatus = "No band sync yet"
+  var externalSleepImportStatus = "External sleep imports disabled"
+  var referenceRunStatusByFamily: [String: String] = [:]
+  var primarySleepDetail: PrimarySleepDetail?
+
+  // Apple Health fallback values — used when WHOOP packet data is unavailable
+  var hkRestingHR: Double?
+  var hkHRVSDNNMs: Double?
+  var hkRespiratoryRate: Double?
+  var hkSpO2Percent: Double?
+  var hkSkinTempDeltaC: Double?
+  var hkSteps: Int?
+  var hkActiveKcal: Double?
+  var hkWorkouts: [ActivityTimelineItem] = []
+  var hkImportStatus = "Not imported"
+  // 90-day history for WHOOP-style baseline recovery scoring
+  var hkHRVHistory: [(sdnn: Double, date: Date)] = []
+  var hkRHRHistory: [(bpm: Double, date: Date)] = []
+
+  var calibrationTargetFamily = "recovery"
+  var calibrationLabelsImported = false
+  var calibrationRunComplete = false
+  var heartRateHourlyRanges: [HeartRateHourlyRange] = []
+  var heartRateTimelineStatus = "No HR samples stored"
 
   let bridge = GooseRustBridge()
   let heartRateSeriesStore = HeartRateSeriesStore.shared
@@ -33,10 +49,14 @@ final class HealthDataStore: ObservableObject {
   var packetInputRunID: UUID?
   var packetInputIsRunning = false
   var heartRateTimelineRefreshID: UUID?
-  var heartRateSeriesUpdateObserver: NSObjectProtocol?
+  @ObservationIgnored nonisolated(unsafe) var heartRateSeriesUpdateObserver: NSObjectProtocol?
   let packetInputQueue = DispatchQueue(label: "com.goose.swift.health.packet-inputs", qos: .utility)
   let heartRateTimelineQueue = DispatchQueue(label: "com.goose.swift.health.heart-rate-timeline", qos: .utility)
-  lazy var databasePath = HealthDataStore.defaultDatabasePath()
+  var databasePath: String
+
+  // Cache for the 7-day rolling average strain computation (moved from extension — stored
+  // properties are not allowed inside Swift extensions).
+  var sevenDayStrainCache: (value: Double?, computedAt: Date)?
 
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
@@ -53,6 +73,7 @@ final class HealthDataStore: ObservableObject {
     referenceDefinitions = []
     selectedAlgorithmByFamily = [:]
     primarySleepDetail = nil
+    databasePath = HealthDataStore.defaultDatabasePath()
     refreshHeartRateTimeline()
     heartRateSeriesUpdateObserver = NotificationCenter.default.addObserver(
       forName: HeartRateSeriesStore.didUpdateNotification,
@@ -71,13 +92,17 @@ final class HealthDataStore: ObservableObject {
     }
   }
 
-  static func defaultDatabasePath() -> String {
+  nonisolated static func defaultDatabasePath() -> String {
+    _sharedDatabasePath
+  }
+
+  private nonisolated static let _sharedDatabasePath: String = {
     let baseDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
       ?? FileManager.default.temporaryDirectory
     let directory = baseDirectory.appendingPathComponent("GooseSwift", isDirectory: true)
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     return directory.appendingPathComponent("goose.sqlite").path
-  }
+  }()
 
   var usesSampleData: Bool {
     false
@@ -162,38 +187,49 @@ final class HealthDataStore: ObservableObject {
   }
 
   func refreshBridgeCatalogs() {
-    do {
-      let algorithmsValue = try bridge.requestValue(method: "metrics.built_in_definitions")
-      let referencesValue = try bridge.requestValue(method: "metrics.reference_definitions")
-      let preferencesValue = try bridge.requestValue(method: "metrics.default_preferences")
+    catalogStatus = "Loading bridge catalog..."
+    let bridge = self.bridge
+    packetInputQueue.async { [weak self] in
+      do {
+        let algorithmsValue = try bridge.requestValue(method: "metrics.built_in_definitions")
+        let referencesValue = try bridge.requestValue(method: "metrics.reference_definitions")
+        let preferencesValue = try bridge.requestValue(method: "metrics.default_preferences")
 
-      let parsedAlgorithms = Self.algorithmRows(from: algorithmsValue)
-        .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.built_in_definitions")) }
-      let parsedReferences = Self.algorithmRows(from: referencesValue)
-        .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.reference_definitions")) }
-      let parsedPreferences = Self.preferenceRows(from: preferencesValue)
+        let parsedAlgorithms = Self.algorithmRows(from: algorithmsValue)
+          .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.built_in_definitions")) }
+        let parsedReferences = Self.algorithmRows(from: referencesValue)
+          .map { HealthAlgorithmDefinition(row: $0, source: .bridge("metrics.reference_definitions")) }
+        let parsedPreferences = Self.preferenceRows(from: preferencesValue)
 
-      if !parsedAlgorithms.isEmpty {
-        algorithmDefinitions = parsedAlgorithms
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
+          if !parsedAlgorithms.isEmpty {
+            self.algorithmDefinitions = parsedAlgorithms
+          }
+          if !parsedReferences.isEmpty {
+            self.referenceDefinitions = parsedReferences
+          }
+          if !parsedPreferences.isEmpty {
+            self.selectedAlgorithmByFamily = parsedPreferences
+          } else {
+            self.selectedAlgorithmByFamily = Dictionary(
+              uniqueKeysWithValues: self.algorithmDefinitions.map { ($0.family, $0.id) }
+            )
+          }
+          self.catalogSource = .bridge("Rust metric registry")
+          self.catalogStatus = "Bridge catalog loaded"
+        }
+      } catch {
+        let shortErr = Self.shortError(error)
+        DispatchQueue.main.async { [weak self] in
+          guard let self else { return }
+          self.algorithmDefinitions = []
+          self.referenceDefinitions = []
+          self.selectedAlgorithmByFamily = [:]
+          self.catalogSource = .unavailable("Rust catalog unavailable")
+          self.catalogStatus = "Metric catalog unavailable: \(shortErr)"
+        }
       }
-      if !parsedReferences.isEmpty {
-        referenceDefinitions = parsedReferences
-      }
-      if !parsedPreferences.isEmpty {
-        selectedAlgorithmByFamily = parsedPreferences
-      } else {
-        selectedAlgorithmByFamily = Dictionary(
-          uniqueKeysWithValues: algorithmDefinitions.map { ($0.family, $0.id) }
-        )
-      }
-      catalogSource = .bridge("Rust metric registry")
-      catalogStatus = "Bridge catalog loaded"
-    } catch {
-      algorithmDefinitions = []
-      referenceDefinitions = []
-      selectedAlgorithmByFamily = [:]
-      catalogSource = .unavailable("Rust catalog unavailable")
-      catalogStatus = "Metric catalog unavailable: \(Self.shortError(error))"
     }
   }
 

@@ -4,7 +4,7 @@ import SwiftUI
 import UIKit
 
 struct EnergyBankView: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     List {
@@ -49,7 +49,7 @@ struct EnergyBankView: View {
 }
 
 struct AlgorithmsHealthView: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     List {
@@ -89,7 +89,7 @@ struct AlgorithmsHealthView: View {
 }
 
 struct ReferenceComparisonsView: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     List {
@@ -115,7 +115,7 @@ struct ReferenceComparisonsView: View {
 }
 
 struct CalibrationHealthView: View {
-  @ObservedObject var store: HealthDataStore
+  @Bindable var store: HealthDataStore
 
   var body: some View {
     List {

@@ -5,8 +5,8 @@ import UIKit
 
 struct RecoveryV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  @EnvironmentObject private var model: GooseAppModel
-  @ObservedObject var store: HealthDataStore
+  @Environment(GooseAppModel.self) private var model
+  var store: HealthDataStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingDatePicker = false
@@ -37,15 +37,21 @@ struct RecoveryV2OverviewPage: View {
           LazyVStack(alignment: .leading, spacing: 0) {
             SleepV2ScrollOffsetProbe()
 
-            SleepV2Hero(
-              palette: palette,
-              title: "Recovery",
-              dateLabel: dateLabel,
-              score: recoveryScore,
-              gaugeLabel: "Recovery",
-              onDateTap: { showingDatePicker = true }
-            )
-            .frame(height: heroHeight)
+            if store.packetScoreStatus.hasPrefix("Extracting") {
+              ProgressView()
+                .tint(palette.accent)
+                .frame(height: heroHeight)
+            } else {
+              SleepV2Hero(
+                palette: palette,
+                title: "Recovery",
+                dateLabel: dateLabel,
+                score: recoveryScore,
+                gaugeLabel: "Recovery",
+                onDateTap: { showingDatePicker = true }
+              )
+              .frame(height: heroHeight)
+            }
 
             VStack(alignment: .leading, spacing: 14) {
               LazyVGrid(columns: statColumns, spacing: 12) {
@@ -87,6 +93,14 @@ struct RecoveryV2OverviewPage: View {
                 systemImage: "thermometer.medium",
                 label: "Wrist Temperature",
                 value: store.recoveryWristTemperatureDisplayText(for: selectedDate)
+              )
+              .frame(height: 96)
+
+              SleepV2StatCard(
+                palette: palette,
+                systemImage: "target",
+                label: "Target Strain Today",
+                value: store.strainTargetDisplayText()
               )
               .frame(height: 96)
 
@@ -153,6 +167,13 @@ struct RecoveryV2OverviewPage: View {
     .sheet(item: $selectedTrend) { snapshot in
       SleepV2BevelTrendSheet(snapshot: snapshot)
     }
+    .onAppear {
+      store.loadBridgeCatalogsIfNeeded()
+      store.runPacketScores()
+    }
+    .onChange(of: model.packetImportRevision) { _, _ in
+      store.runPacketScores()
+    }
   }
 
   private var selectedSnapshot: HealthMetricSnapshot {
@@ -197,8 +218,8 @@ struct RecoveryV2OverviewPage: View {
 
 struct StressV2OverviewPage: View {
   @EnvironmentObject private var router: AppRouter
-  @EnvironmentObject private var model: GooseAppModel
-  @ObservedObject var store: HealthDataStore
+  @Environment(GooseAppModel.self) private var model
+  var store: HealthDataStore
   @Binding var selectedDate: Date
   @Environment(\.colorScheme) private var colorScheme
   @State private var showingDatePicker = false

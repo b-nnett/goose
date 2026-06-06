@@ -22,7 +22,7 @@ enum OnboardingStep: Int, CaseIterable {
     case .notifications:
       return "Enable Notifications"
     case .connect:
-      return "Connect your WHOOP"
+      return "Connect your WHOOP (4.0 or 5.0)"
     case .profile:
       return "Personal details"
     }

@@ -1136,10 +1136,10 @@ fn load_command_local_frame_candidates_file(
         return Ok(Vec::new());
     }
 
-    if let Ok(file) = serde_json::from_str::<CommandLocalFrameCandidateFile>(&raw) {
-        if let Some(candidates) = file.candidates {
-            return Ok(normalize_command_local_frame_candidates(candidates));
-        }
+    if let Ok(file) = serde_json::from_str::<CommandLocalFrameCandidateFile>(&raw)
+        && let Some(candidates) = file.candidates
+    {
+        return Ok(normalize_command_local_frame_candidates(candidates));
     }
     if let Ok(candidates) = serde_json::from_str::<Vec<CommandLocalFrameCandidate>>(&raw) {
         return Ok(normalize_command_local_frame_candidates(candidates));
@@ -1210,7 +1210,7 @@ fn normalize_command_identifier(raw: &str) -> Option<String> {
         .find(|definition| {
             definition.id == snake
                 || definition.id.eq_ignore_ascii_case(trimmed)
-                || definition.id.to_ascii_uppercase() == trimmed.to_ascii_uppercase()
+                || definition.id.eq_ignore_ascii_case(trimmed)
         })
         .map(|definition| definition.id.to_string())
 }
@@ -1247,7 +1247,7 @@ pub fn command_evidence_from_emulator_log_text(
     raw: &str,
     options: &CommandEmulatorLogEvidenceOptions,
 ) -> GooseResult<CommandEmulatorLogEvidenceReport> {
-    let lines = emulator_log_lines(&raw);
+    let lines = emulator_log_lines(raw);
     let mut issues = Vec::new();
     let mut pending_writes = Vec::<PendingEmulatorCommandWrite>::new();
     let mut accumulators = BTreeMap::<String, EmulatorCommandEvidenceAccumulator>::new();
@@ -3166,33 +3166,31 @@ fn validate_command_endpoint(
         warnings,
     );
 
-    if let (Some(official), Some(local)) = (&official_service, &local_service) {
-        if normalize_ble_identifier_for_compare(official)
+    if let (Some(official), Some(local)) = (&official_service, &local_service)
+        && normalize_ble_identifier_for_compare(official)
             != normalize_ble_identifier_for_compare(local)
-        {
-            missing.push("ble_service_uuid_matches_official_capture".to_string());
-            warnings.push(format!(
-                "local BLE service {local} did not match official capture {official}"
-            ));
-        }
+    {
+        missing.push("ble_service_uuid_matches_official_capture".to_string());
+        warnings.push(format!(
+            "local BLE service {local} did not match official capture {official}"
+        ));
     }
-    if let (Some(official), Some(local)) = (&official_characteristic, &local_characteristic) {
-        if normalize_ble_identifier_for_compare(official)
+    if let (Some(official), Some(local)) = (&official_characteristic, &local_characteristic)
+        && normalize_ble_identifier_for_compare(official)
             != normalize_ble_identifier_for_compare(local)
-        {
-            missing.push("ble_characteristic_uuid_matches_official_capture".to_string());
-            warnings.push(format!(
-                "local BLE characteristic {local} did not match official capture {official}"
-            ));
-        }
+    {
+        missing.push("ble_characteristic_uuid_matches_official_capture".to_string());
+        warnings.push(format!(
+            "local BLE characteristic {local} did not match official capture {official}"
+        ));
     }
-    if let (Some(official), Some(local)) = (&official_write_type, &local_write_type) {
-        if official != local {
-            missing.push("ble_write_type_matches_official_capture".to_string());
-            warnings.push(format!(
-                "local BLE write type {local} did not match official capture {official}"
-            ));
-        }
+    if let (Some(official), Some(local)) = (&official_write_type, &local_write_type)
+        && official != local
+    {
+        missing.push("ble_write_type_matches_official_capture".to_string());
+        warnings.push(format!(
+            "local BLE write type {local} did not match official capture {official}"
+        ));
     }
 
     match (local_service, local_characteristic, local_write_type) {
@@ -3659,22 +3657,18 @@ fn candidate_endpoint_mismatch(
     if let (Some(official), Some(local)) = (
         evidence.official_service_uuid.as_deref(),
         candidate.local_service_uuid.as_deref(),
-    ) {
-        if normalize_ble_identifier_for_compare(official)
-            != normalize_ble_identifier_for_compare(local)
-        {
-            return Err("local_service_uuid_mismatch".to_string());
-        }
+    ) && normalize_ble_identifier_for_compare(official)
+        != normalize_ble_identifier_for_compare(local)
+    {
+        return Err("local_service_uuid_mismatch".to_string());
     }
     if let (Some(official), Some(local)) = (
         evidence.official_characteristic_uuid.as_deref(),
         candidate.local_characteristic_uuid.as_deref(),
-    ) {
-        if normalize_ble_identifier_for_compare(official)
-            != normalize_ble_identifier_for_compare(local)
-        {
-            return Err("local_characteristic_uuid_mismatch".to_string());
-        }
+    ) && normalize_ble_identifier_for_compare(official)
+        != normalize_ble_identifier_for_compare(local)
+    {
+        return Err("local_characteristic_uuid_mismatch".to_string());
     }
     if let (Some(official), Some(local)) = (
         evidence.official_write_type.as_deref(),

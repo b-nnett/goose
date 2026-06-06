@@ -898,15 +898,14 @@ impl ExternalReferenceReport {
                     errors.push("output_units_must_be_object".to_string());
                 }
             }
-            "goose.reference-algo-report.v1" => {
+            "goose.reference-algo-report.v1"
                 if self
                     .provenance
                     .get("provider_kind")
                     .and_then(|value| value.as_str())
-                    .is_none_or(str::is_empty)
-                {
-                    errors.push("missing_provider_kind".to_string());
-                }
+                    .is_none_or(str::is_empty) =>
+            {
+                errors.push("missing_provider_kind".to_string());
             }
             _ => {}
         }

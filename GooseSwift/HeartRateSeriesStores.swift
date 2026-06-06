@@ -57,7 +57,7 @@ struct HeartRateSeriesFile: Codable {
   let samples: [HeartRateSamplePoint]
 }
 
-final class HeartRateSeriesStore {
+final class HeartRateSeriesStore: @unchecked Sendable {
   static let shared = HeartRateSeriesStore()
   static let didUpdateNotification = Notification.Name("GooseHeartRateSeriesStoreDidUpdate")
 

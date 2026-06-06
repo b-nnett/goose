@@ -32,9 +32,6 @@ final class OnboardingLocationPermissionRequester: NSObject, ObservableObject, C
   }
 
   func requestAccess() async -> LocationPermissionResult {
-    guard CLLocationManager.locationServicesEnabled() else {
-      return LocationPermissionResult(status: "Location services disabled", isResolved: true)
-    }
     guard continuation == nil else {
       return LocationPermissionResult(status: "Request already in progress", isResolved: false)
     }

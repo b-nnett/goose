@@ -5,6 +5,7 @@ enum HealthPacketCaptureMode: String {
   case walk
   case temperature
   case physiology
+  case hrMonitor = "hr_monitor"
 
   var purpose: String {
     switch self {
@@ -14,6 +15,8 @@ enum HealthPacketCaptureMode: String {
       return "temperature_history_event_capture"
     case .physiology:
       return "full_physiology_signal_capture"
+    case .hrMonitor:
+      return "standard_gatt_hr_monitor_capture"
     }
   }
 
@@ -46,6 +49,8 @@ enum HealthPacketCaptureMode: String {
         "pulse_information_k25_k26",
         "temperature_candidates_if_present",
       ]
+    case .hrMonitor:
+      return ["embedded_heart_rate"]
     }
   }
 
@@ -57,6 +62,8 @@ enum HealthPacketCaptureMode: String {
       return "frames 0 | K18 0 | K24 0 | event17 0 | temp 0 | unknown 0"
     case .physiology:
       return "frames 0 | motion 0 | K11 0 | HR 0 | R21 0 | optical 0 | pulse 0 | temp 0 | unknown 0"
+    case .hrMonitor:
+      return "frames 0 | BPM 0 | RR 0"
     }
   }
 
@@ -68,6 +75,8 @@ enum HealthPacketCaptureMode: String {
       return "Capturing temperature history"
     case .physiology:
       return "Capturing physiology signals"
+    case .hrMonitor:
+      return "Capturing HR monitor"
     }
   }
 }

@@ -321,7 +321,7 @@ struct HealthRouteShortcutCard: View {
 
 struct HealthRouteDetailView: View {
   let route: HealthRoute
-  @StateObject private var store: HealthDataStore
+  @State private var store: HealthDataStore
 
   init(route: HealthRoute, previewState: HealthPreviewState? = nil) {
     self.route = route
@@ -329,7 +329,7 @@ struct HealthRouteDetailView: View {
     if let previewState {
       store.applyPreviewState(previewState)
     }
-    _store = StateObject(wrappedValue: store)
+    _store = State(initialValue: store)
   }
 
   var body: some View {
@@ -339,7 +339,7 @@ struct HealthRouteDetailView: View {
 
 struct HealthRouteDestinationView: View {
   let route: HealthRoute
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
   var selectedDate: Binding<Date>?
 
   init(route: HealthRoute, store: HealthDataStore, selectedDate: Binding<Date>? = nil) {
@@ -358,7 +358,7 @@ struct HealthRouteDestinationView: View {
 
 struct HealthRouteContentView: View {
   let route: HealthRoute
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
   var selectedDate: Binding<Date>? = nil
 
   var body: some View {
@@ -384,7 +384,7 @@ struct HealthRouteContentView: View {
 }
 
 struct HealthStatusBanner: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
@@ -470,8 +470,9 @@ struct HealthMetricCard: View {
 }
 
 struct HealthMonitorView: View {
-  @ObservedObject var store: HealthDataStore
+  var store: HealthDataStore
   @State private var selectedTrend: HealthMetricSnapshot?
+  @State private var cachedMonitorSnapshots: [HealthMetricSnapshot] = []
 
   private let columns = [
     GridItem(.flexible(), spacing: 10),
@@ -484,7 +485,7 @@ struct HealthMonitorView: View {
         HealthHero(snapshot: store.snapshot(for: .healthMonitor), subtitle: "Vitals, timeline, and primary sleep inputs")
 
         LazyVGrid(columns: columns, spacing: 10) {
-          ForEach(store.healthMonitorSnapshots()) { snapshot in
+          ForEach(cachedMonitorSnapshots) { snapshot in
             Button {
               selectedTrend = snapshot
             } label: {
@@ -540,9 +541,13 @@ struct HealthMonitorView: View {
     .gooseScreenBackground()
     .navigationTitle("Health Monitor")
     .task {
+      cachedMonitorSnapshots = store.healthMonitorSnapshots()
       store.refreshHeartRateTimeline()
       store.refreshPacketInputsIfNeeded()
     }
+    .onChange(of: store.packetScoreStatus) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: store.hkHRVSDNNMs) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
+    .onChange(of: store.hkRestingHR) { cachedMonitorSnapshots = store.healthMonitorSnapshots() }
     .sheet(item: $selectedTrend) { snapshot in
       if snapshot.id == "resting-hr" || snapshot.id == "resting-hrv" {
         SleepV2BevelTrendSheet(snapshot: snapshot)
@@ -554,8 +559,8 @@ struct HealthMonitorView: View {
 }
 
 struct PacketHealthView: View {
-  @EnvironmentObject private var model: GooseAppModel
-  @ObservedObject var store: HealthDataStore
+  @Environment(GooseAppModel.self) private var model
+  var store: HealthDataStore
 
   var body: some View {
     List {

@@ -1,0 +1,47 @@
+# Goose stack: TimescaleDB datastore + FastAPI ingest service.
+# Uses named Docker volumes for data persistence.
+# Copy .env.example to .env and fill in before `docker compose up`.
+services:
+  goose-db:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: goose-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${GOOSE_DB_NAME:-goose}
+      - POSTGRES_USER=${GOOSE_DB_USER:-goose}
+      - POSTGRES_PASSWORD=${GOOSE_DB_PASSWORD}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - goose-db-data:/var/lib/postgresql/data
+      # init.sql runs ONLY on first init (empty data dir). The ingest service also
+      # bootstraps the schema idempotently on startup, so re-runs are safe.
+      - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GOOSE_DB_USER:-goose} -d ${GOOSE_DB_NAME:-goose}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  goose-ingest:
+    build:
+      # server/ dir, so the image can COPY packages/whoop-protocol
+      context: .
+      dockerfile: ingest/Dockerfile
+    container_name: goose-ingest
+    restart: unless-stopped
+    depends_on:
+      goose-db:
+        condition: service_healthy
+    environment:
+      - GOOSE_API_KEY=${GOOSE_API_KEY}
+      - GOOSE_DB_DSN=postgresql://${GOOSE_DB_USER:-goose}:${GOOSE_DB_PASSWORD}@goose-db:5432/${GOOSE_DB_NAME:-goose}
+      - GOOSE_RAW_ROOT=/data/raw
+      - TZ=${TZ:-UTC}
+    volumes:
+      - goose-raw-data:/data/raw
+    ports:
+      - "${GOOSE_INGEST_PORT:-8770}:8000"
+
+volumes:
+  goose-db-data:
+  goose-raw-data:

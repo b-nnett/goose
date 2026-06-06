@@ -8,14 +8,15 @@ import HealthKit
 #endif
 
 struct MoreView: View {
-  @EnvironmentObject private var model: GooseAppModel
+  @Environment(GooseAppModel.self) private var model
   @EnvironmentObject private var router: AppRouter
-  @ObservedObject private var healthStore: HealthDataStore
+  private var healthStore: HealthDataStore
   @StateObject private var store: MoreDataStore
   @AppStorage(OnboardingStorage.firstName) private var profileFirstName = ""
   @AppStorage(OnboardingStorage.unitSystem) private var profileUnitSystemRaw = "imperial"
   @AppStorage(OnboardingStorage.heightMm) private var profileHeightMm = 0
   @AppStorage(OnboardingStorage.weightGrams) private var profileWeightGrams = 0
+  @State private var isImportingSleep = false
 
   @MainActor
   init(healthStore: HealthDataStore) {
@@ -49,6 +50,31 @@ struct MoreView: View {
         routeRows(MoreRoute.appRoutes)
       }
 
+      Section("Apple Health") {
+        Button {
+          guard !isImportingSleep else { return }
+          isImportingSleep = true
+          Task {
+            await healthStore.importAllFromHealthKit()
+            isImportingSleep = false
+          }
+        } label: {
+          HStack {
+            Label("Import from Apple Health", systemImage: "heart.fill")
+            Spacer()
+            if isImportingSleep {
+              ProgressView()
+            }
+          }
+        }
+        .disabled(isImportingSleep)
+        if healthStore.hkImportStatus != "Not imported" {
+          Text(healthStore.hkImportStatus)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+      }
+
       Section("Settings") {
         routeRows(MoreRoute.settingsRoutes)
       }
@@ -73,18 +99,24 @@ struct MoreView: View {
       model.recordUIAction("page.opened", detail: "More")
       store.refreshBridgeStatus(model: model)
       store.refreshRecentCaptureSessions()
+      store.refreshRouteStatus(ble: model.ble, model: model)
     }
-  }
-
-  private var routeStatus: MoreRouteStatus {
-    store.routeStatus(ble: model.ble, model: model)
+    .onChange(of: model.ble.connectionState) { _, _ in
+      store.refreshRouteStatus(ble: model.ble, model: model)
+    }
+    .onChange(of: model.ble.hrConnectionState) { _, _ in
+      store.refreshRouteStatus(ble: model.ble, model: model)
+    }
+    .onChange(of: model.helloSummary) { _, _ in
+      store.refreshRouteStatus(ble: model.ble, model: model)
+    }
   }
 
   @ViewBuilder
   private func routeRows(_ routes: [MoreRoute]) -> some View {
     ForEach(routes) { route in
       NavigationLink(value: route) {
-        MoreRouteRow(route: route, status: routeStatus[keyPath: route.statusKeyPath])
+        MoreRouteRow(route: route, status: store.routeStatus[keyPath: route.statusKeyPath])
       }
       .accessibilityLabel(route.title)
     }
@@ -95,6 +127,8 @@ struct MoreView: View {
     switch route {
     case .device:
       DeviceView()
+    case .hrMonitor:
+      HRMonitorView()
     case .profile:
       MoreProfileView()
     case .connectionLab:
@@ -115,12 +149,14 @@ struct MoreView: View {
       MoreDebugView(store: store)
     case .privacy:
       MorePrivacyView(store: store)
+    case .remoteServer:
+      MoreRemoteServerView()
     case .support:
       MoreSupportView(store: store)
     case .about:
       MoreAboutView(store: store)
     case .developer:
-      MoreDeveloperView(routes: MoreRoute.developerToolRoutes, routeStatus: routeStatus)
+      MoreDeveloperView(routes: MoreRoute.developerToolRoutes, routeStatus: store.routeStatus)
     }
   }
 
