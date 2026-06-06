@@ -608,7 +608,7 @@ extension GooseBLEClient {
       // counter and queues the next cmd 23 request for page_seq + 1.
       let ackPayload: [UInt8]
       if activeDeviceGeneration == .gen4 {
-        gen4HistoricalPageSeq += 1
+        gen4HistoricalPageSeq &+= 1
         ackPayload = gen4PageRequestPayload(seq: gen4HistoricalPageSeq)
         record(
           level: .debug,
