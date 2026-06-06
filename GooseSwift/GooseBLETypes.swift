@@ -198,6 +198,12 @@ enum WhoopGeneration: CustomStringConvertible {
   // MARK: Gen4 internals
 
   /// Gen4 frame layout: [0xaa, len_lo, len_hi, crc8(len_bytes), payload..., crc32 x4]
+  ///
+  /// Gen4 frames are intentionally unpadded — unlike `buildV5CommandFrame`,
+  /// which rounds the payload up to a 4-byte boundary. Confirmed from the
+  /// PacketLogger capture of the official iOS app: it emits `cmd 120` with a
+  /// 65-byte args field (not a multiple of 4), proving no padding is applied.
+  /// Our unpadded frames also round-trip cleanly with the strap.
   private static func buildGen4CommandFrame(sequence: UInt8, command: UInt8, data: [UInt8]) -> Data {
     var payload: [UInt8] = [GooseBLEClient.V5PacketType.command, sequence, command]
     payload.append(contentsOf: data)
