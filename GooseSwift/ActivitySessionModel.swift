@@ -14,6 +14,16 @@ final class ActivitySessionModel: ObservableObject {
   @Published private(set) var maxHeartRate: Int?
   @Published private(set) var zoneDurations: [Int: TimeInterval] = [:]
 
+  // Private backing stores updated at full 60 Hz sample rate.
+  // @Published properties are only flushed at uiPublishInterval to avoid
+  // driving a SwiftUI re-render on every sample tick.
+  private var _elapsed: TimeInterval = 0
+  private var _averageHeartRate: Int?
+  private var _maxHeartRate: Int?
+  private var _zoneDurations: [Int: TimeInterval] = [:]
+  private var lastPublishedAt: Date = .distantPast
+  private static let uiPublishInterval: TimeInterval = 1.0 / 4.0
+
   private var lastTick: Date?
   private var heartRateWeightedTotal: Double = 0
   private var heartRateMeasuredSeconds: TimeInterval = 0
@@ -71,6 +81,7 @@ final class ActivitySessionModel: ObservableObject {
       return
     }
     tick(now: now, heartRate: heartRate)
+    flushToUI(now: now)  // ensure latest samples are visible before pausing
     isPaused = true
     lastTick = nil
     timer?.invalidate()
@@ -82,6 +93,7 @@ final class ActivitySessionModel: ObservableObject {
       return
     }
     tick(now: now, heartRate: heartRate)
+    flushToUI(now: now)  // flush final sample before clearing state
     isActive = false
     isPaused = false
     endedAt = now
@@ -97,18 +109,31 @@ final class ActivitySessionModel: ObservableObject {
     }
     let previousTick = lastTick ?? now
     let delta = max(0, now.timeIntervalSince(previousTick))
-    elapsed += delta
+    _elapsed += delta
     lastTick = now
 
-    guard delta > 0, let heartRate else {
-      return
+    if delta > 0, let heartRate {
+      let zoneID = HeartRateZone.zoneID(for: heartRate)
+      _zoneDurations[zoneID, default: 0] += delta
+      heartRateWeightedTotal += Double(heartRate) * delta
+      heartRateMeasuredSeconds += delta
+      _averageHeartRate = Int((heartRateWeightedTotal / max(heartRateMeasuredSeconds, 1)).rounded())
+      _maxHeartRate = max(_maxHeartRate ?? heartRate, heartRate)
     }
-    let zoneID = HeartRateZone.zoneID(for: heartRate)
-    zoneDurations[zoneID, default: 0] += delta
-    heartRateWeightedTotal += Double(heartRate) * delta
-    heartRateMeasuredSeconds += delta
-    averageHeartRate = Int((heartRateWeightedTotal / max(heartRateMeasuredSeconds, 1)).rounded())
-    maxHeartRate = max(maxHeartRate ?? heartRate, heartRate)
+
+    if now.timeIntervalSince(lastPublishedAt) >= Self.uiPublishInterval {
+      flushToUI(now: now)
+    }
+  }
+
+  // Copies backing-store values into the @Published properties in a single
+  // synchronous block so SwiftUI coalesces them into one re-render.
+  private func flushToUI(now: Date) {
+    lastPublishedAt = now
+    elapsed = _elapsed
+    averageHeartRate = _averageHeartRate
+    maxHeartRate = _maxHeartRate
+    zoneDurations = _zoneDurations
   }
 
   private func scheduleTimer() {
@@ -130,13 +155,18 @@ final class ActivitySessionModel: ObservableObject {
     if !keepingSelection {
       selectedActivity = .run
     }
+    _elapsed = 0
+    _averageHeartRate = nil
+    _maxHeartRate = nil
+    _zoneDurations = [:]
+    heartRateWeightedTotal = 0
+    heartRateMeasuredSeconds = 0
+    lastTick = nil
+    lastPublishedAt = .distantPast
     elapsed = 0
     averageHeartRate = nil
     maxHeartRate = nil
     zoneDurations = [:]
-    heartRateWeightedTotal = 0
-    heartRateMeasuredSeconds = 0
-    lastTick = nil
     startedAt = nil
     endedAt = nil
     isActive = false

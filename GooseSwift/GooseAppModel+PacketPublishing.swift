@@ -666,7 +666,10 @@ extension GooseAppModel {
     }
 
     movementPacketValidation.ingest(sample)
-    movementPacketValidationStatus = movementPacketValidation.statusSummary
+    let newValidationStatus = movementPacketValidation.statusSummary
+    if newValidationStatus != movementPacketValidationStatus {
+      movementPacketValidationStatus = newValidationStatus
+    }
     ble.record(
       level: .debug,
       source: "activity.detect",
@@ -703,6 +706,9 @@ extension GooseAppModel {
     for event in events {
       switch event {
       case .status(let status):
+        // Guard prevents @Published objectWillChange from firing when the status string
+        // repeats unchanged across consecutive movement packets.
+        guard status != activityDetectionStatus else { break }
         activityDetectionStatus = status
       case .primeGPS(let reason):
         activityDetectionStatus = "Movement detected; priming GPS"

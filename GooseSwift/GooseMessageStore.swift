@@ -47,10 +47,10 @@ final class GooseMessageStore: ObservableObject {
       return
     }
 
-    messages.insert(contentsOf: pendingMessages.reversed(), at: 0)
+    // Concatenation is O(n+k); insert-at-0 with shift is also O(n) but forces a copy of the
+    // entire backing store. Using + avoids mutating the existing buffer in-place.
+    let merged = pendingMessages.reversed() + messages
     pendingMessages.removeAll(keepingCapacity: true)
-    if messages.count > maximumMessages {
-      messages.removeLast(messages.count - maximumMessages)
-    }
+    messages = merged.count > maximumMessages ? Array(merged.prefix(maximumMessages)) : Array(merged)
   }
 }
