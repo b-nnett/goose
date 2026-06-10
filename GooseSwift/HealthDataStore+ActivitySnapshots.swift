@@ -5,8 +5,7 @@ import UIKit
 
 extension HealthDataStore {
   func dailyRecoveryMetrics() -> [[String: Any]] {
-    Self.array(packetInputReports["daily_recovery"]?["metrics"])
-      .filter { Self.localHealthMetricRowIsDisplaySafe($0) }
+    displaySafeMetrics(family: "daily_recovery")
   }
 
   func dailyRecoveryMetricsWithRestingHR() -> [[String: Any]] {
@@ -161,7 +160,6 @@ extension HealthDataStore {
 
   static func preferredDailyRecoveryMetric(from metrics: [[String: Any]], valueKey: String) -> [String: Any]? {
     metrics
-      .filter { localHealthMetricRowIsDisplaySafe($0) }
       .sorted { lhs, rhs in
         dailyRecoveryMetric(lhs, isBetterThan: rhs, valueKey: valueKey)
       }
@@ -178,9 +176,6 @@ extension HealthDataStore {
   ) -> [[String: Any]] {
     var rowsByDate: [String: [String: Any]] = [:]
     for metric in metrics {
-      guard localHealthMetricRowIsDisplaySafe(metric) else {
-        continue
-      }
       guard let dateKey = metric["date_key"] as? String ?? metric["date"] as? String,
             let value = doubleValue(metric[valueKey]) else {
         continue
@@ -225,7 +220,6 @@ extension HealthDataStore {
 
   static func preferredStepMetric(from metrics: [[String: Any]]) -> [String: Any]? {
     metrics
-      .filter { localHealthMetricRowIsDisplaySafe($0) }
       .filter { intValue($0["steps"]) != nil }
       .sorted { lhs, rhs in
         let lhsPriority = stepMetricSourcePriority(lhs["source_kind"] as? String)
@@ -250,7 +244,6 @@ extension HealthDataStore {
     valueKey: String
   ) -> [String: Any]? {
     metrics
-      .filter { localHealthMetricRowIsDisplaySafe($0) }
       .filter { doubleValue($0[valueKey]) != nil }
       .sorted { lhs, rhs in
         dailyActivityMetric(lhs, isBetterThan: rhs, valueKey: valueKey)
@@ -264,9 +257,6 @@ extension HealthDataStore {
   ) -> [[String: Any]] {
     var rowsByDate: [String: [String: Any]] = [:]
     for metric in metrics {
-      guard localHealthMetricRowIsDisplaySafe(metric) else {
-        continue
-      }
       guard let dateKey = metric["date_key"] as? String ?? metric["date"] as? String,
             let value = doubleValue(metric[valueKey]) else {
         continue

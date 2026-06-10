@@ -609,8 +609,7 @@ extension HealthDataStore {
   }
 
   func dailyActivityMetrics() -> [[String: Any]] {
-    Self.array(packetInputReports["daily_activity"]?["metrics"])
-      .filter { Self.localHealthMetricRowIsDisplaySafe($0) }
+    displaySafeMetrics(family: "daily_activity")
   }
 
   func dailyActivityMetrics(forDateKey dateKey: String) -> [[String: Any]] {
@@ -622,8 +621,7 @@ extension HealthDataStore {
   }
 
   func hourlyActivityMetrics() -> [[String: Any]] {
-    Self.array(packetInputReports["hourly_activity"]?["metrics"])
-      .filter { Self.localHealthMetricRowIsDisplaySafe($0) }
+    displaySafeMetrics(family: "hourly_activity")
   }
 
   func hourlyActivityMetrics(forDateKey dateKey: String) -> [[String: Any]] {

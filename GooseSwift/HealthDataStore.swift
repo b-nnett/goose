@@ -26,7 +26,33 @@ final class HealthDataStore: ObservableObject {
   let heartRateSeriesStore = HeartRateSeriesStore.shared
   var attemptedCatalogLoad = false
   var previewMissingData = false
-  var packetInputReports: [String: [String: Any]] = [:]
+  // The forbidden-source-marker scan deep-reads every string in every metric
+  // row. Metric rows are Swift value-type dictionaries with no stable object
+  // identity, so per-row/per-container caches keyed on identity never hit and
+  // the scan re-ran for every row on every SwiftUI body pass (an on-device
+  // Time Profiler trace attributed 22 s of a 42 s main-thread total to it
+  // during sync). It only needs to run when the reports change, so the
+  // display-safe rows are filtered once here and read everywhere else.
+  var packetInputReports: [String: [String: Any]] = [:] {
+    didSet { rebuildDisplaySafeMetrics() }
+  }
+  private static let displaySafeFamilies = ["daily_recovery", "daily_activity", "hourly_activity"]
+  private var displaySafeMetricsByFamily: [String: [[String: Any]]] = [:]
+
+  private func rebuildDisplaySafeMetrics() {
+    var result: [String: [[String: Any]]] = [:]
+    for family in Self.displaySafeFamilies {
+      result[family] = Self.array(packetInputReports[family]?["metrics"])
+        .filter { Self.localHealthMetricRowIsDisplaySafe($0) }
+    }
+    displaySafeMetricsByFamily = result
+  }
+
+  /// Display-safe metric rows for a family, filtered once when the packet-input
+  /// reports were stored. Callers must not re-apply the display-safety filter.
+  func displaySafeMetrics(family: String) -> [[String: Any]] {
+    displaySafeMetricsByFamily[family] ?? []
+  }
   var packetScoreReports: [String: [String: Any]] = [:]
   var referenceComparisonReports: [String: [String: Any]] = [:]
   var packetInputRefreshWorkItem: DispatchWorkItem?
