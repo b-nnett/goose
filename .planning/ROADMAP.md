@@ -138,7 +138,17 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
   3. `cargo test -- protocol_tests` passes in full, including new round-trip tests for R22 type 0x10 and v18 per-second decode
   4. No Swift files are changed — the fix is entirely within `Rust/core/src/protocol.rs` and its test suite
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 67-01-PLAN.md — BLE5-01: R22 realtime packet (type 0x10) parsing + R17/R22 same-second dedup (R22 priority)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 67-02-PLAN.md — BLE5-02: v18 per-second historical decode + SQLite persistence + stale-clock 300s snap + EVENT type-48 timestamp bypass
 
 ### Phase 68: BLE Manager Refactor + Data Validator
 
