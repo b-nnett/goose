@@ -1,0 +1,53 @@
+{
+  "id": "synthetic.goose.v5.k16_raw_ecg_labrador",
+  "path": "synthetic/goose_v5_k16_raw_ecg_labrador.hex",
+  "kind": "synthetic",
+  "source": "Hand-derived Goose v5 K16 WHOOP MG raw ECG/Labrador frame using the same APK qh0.i offsets as R17.",
+  "captured_at": "2026-06-11T00:30:00Z",
+  "device_model": "WHOOP MG",
+  "device_firmware": "synthetic",
+  "app_version": "not_applicable",
+  "schema": "goose.frame.hex.v1",
+  "consent": "synthetic-no-user-data",
+  "sensitivity": "public-test-fixture",
+  "notes": "K16 raw ECG/Labrador packet fixture for WHOOP MG. Validates offset-level flags, channels/gain bytes, signed sample stats, and raw body preservation.",
+  "expected": {
+    "device_type": "GOOSE",
+    "packet_type": 47,
+    "packet_type_name": "HISTORICAL_DATA",
+    "sequence": 16,
+    "command_or_event": 1,
+    "header_crc_valid": true,
+    "payload_crc_valid": true,
+    "payload_hex": "2f100100000000000000000000000a0102030405060000000300e80318fcc800",
+    "parsed_payload": {
+      "kind": "data_packet",
+      "packet_k": 16,
+      "domain": "raw_ecg_labrador",
+      "status_or_stream": 1,
+      "counter_or_page": 0,
+      "timestamp_seconds": 0,
+      "timestamp_subseconds": 0,
+      "body_offset": 13,
+      "body_summary": {
+        "kind": "raw_ecg_labrador",
+        "flags": 2560,
+        "flag_bit_9": true,
+        "flag_bit_11": true,
+        "channels_or_gain": [1, 2, 3, 4, 5, 6],
+        "sample_count": 3,
+        "samples": {
+          "name": "k16_samples",
+          "offset": 26,
+          "expected_count": 3,
+          "parsed_count": 3,
+          "min": -1000,
+          "max": 1000,
+          "sum": 200,
+          "preview": [1000, -1000, 200]
+        },
+        "warnings": []
+      }
+    }
+  }
+}

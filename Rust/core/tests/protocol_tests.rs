@@ -231,6 +231,59 @@ fn normal_history_zero_hr_marker_is_not_treated_as_hr_present() {
 }
 
 #[test]
+fn parses_k16_raw_ecg_labrador_body_offsets_and_signed_sample_stats() {
+    let mut payload = vec![0; 32];
+    payload[0] = PACKET_TYPE_HISTORICAL_DATA;
+    payload[1] = 16;
+    payload[2] = 1;
+    put_u16(&mut payload, 13, (1 << 9) | (1 << 11));
+    payload[15..=20].copy_from_slice(&[1, 2, 3, 4, 5, 6]);
+    put_u16(&mut payload, 24, 3);
+    put_i16(&mut payload, 26, 1000);
+    put_i16(&mut payload, 28, -1000);
+    put_i16(&mut payload, 30, 200);
+
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket {
+            body_summary,
+            warnings,
+            packet_k,
+            domain,
+            ..
+        } => {
+            assert_eq!(packet_k, Some(16));
+            assert_eq!(domain.as_deref(), Some("raw_ecg_labrador"));
+            assert!(warnings.is_empty());
+            assert_eq!(
+                body_summary,
+                Some(DataPacketBodySummary::RawEcgLabrador {
+                    flags: Some(0x0a00),
+                    flag_bit_9: Some(true),
+                    flag_bit_11: Some(true),
+                    channels_or_gain: vec![1, 2, 3, 4, 5, 6],
+                    sample_count: Some(3),
+                    samples: Some(I16SeriesSummary {
+                        name: "k16_samples".to_string(),
+                        offset: 26,
+                        expected_count: 3,
+                        parsed_count: 3,
+                        min: Some(-1000),
+                        max: Some(1000),
+                        sum: 200,
+                        preview: vec![1000, -1000, 200],
+                    }),
+                    warnings: Vec::new(),
+                })
+            );
+        }
+        other => panic!("expected data packet, got {other:?}"),
+    }
+}
+
+#[test]
 fn parses_r17_optical_body_offsets_and_signed_sample_stats() {
     let mut payload = vec![0; 32];
     payload[0] = PACKET_TYPE_HISTORICAL_DATA;

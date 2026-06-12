@@ -2336,6 +2336,20 @@ fn export_sensor_samples(
                     }
                 }
             }
+            DataPacketBodySummary::RawEcgLabrador {
+                samples, warnings, ..
+            } => {
+                if let Some(samples) = samples {
+                    push_i16_sensor_series(
+                        &mut rows,
+                        &context,
+                        &payload,
+                        "raw_ecg_labrador",
+                        &samples,
+                        &warnings,
+                    )?;
+                }
+            }
             DataPacketBodySummary::R17OpticalOrLabradorFiltered {
                 samples, warnings, ..
             } => {

@@ -41,6 +41,7 @@ enum HealthPacketCaptureMode: String {
         "raw_stream_k11",
         "embedded_heart_rate",
         "raw_or_research_k20",
+        "raw_ecg_labrador_k16",
         "r17_optical_or_labrador_filtered",
         "raw_motion_k21",
         "pulse_information_k25_k26",
@@ -56,7 +57,7 @@ enum HealthPacketCaptureMode: String {
     case .temperature:
       return "frames 0 | K18 0 | K24 0 | event17 0 | temp 0 | unknown 0"
     case .physiology:
-      return "frames 0 | motion 0 | K11 0 | HR 0 | R21 0 | optical 0 | pulse 0 | temp 0 | unknown 0"
+      return "frames 0 | motion 0 | K11 0 | HR 0 | R21 0 | ECG 0 | optical 0 | pulse 0 | temp 0 | unknown 0"
     }
   }
 

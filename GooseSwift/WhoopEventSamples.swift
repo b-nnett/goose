@@ -282,9 +282,10 @@ struct WhoopDataSignalSample {
   }
 
   var r17OpticalSummary: String? {
-    guard packetK == 17 else {
+    guard packetK == 16 || packetK == 17 else {
       return nil
     }
+    let label = packetK == 16 ? "K16 ECG" : "R17 optical"
     let flagsText = r17Flags.map { String(format: "0x%04x", $0) } ?? "?"
     let samplesText = r17SampleCount.map { "\($0)" } ?? "?"
     let parsedText = r17ParsedSampleCount.map { "\($0)" } ?? "?"
@@ -294,7 +295,7 @@ struct WhoopDataSignalSample {
     } else {
       rangeText = "?"
     }
-    return "R17 optical samples=\(parsedText)/\(samplesText) flags=\(flagsText) range=\(rangeText)"
+    return "\(label) samples=\(parsedText)/\(samplesText) flags=\(flagsText) range=\(rangeText)"
   }
 
   var opticalSummary: String? {
@@ -338,7 +339,7 @@ struct WhoopDataSignalSample {
       let payload = parsed["parsed_payload"] as? [String: Any],
       payload["kind"] as? String == "data_packet",
       let packetK = intValue(payload["packet_k"]),
-      [2, 9, 10, 11, 12, 17, 18, 20, 21, 24, 25, 26, 47].contains(packetK)
+      [2, 9, 10, 11, 12, 16, 17, 18, 20, 21, 24, 25, 26, 47].contains(packetK)
     else {
       return nil
     }
@@ -378,7 +379,7 @@ struct WhoopDataSignalSample {
     guard
       compact.payloadKind == "data_packet",
       let packetK = compact.packetK,
-      [2, 9, 10, 11, 12, 17, 18, 20, 21, 24, 25, 26, 47].contains(packetK)
+      [2, 9, 10, 11, 12, 16, 17, 18, 20, 21, 24, 25, 26, 47].contains(packetK)
     else {
       return nil
     }

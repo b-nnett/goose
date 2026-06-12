@@ -177,6 +177,8 @@ enum CodexLocalToolContext {
       "software_revision": jsonValue(ble.softwareRevision),
       "hardware_revision": jsonValue(ble.hardwareRevision),
       "model_number": jsonValue(ble.modelNumber),
+      "device_generation": ble.deviceGeneration.rawValue,
+      "supports_labrador_ecg": ble.isWhoopMG,
       "last_sync_at": isoString(ble.lastSyncAt),
       "historical_sync": [
         "active": ble.isHistoricalSyncing,

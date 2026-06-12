@@ -6,7 +6,7 @@ If you don't know what Xcode is, or how to build the Rust core, this build is no
 
 ![Goose app hero showing a connected WHOOP 5.0 device](docs/assets/readme-hero.png)
 
-This prototype targets WHOOP 5.0 only. Other WHOOP generations are not supported in this build.
+This prototype targets WHOOP 5.0 and WHOOP MG (the medical-grade WHOOP 5.0 variant). Other WHOOP generations are not supported in this build.
 
 The app and backend have had very little attention put into performance. The app will lag, very considerably. Performance PRs are welcome, or you can wait until I address it in due course.
 
@@ -49,7 +49,7 @@ The current health metric UI draws heavily from [Bevel](https://www.bevel.health
 
 - SwiftUI app shell with Home, Health, Coach, and More tabs.
 - Onboarding and persisted profile state.
-- CoreBluetooth scan/connect flows for WHOOP 5.0 devices.
+- CoreBluetooth scan/connect flows for WHOOP 5.0 and WHOOP MG devices.
 - JSON-over-C bridge into the Goose Rust core.
 - Health metric surfaces for Sleep, Recovery, Strain, Stress, Cardio Load, Energy Bank, Health Monitor, Packet Inputs, Algorithms, References, and Calibration.
 - HealthKit sleep import and workout write support.

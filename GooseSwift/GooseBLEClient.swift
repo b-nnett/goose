@@ -526,6 +526,35 @@ final class GooseBLEClient: NSObject, ObservableObject {
       SensorStreamCommandKind(commandNumber: 153, payload: revisionBoolean(true), name: "TOGGLE_PERSISTENT_R20_ON"),
     ]
 
+    static let startLabradorCapture = [
+      SensorStreamCommandKind(commandNumber: 124, payload: revisionBoolean(true), name: "TOGGLE_LABRADOR_DATA_GENERATION_ON"),
+      SensorStreamCommandKind(commandNumber: 125, payload: revisionBoolean(true), name: "TOGGLE_LABRADOR_RAW_SAVE_ON"),
+      SensorStreamCommandKind(commandNumber: 139, payload: revisionBoolean(true), name: "TOGGLE_LABRADOR_FILTERED_ON"),
+    ]
+
+    static let stopLabradorCapture = [
+      SensorStreamCommandKind(commandNumber: 139, payload: revisionBoolean(false), name: "TOGGLE_LABRADOR_FILTERED_OFF"),
+      SensorStreamCommandKind(commandNumber: 125, payload: revisionBoolean(false), name: "TOGGLE_LABRADOR_RAW_SAVE_OFF"),
+      SensorStreamCommandKind(commandNumber: 124, payload: revisionBoolean(false), name: "TOGGLE_LABRADOR_DATA_GENERATION_OFF"),
+    ]
+
+    static func physiologyCaptureStartCommands(includeLabrador: Bool) -> [SensorStreamCommandKind] {
+      var commands = startPhysiologyCapture
+      if includeLabrador {
+        commands.append(contentsOf: startLabradorCapture)
+      }
+      return commands
+    }
+
+    static func physiologyCaptureStopCommands(includeLabrador: Bool) -> [SensorStreamCommandKind] {
+      var commands: [SensorStreamCommandKind] = []
+      if includeLabrador {
+        commands.append(contentsOf: stopLabradorCapture)
+      }
+      commands.append(contentsOf: stopPhysiologyCapture)
+      return commands
+    }
+
     static let startMovementHeartRateCapture = [
       SensorStreamCommandKind(commandNumber: 3, payload: [1], name: "TOGGLE_REALTIME_HR_ON"),
       SensorStreamCommandKind(commandNumber: 63, payload: [1], name: "SEND_R10_R11_REALTIME_ON"),
@@ -831,6 +860,39 @@ final class GooseBLEClient: NSObject, ObservableObject {
       requiresPayloadHex: true,
       payloadHint: "explicit payload hex required"
     ),
+    GooseDebugCommandDefinition(
+      id: "toggle_labrador_data_generation",
+      title: "Labrador Data Generation",
+      commandNumber: 124,
+      family: "ecg",
+      risk: "state change",
+      detail: "WHOOP MG raw ECG/Labrador packet generation toggle.",
+      defaultPayloadHex: "0101",
+      requiresPayloadHex: false,
+      payloadHint: "revision 01 + enabled"
+    ),
+    GooseDebugCommandDefinition(
+      id: "toggle_labrador_raw_save",
+      title: "Labrador Raw Save",
+      commandNumber: 125,
+      family: "ecg",
+      risk: "state change",
+      detail: "WHOOP MG Labrador raw-save behavior toggle.",
+      defaultPayloadHex: "0101",
+      requiresPayloadHex: false,
+      payloadHint: "revision 01 + enabled"
+    ),
+    GooseDebugCommandDefinition(
+      id: "toggle_labrador_filtered",
+      title: "Labrador Filtered Stream",
+      commandNumber: 139,
+      family: "ecg",
+      risk: "state change",
+      detail: "WHOOP MG filtered ECG/Labrador stream toggle.",
+      defaultPayloadHex: "0101",
+      requiresPayloadHex: false,
+      payloadHint: "revision 01 + enabled"
+    ),
   ]
 
   var canScan: Bool {
@@ -871,6 +933,48 @@ final class GooseBLEClient: NSObject, ObservableObject {
 
   var strapClockAutoSyncThresholdDisplay: String {
     "\(Int(Self.strapClockAutoSyncThresholdSeconds.rounded()))s"
+  }
+
+  var deviceGeneration: WhoopDeviceGeneration {
+    guard let model = modelNumber?.trimmingCharacters(in: .whitespacesAndNewlines), !model.isEmpty else {
+      return .unknown
+    }
+    let m = model.uppercased()
+    if m == "MG" || m.contains("MG") || m.contains("973-002") {
+      return .whoopMG
+    }
+    if m.contains("4.") {
+      return .whoop4
+    }
+    return .whoop5
+  }
+
+  var isWhoopMG: Bool { deviceGeneration == .whoopMG }
+
+  var deviceDisplayName: String {
+    deviceGeneration.displayName
+  }
+
+  var labradorECGSupportSummary: String {
+    guard isWhoopMG else {
+      return "Not applicable"
+    }
+    if !supportsV5SensorCommands {
+      return "Connect strap for ECG"
+    }
+    if physiologyCaptureStatus.lowercased().contains("starting")
+      || physiologyCaptureStatus.lowercased().contains("capturing") {
+      return "Labrador ECG capture active"
+    }
+    return "Labrador ECG commands available"
+  }
+
+  func physiologyCaptureStartCommands() -> [SensorStreamCommandKind] {
+    SensorStreamCommandKind.physiologyCaptureStartCommands(includeLabrador: isWhoopMG)
+  }
+
+  func physiologyCaptureStopCommands() -> [SensorStreamCommandKind] {
+    SensorStreamCommandKind.physiologyCaptureStopCommands(includeLabrador: isWhoopMG)
   }
 
   var alarmDisplaySummary: String {

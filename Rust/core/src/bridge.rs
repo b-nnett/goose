@@ -2673,6 +2673,7 @@ fn parsed_payload_kind(payload: &ParsedPayload) -> &'static str {
 fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
     match summary {
         Some(DataPacketBodySummary::NormalHistory { .. }) => "normal_history",
+        Some(DataPacketBodySummary::RawEcgLabrador { .. }) => "raw_ecg_labrador",
         Some(DataPacketBodySummary::R17OpticalOrLabradorFiltered { .. }) => {
             "r17_optical_or_labrador_filtered"
         }
@@ -7560,6 +7561,7 @@ fn parse_device_type(value: &str) -> GooseResult<DeviceType> {
         "MAVERICK" | "Maverick" | "maverick" => Ok(DeviceType::Maverick),
         "PUFFIN" | "Puffin" | "puffin" => Ok(DeviceType::Puffin),
         "GOOSE" | "Goose" | "goose" => Ok(DeviceType::Goose),
+        "WHOOP_MG" | "WHOOP MG" | "whoop_mg" | "whoop-mg" | "MG" | "mg" => Ok(DeviceType::Goose),
         other => Err(GooseError::message(format!(
             "unsupported device_type: {other}"
         ))),

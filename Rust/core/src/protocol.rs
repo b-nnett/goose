@@ -133,6 +133,15 @@ pub enum DataPacketBodySummary {
         marker_offset: Option<usize>,
         marker_value: Option<u8>,
     },
+    RawEcgLabrador {
+        flags: Option<u16>,
+        flag_bit_9: Option<bool>,
+        flag_bit_11: Option<bool>,
+        channels_or_gain: Vec<u8>,
+        sample_count: Option<u16>,
+        samples: Option<I16SeriesSummary>,
+        warnings: Vec<String>,
+    },
     R17OpticalOrLabradorFiltered {
         flags: Option<u16>,
         flag_bit_9: Option<bool>,
@@ -528,6 +537,7 @@ fn parse_data_packet_body_summary(
             }),
             Vec::new(),
         ),
+        16 => parse_k16_raw_ecg_labrador_summary(payload),
         17 => parse_r17_body_summary(payload),
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),
@@ -535,7 +545,55 @@ fn parse_data_packet_body_summary(
     }
 }
 
+fn parse_k16_raw_ecg_labrador_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    let Some((summary, warnings)) =
+        parse_labrador_signal_body_summary(payload, "k16_samples", "k16_header_too_short")
+    else {
+        return (None, vec!["k16_header_too_short".to_string()]);
+    };
+    (
+        Some(DataPacketBodySummary::RawEcgLabrador {
+            flags: summary.flags,
+            flag_bit_9: summary.flag_bit_9,
+            flag_bit_11: summary.flag_bit_11,
+            channels_or_gain: summary.channels_or_gain,
+            sample_count: summary.sample_count,
+            samples: summary.samples,
+            warnings: summary.warnings,
+        }),
+        warnings,
+    )
+}
+
 fn parse_r17_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    let Some((summary, warnings)) =
+        parse_labrador_signal_body_summary(payload, "r17_samples", "r17_header_too_short")
+    else {
+        return (None, vec!["r17_header_too_short".to_string()]);
+    };
+    (
+        Some(DataPacketBodySummary::R17OpticalOrLabradorFiltered {
+            flags: summary.flags,
+            flag_bit_9: summary.flag_bit_9,
+            flag_bit_11: summary.flag_bit_11,
+            channels_or_gain: summary.channels_or_gain,
+            sample_count: summary.sample_count,
+            samples: summary.samples,
+            warnings: summary.warnings,
+        }),
+        warnings,
+    )
+}
+
+fn parse_labrador_signal_body_summary(
+    payload: &[u8],
+    sample_series_name: &str,
+    header_too_short_warning: &str,
+) -> Option<(LabradorSignalBodyFields, Vec<String>)> {
+    if payload.len() < 26 {
+        return None;
+    }
+
     let flags = read_u16_le(payload, 13);
     let sample_count = read_u16_le(payload, 24);
     let channels_or_gain = (15..=20)
@@ -545,14 +603,14 @@ fn parse_r17_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
         payload,
         26,
         sample_count.unwrap_or(0) as usize,
-        "r17_samples",
+        sample_series_name,
     );
     if payload.len() < 26 {
-        warnings.push("r17_header_too_short".to_string());
+        warnings.push(header_too_short_warning.to_string());
     }
 
-    (
-        Some(DataPacketBodySummary::R17OpticalOrLabradorFiltered {
+    Some((
+        LabradorSignalBodyFields {
             flags,
             flag_bit_9: flags.map(|value| value & (1 << 9) != 0),
             flag_bit_11: flags.map(|value| value & (1 << 11) != 0),
@@ -560,9 +618,20 @@ fn parse_r17_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
             sample_count,
             samples,
             warnings: warnings.clone(),
-        }),
+        },
         warnings,
-    )
+    ))
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LabradorSignalBodyFields {
+    pub flags: Option<u16>,
+    pub flag_bit_9: Option<bool>,
+    pub flag_bit_11: Option<bool>,
+    pub channels_or_gain: Vec<u8>,
+    pub sample_count: Option<u16>,
+    pub samples: Option<I16SeriesSummary>,
+    pub warnings: Vec<String>,
 }
 
 fn parse_k10_raw_motion_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {

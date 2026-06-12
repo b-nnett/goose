@@ -1031,7 +1031,7 @@ fn parser_runner_validates_indexed_frame_fixture_expectations() {
 
     assert!(report.pass, "{:?}", report.issues);
     assert!(report.next_actions.is_empty(), "{:?}", report.next_actions);
-    assert_eq!(report.fixtures.len(), 14);
+    assert_eq!(report.fixtures.len(), 15);
     let fixture = report
         .fixtures
         .iter()

@@ -120,6 +120,8 @@ extension GooseAppModel {
     if let modelNumber = ble.modelNumber {
       args["device_model"] = modelNumber
     }
+    args["device_generation"] = ble.deviceGeneration.rawValue
+    args["supports_labrador_ecg"] = ble.isWhoopMG
 
     do {
       _ = try rust.request(method: "capture.start_session", args: args)

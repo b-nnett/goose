@@ -251,6 +251,63 @@
       }
     },
     {
+      "id": "synthetic.activity.candidate.packet_derived_windows",
+      "path": "synthetic/activity_candidates_packet_derived_windows.json",
+      "kind": "synthetic",
+      "source": "Packet-derived synthetic activity-candidate windows built from a historical HR marker and a raw-motion packet summary.",
+      "captured_at": "2026-05-28T00:00:00Z",
+      "device_model": "WHOOP 5.0 Goose",
+      "device_firmware": "synthetic",
+      "app_version": "not_applicable",
+      "schema": "goose.activity-candidate-classifier-input.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "One HR-only window and one motion-only window exercise packet-derived provenance, readiness, and blocker reporting without promoting either window to candidate state.",
+      "checksum_sha256": "643653201fb7df38b94d138a6dd6a06410ac3b89069ac4527ccc8492b6917831",
+      "byte_len": 4588,
+      "expected": {
+        "blocked_window_count": 0,
+        "candidate_window_count": 0,
+        "unknown_window_count": 2,
+        "window_count": 2,
+        "window_ids": [
+          "synthetic.activity.packet_derived.hr_only.window",
+          "synthetic.activity.packet_derived.motion_only.window"
+        ]
+      }
+    },
+    {
+      "id": "synthetic.activity.sessions.pre_device.hand_derived",
+      "path": "synthetic/activity_sessions_pre_device_hand_derived.json",
+      "kind": "synthetic",
+      "source": "Hand-derived synthetic activity-session fixture covering unknown, run-like, ride-like, strength-like, HR-only/no-distance, no-HR, and multi-interval cases.",
+      "captured_at": "2026-05-27T00:00:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.activity-session-fixtures.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Seven synthetic activity sessions cover the generic pre-device corpus without WHOOP bytes. The file keeps provenance, sync status, metrics, intervals, and labels aligned with the activity storage tables.",
+      "checksum_sha256": "e1c9a3bf5f21f9c9c8e7639937cabcad3b412e7c7e71d111f3cc261680e5a3e5",
+      "byte_len": 30575,
+      "expected": {
+        "interval_count": 11,
+        "label_count": 7,
+        "metric_count": 23,
+        "session_count": 7,
+        "session_kinds": [
+          "unknown",
+          "run_like",
+          "ride_like",
+          "strength_like",
+          "hr_only_no_distance",
+          "no_hr",
+          "multi_interval"
+        ]
+      }
+    },
+    {
       "id": "synthetic.goose.debug_ws.contract.valid",
       "path": "synthetic/debug_ws_contract_valid.json",
       "kind": "synthetic",
@@ -339,6 +396,42 @@
         "payload_crc_valid": true,
         "payload_hex": "2f120104030201443322116655aa4dbbccddeeff",
         "sequence": 18
+      }
+    },
+    {
+      "id": "synthetic.goose.v5.historical_sync_gen5_dry_run_command_validation",
+      "path": "synthetic/goose_v5_historical_sync_gen5_dry_run_command_validation.json",
+      "kind": "synthetic",
+      "source": "Hand-derived synthetic exported command-validation rows for Gen5 historical-sync dry-run coverage.",
+      "captured_at": "2026-05-29T00:00:00Z",
+      "device_model": "WHOOP 5.0 Goose",
+      "device_firmware": "synthetic",
+      "app_version": "not_applicable",
+      "schema": "goose.command-validation-fixtures.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Covers the optional GetDataRange row, the SendHistoricalData and HistoryEnd acknowledgement rows, and an AbortHistoricalTransmits row for retry and cancel-path dry-run coverage.",
+      "checksum_sha256": "12d8fc358f23f49e70b808e471fc1728e669695aa798f2d37cc2924882920f1e",
+      "byte_len": 7818,
+      "expected": {
+        "blocked_count": 0,
+        "command_count": 4,
+        "command_numbers": [
+          34,
+          22,
+          23,
+          20
+        ],
+        "command_sequence": [
+          "get_data_range",
+          "send_historical_data",
+          "historical_data_result",
+          "abort_historical_transmits"
+        ],
+        "direct_send_ready_count": 4,
+        "family": "historical_sync",
+        "generation": "gen5",
+        "request_data_range": true
       }
     },
     {
@@ -454,6 +547,72 @@
         },
         "payload_crc_valid": true,
         "sequence": 10
+      }
+    },
+    {
+      "id": "synthetic.goose.v5.k16_raw_ecg_labrador",
+      "path": "synthetic/goose_v5_k16_raw_ecg_labrador.hex",
+      "kind": "synthetic",
+      "source": "Hand-derived Goose v5 K16 WHOOP MG raw ECG/Labrador frame using the same APK qh0.i offsets as R17.",
+      "captured_at": "2026-06-11T00:30:00Z",
+      "device_model": "WHOOP MG",
+      "device_firmware": "synthetic",
+      "app_version": "not_applicable",
+      "schema": "goose.frame.hex.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "K16 raw ECG/Labrador packet fixture for WHOOP MG. Validates offset-level flags, channels/gain bytes, signed sample stats, and raw body preservation.",
+      "checksum_sha256": "de14acfe24ea579edd68fed0b42b40dad588d6b11bc3996b4c2fb157c3ea359b",
+      "byte_len": 89,
+      "expected": {
+        "command_or_event": 1,
+        "device_type": "GOOSE",
+        "header_crc_valid": true,
+        "packet_type": 47,
+        "packet_type_name": "HISTORICAL_DATA",
+        "parsed_payload": {
+          "body_offset": 13,
+          "body_summary": {
+            "channels_or_gain": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "flag_bit_11": true,
+            "flag_bit_9": true,
+            "flags": 2560,
+            "kind": "raw_ecg_labrador",
+            "sample_count": 3,
+            "samples": {
+              "expected_count": 3,
+              "max": 1000,
+              "min": -1000,
+              "name": "k16_samples",
+              "offset": 26,
+              "parsed_count": 3,
+              "preview": [
+                1000,
+                -1000,
+                200
+              ],
+              "sum": 200
+            },
+            "warnings": []
+          },
+          "counter_or_page": 0,
+          "domain": "raw_ecg_labrador",
+          "kind": "data_packet",
+          "packet_k": 16,
+          "status_or_stream": 1,
+          "timestamp_seconds": 0,
+          "timestamp_subseconds": 0
+        },
+        "payload_crc_valid": true,
+        "payload_hex": "2f100100000000000000000000000a0102030405060000000300e80318fcc800",
+        "sequence": 16
       }
     },
     {
@@ -681,14 +840,16 @@
       "consent": "synthetic-no-user-data",
       "sensitivity": "public-test-fixture",
       "notes": "Plans heart rate and SDNN writes while blocking RMSSD to HealthKit SDNN and benchmark-only reference algorithm output sync.",
-      "checksum_sha256": "e3d7282585b6d8b65d9a21307cb16aef5142de52846cee995e76b4eebe84966d",
-      "byte_len": 2126,
+      "checksum_sha256": "7c4fd80002ca1d1c6820ac81395b71703645cb35a0a917b2c95831274f441c65",
+      "byte_len": 2192,
       "expected": {
         "blocked_count": 2,
         "blocked_reasons": [
           "healthkit_rmssd_must_not_be_written_as_sdnn",
           "benchmark_only_algorithm_not_syncable"
         ],
+        "partial_plan_confirmation_required": true,
+        "partial_plan_policy": "allow_planned_rows_after_confirmation",
         "planned_write_count": 2,
         "platform": "health_kit"
       }
@@ -715,6 +876,219 @@
         "rmssd_ms": 14.142135623730953,
         "sdnn_ms": 8.16496580927726,
         "version": "0.1.0"
+      }
+    },
+    {
+      "id": "synthetic.openwhoop.activity_health_sync_comparison",
+      "path": "synthetic/openwhoop_activity_health_sync_comparison.json",
+      "kind": "synthetic",
+      "source": "Hand-derived OpenWhoop-inspired activity dry-run comparison fixture from Goose's current planner and the OpenWhoop reference commit 55c5c1e2e02d3822c33e258838a57bb7d9e2ca53.",
+      "captured_at": "2026-05-29T00:00:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.activity-health-sync-dry-run.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Covers planned activity-session labels, destination activity mappings, and attached metric/interval counts for OpenWhoop-inspired dry-run comparison. Strain comparison remains covered by the existing strain reference tests. The referenced OpenWhoop snapshot did not include a license file at the cited commit; use it as reverse-engineering prior art only.",
+      "checksum_sha256": "297ed5a31d7fa34afa4ee4e13852b4f79a757d7433a7c0c51cf867f96b4043be",
+      "byte_len": 6676,
+      "expected": {
+        "blocked_session_count": 0,
+        "permission_grants": [
+          "HKWorkout"
+        ],
+        "planned_session_count": 3,
+        "planned_sessions": [
+          {
+            "activity_type": "running",
+            "attached_interval_count": 1,
+            "attached_metric_count": 1,
+            "custom_label": "Tempo run",
+            "destination_activity_type": "running",
+            "destination_type": "HKWorkout",
+            "end_time": "2026-05-27T06:45:00Z",
+            "goose_marker": "goose:activity:running:synthetic.activity.run_like.session",
+            "raw_activity_type": "Run",
+            "session_id": "synthetic.activity.run_like.session",
+            "session_kind": "activity",
+            "start_time": "2026-05-27T06:00:00Z"
+          },
+          {
+            "activity_type": "cycling",
+            "attached_interval_count": 1,
+            "attached_metric_count": 1,
+            "custom_label": "Endurance ride",
+            "destination_activity_type": "cycling",
+            "destination_type": "HKWorkout",
+            "end_time": "2026-05-27T08:00:00Z",
+            "goose_marker": "goose:activity:cycling:synthetic.activity.ride_like.session",
+            "raw_activity_type": "Ride",
+            "session_id": "synthetic.activity.ride_like.session",
+            "session_kind": "activity",
+            "start_time": "2026-05-27T07:00:00Z"
+          },
+          {
+            "activity_type": "strength",
+            "attached_interval_count": 1,
+            "attached_metric_count": 1,
+            "custom_label": "Dumbbell circuit",
+            "destination_activity_type": "strength_training",
+            "destination_type": "HKWorkout",
+            "end_time": "2026-05-27T18:30:00Z",
+            "goose_marker": "goose:activity:strength:synthetic.activity.strength_like.session",
+            "raw_activity_type": "Strength training",
+            "session_id": "synthetic.activity.strength_like.session",
+            "session_kind": "activity",
+            "start_time": "2026-05-27T18:00:00Z"
+          }
+        ],
+        "session_count": 3
+      }
+    },
+    {
+      "id": "synthetic.openwhoop.gen5.history_metadata_markers",
+      "path": "synthetic/openwhoop_gen5_history_metadata_markers.json",
+      "kind": "synthetic",
+      "source": "Hand-derived Gen5 metadata-marker fixture from Goose's current historical-sync planner and the OpenWhoop Gen5 flow at commit 55c5c1e2e02d3822c33e258838a57bb7d9e2ca53.",
+      "captured_at": "2026-05-29T00:00:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.historical-sync-dry-run.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Exercises the marker normalizer so HistoryStart, HistoryEnd, and HistoryComplete are recovered from mixed-case metadata names. The referenced OpenWhoop snapshot did not include a license file at the cited commit; use it as reverse-engineering prior art only.",
+      "checksum_sha256": "df8f3a9dc4aba44bb50cafd1ca3b688d9a567f27cb27aff3abb1725fb195a7b4",
+      "byte_len": 615,
+      "expected": {
+        "command_numbers": [
+          22,
+          23
+        ],
+        "command_payload_expectations": [
+          "empty",
+          "history_end_ack_success"
+        ],
+        "marker_event_names": [
+          "HistoryStart",
+          "HistoryEnd",
+          "HistoryComplete"
+        ],
+        "marker_notes": [
+          "history_start",
+          "history_end",
+          "history_complete"
+        ],
+        "planned_command_count": 2,
+        "state": "complete",
+        "state_trace": [
+          "idle",
+          "connected",
+          "transferring",
+          "transferring",
+          "ack_pending",
+          "ack_pending",
+          "ack_pending",
+          "complete"
+        ],
+        "step_kinds": [
+          "connect",
+          "send_historical_data",
+          "consume_metadata",
+          "consume_metadata",
+          "historical_data_result",
+          "consume_metadata",
+          "complete"
+        ]
+      }
+    },
+    {
+      "id": "synthetic.openwhoop.gen5.history_plan",
+      "path": "synthetic/openwhoop_gen5_history_plan.json",
+      "kind": "synthetic",
+      "source": "Hand-derived Gen5 historical-sync planning fixture from Goose's current dry-run planner and the OpenWhoop Gen5 flow at commit 55c5c1e2e02d3822c33e258838a57bb7d9e2ca53.",
+      "captured_at": "2026-05-29T00:00:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.historical-sync-dry-run.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Covers Gen5 optional data-range planning, SendHistoricalData, HistoryStart/HistoryEnd/HistoryComplete progression, and the empty-payload ack path. The referenced OpenWhoop snapshot did not include a license file at the cited commit; use it as reverse-engineering prior art only.",
+      "checksum_sha256": "71bec20a9c140284c4d7c7069358913196dabcded18a7b4eff5169bc49bca219",
+      "byte_len": 746,
+      "expected": {
+        "command_numbers": [
+          34,
+          22,
+          23
+        ],
+        "command_payload_expectations": [
+          "empty",
+          "empty",
+          "history_end_ack_success"
+        ],
+        "planned_command_count": 3,
+        "state": "complete",
+        "state_trace": [
+          "idle",
+          "connected",
+          "range_requested",
+          "transferring",
+          "transferring",
+          "transferring",
+          "transferring",
+          "ack_pending",
+          "ack_pending",
+          "ack_pending",
+          "ack_pending",
+          "complete"
+        ],
+        "step_kinds": [
+          "connect",
+          "get_data_range",
+          "send_historical_data",
+          "consume_metadata",
+          "consume_metadata",
+          "consume_reading",
+          "consume_metadata",
+          "historical_data_result",
+          "consume_metadata",
+          "consume_metadata",
+          "complete"
+        ]
+      }
+    },
+    {
+      "id": "synthetic.openwhoop.uuid_detection",
+      "path": "synthetic/openwhoop_uuid_detection.json",
+      "kind": "synthetic",
+      "source": "Hand-derived OpenWhoop-inspired UUID probe fixture from Goose's current reference tables at OpenWhoop commit 55c5c1e2e02d3822c33e258838a57bb7d9e2ca53.",
+      "captured_at": "2026-05-29T00:00:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.openwhoop-reference-fixture.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Trims and case-folds each service UUID before generation lookup. The referenced OpenWhoop snapshot did not include a license file at the cited commit; use it as reverse-engineering prior art only.",
+      "checksum_sha256": "0fb28ea2b54e7d81bd73e768e9351fdaadea456d125e05310748f9f08ab7d52d",
+      "byte_len": 310,
+      "expected": {
+        "canonical_service_uuids": [
+          "61080001-8d6d-82b8-614a-1c8cb0f8dcc6",
+          "fd4b0001-cce1-4033-93ce-002d5875f58a"
+        ],
+        "detected_generations": [
+          "Gen4",
+          "Gen5"
+        ],
+        "probe_count": 2,
+        "probe_labels": [
+          "gen4_trimmed_uppercase",
+          "gen5_canonical"
+        ]
       }
     },
     {
@@ -788,6 +1162,58 @@
           "command",
           "data_packet"
         ]
+      }
+    },
+    {
+      "id": "synthetic.sleep.actigraphy_counts.sadeh_hand_derived",
+      "path": "synthetic/sleep_actigraphy_counts_sadeh_hand_derived.json",
+      "kind": "synthetic",
+      "source": "Hand-derived one-minute activity-count fixture for pyActigraphy Sadeh adapter contract tests.",
+      "captured_at": "2026-05-27T22:30:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.sleep-actigraphy-counts-input.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "One-minute synthetic activity-count window with active edges and quiet middle epochs for Sadeh-style sleep/wake scoring.",
+      "checksum_sha256": "5a8e4676b5a2916b42f314e0ce2e7c8fec182315d3354ddb0ab4ec100c3e9a4d",
+      "byte_len": 305,
+      "expected": {
+        "algorithm_id": "reference.sleep.pyactigraphy_sadeh.v1",
+        "epoch_count": 15,
+        "epoch_minutes": 1.0,
+        "provider": "external.pyactigraphy.sadeh",
+        "sleep_efficiency_fraction": 0.4,
+        "sleep_epoch_count": 6,
+        "wake_epoch_count": 9
+      }
+    },
+    {
+      "id": "synthetic.sleep.ggir_summary.hand_derived",
+      "path": "synthetic/sleep_ggir_summary_hand_derived.json",
+      "kind": "synthetic",
+      "source": "Hand-derived GGIR part4/part5-style sleep summary fixture for external benchmark adapter contract tests.",
+      "captured_at": "2026-05-27T22:30:00Z",
+      "device_model": "not_applicable",
+      "device_firmware": "not_applicable",
+      "app_version": "not_applicable",
+      "schema": "goose.sleep-ggir-summary-input.v1",
+      "consent": "synthetic-no-user-data",
+      "sensitivity": "public-test-fixture",
+      "notes": "Two synthetic sleep summary rows using official GGIR-style duration, WASO, and sleep-efficiency field names. Expected values are hand-derived from row durations.",
+      "checksum_sha256": "b264716cd89a60bc6ecc04597edec9b7e5d637e98bb9d7e7eec3ffc6482a03fa",
+      "byte_len": 977,
+      "expected": {
+        "algorithm_id": "reference.sleep.ggir_summary.v1",
+        "disturbance_count": 1,
+        "night_count": 2,
+        "provider": "external.ggir.sleep",
+        "sleep_efficiency_fraction": 0.8387096774193549,
+        "sleep_minutes": 780.0,
+        "time_in_bed_minutes": 930.0,
+        "valid_night_count": 2,
+        "wake_after_sleep_onset_minutes": 150.0
       }
     },
     {

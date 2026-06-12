@@ -260,7 +260,7 @@ extension GooseAppModel {
       return .expected
     case 10, 11:
       return .target
-    case 17, 18, 21, 24, 25, 26, 47:
+    case 16, 17, 18, 21, 24, 25, 26, 47:
       return .target
     default:
       return bodyKind == "raw" ? .unresolved : .unknown
@@ -288,6 +288,8 @@ extension GooseAppModel {
       return "Motion/HR"
     case 11:
       return "Raw Stream"
+    case 16:
+      return "ECG K16"
     case 17:
       return "Optical R17"
     case 18:
@@ -322,6 +324,7 @@ extension GooseAppModel {
     let rawResearch = countForIDs("data.k20.")
     let heartRate = motion
     let r21 = countForIDs("data.k21.")
+    let ecg = countForIDs("data.k16.")
     let optical = countForIDs("data.k17.")
     let pulse = countForIDs("data.k25.", "data.k26.")
     let k18History = countForIDs("data.k18.")
@@ -335,8 +338,8 @@ extension GooseAppModel {
       .reduce(0) { $0 + $1.count }
     if activeHealthPacketCapture?.mode == .temperature {
       healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | K18 \(k18History) | K24 \(k24History) | K47 \(k47History) | event17 \(eventTemperature) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
-    } else if r21 + optical + pulse + temperature > 0 {
-      healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | R21 \(r21) | optical \(optical) | pulse \(pulse) | K47 \(k47History) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
+    } else if r21 + ecg + optical + pulse + temperature > 0 {
+      healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | R21 \(r21) | ECG \(ecg) | optical \(optical) | pulse \(pulse) | K47 \(k47History) | metadata \(metadataEvents) | temp \(temperature) | unknown \(unresolved)"
     } else {
       healthPacketCaptureTargetSummary = "frames \(healthPacketCaptureFrameCount) | motion \(motion) | K11 \(rawStream) | K20 \(rawResearch) | K2 \(realtimeStatus) | HR \(heartRate) | K47 \(k47History) | metadata \(metadataEvents) | activity \(activityDetectionStatus) | unknown \(unresolved)"
     }

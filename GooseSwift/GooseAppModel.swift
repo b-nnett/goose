@@ -57,7 +57,7 @@ final class GooseAppModel: ObservableObject {
   let activitySession = ActivitySessionModel()
   let activityLocationTracker = ActivityLocationTracker()
   let rust = GooseRustBridge()
-  let notificationFrameParser = NotificationFrameParser()
+  let notificationFrameParser = WhoopFrameParser()
   let notificationIngestQueue = DispatchQueue(label: "com.goose.swift.notification-ingest", qos: .utility)
   let notificationIngestStateLock = NSLock()
   let notificationParseQueue = DispatchQueue(label: "com.goose.swift.notification-parse", qos: .utility)

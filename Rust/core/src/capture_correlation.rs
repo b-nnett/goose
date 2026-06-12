@@ -574,6 +574,9 @@ fn next_capture_actions_for_summary(
 fn capture_action_text(body_summary_kind: &str, missing: usize) -> String {
     let frame_plural = if missing == 1 { "frame" } else { "frames" };
     match body_summary_kind {
+        "raw_ecg_labrador" => format!(
+            "Capture {missing} more user-owned {body_summary_kind} {frame_plural} from a WHOOP MG Labrador/ECG stream session with commands 124/125/139 enabled, or import a sanitized Files capture containing K16 notifications, then rerun Capture Trust."
+        ),
         "r17_optical_or_labrador_filtered" => format!(
             "Capture {missing} more user-owned {body_summary_kind} {frame_plural} from an official optical/ECG raw-stream session, or import a sanitized Files capture containing K17/R20 notifications, then rerun Capture Trust."
         ),
@@ -666,6 +669,7 @@ fn is_owned_capture_values(kind: &str, source: &str, sensitivity: &str, syntheti
 fn body_summary_kind(summary: &DataPacketBodySummary) -> &'static str {
     match summary {
         DataPacketBodySummary::NormalHistory { .. } => "normal_history",
+        DataPacketBodySummary::RawEcgLabrador { .. } => "raw_ecg_labrador",
         DataPacketBodySummary::R17OpticalOrLabradorFiltered { .. } => {
             "r17_optical_or_labrador_filtered"
         }

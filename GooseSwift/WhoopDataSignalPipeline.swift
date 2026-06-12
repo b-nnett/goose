@@ -177,9 +177,10 @@ final class WhoopDataSignalPipeline {
     }
 
     if let opticalSummary = sample.opticalSummary {
+      let family = sample.packetK == 16 ? "ECG" : "Optical"
       packetUIStateAggregator.set(.opticalPacketStatus, opticalSummary)
       recordDeviceSignalPoint(
-        family: "Optical",
+        family: family,
         value: opticalSummary,
         detail: sample.r17ChannelsOrGain.isEmpty
           ? sample.bodyKind

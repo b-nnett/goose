@@ -261,10 +261,14 @@ extension GooseBLEClient {
   }
 
   func startPhysiologySignalCapture() {
-    record(source: "ui.debug", title: "physiology_capture.start.requested")
+    record(
+      source: "ui.debug",
+      title: "physiology_capture.start.requested",
+      body: "labrador=\(isWhoopMG)"
+    )
     writeSensorStreamCommands(
-      SensorStreamCommandKind.startPhysiologyCapture,
-      requestedStatus: "Starting physiology capture"
+      physiologyCaptureStartCommands(),
+      requestedStatus: isWhoopMG ? "Starting physiology + MG ECG capture" : "Starting physiology capture"
     )
   }
 
@@ -285,10 +289,14 @@ extension GooseBLEClient {
   }
 
   func stopPhysiologySignalCapture() {
-    record(source: "ui.debug", title: "physiology_capture.stop.requested")
+    record(
+      source: "ui.debug",
+      title: "physiology_capture.stop.requested",
+      body: "labrador=\(isWhoopMG)"
+    )
     writeSensorStreamCommands(
-      SensorStreamCommandKind.stopPhysiologyCapture,
-      requestedStatus: "Stopping physiology capture"
+      physiologyCaptureStopCommands(),
+      requestedStatus: isWhoopMG ? "Stopping physiology + MG ECG capture" : "Stopping physiology capture"
     )
   }
 
