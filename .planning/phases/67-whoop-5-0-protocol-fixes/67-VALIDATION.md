@@ -1,6 +1,6 @@
 ---
 phase: 67-whoop-5-0-protocol-fixes
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: true
 audited: 2026-06-12
 ---
@@ -43,13 +43,14 @@ None. All items are automated.
 
 **Root cause:** `r22_shadowed_r17_frame_ids` in `metric_features.rs` (line 6371) calls `chrono_captured_at_to_unix` to extract the unix second from R22 frames' `captured_at` string. That function is a stub that unconditionally returns `Err(())` (lines 6416–6434), so `r22_seconds` is always empty and no R17 frame is ever suppressed.
 
-**Implementation file:** `Rust/core/src/metric_features.rs`, function `chrono_captured_at_to_unix` (line 6416).
+**Fix applied (post-validation):**
+1. `chrono_captured_at_to_unix` implemented using `crate::historical_sync::parse_rfc3339_utc_unix_ms` (made `pub(crate)`) — divides ms by 1000, casts to u32.
+2. `r22_shadowed_r17_frame_ids` refactored to use `CaptureCorrelationReport.observations[].body_summary_kind` directly (avoids unreliable `parsed_payload_json` deserialization path) — signature changed to `(correlation: &CaptureCorrelationReport)`.
+3. R17 dedup uses `captured_at` timestamp (R17 realtime frames have no device timestamp in payload).
 
-**Fix required:** Implement `chrono_captured_at_to_unix` to parse RFC3339 datetime strings into unix seconds. The implementation must not add a new crate dependency — use the existing `parse_rfc3339_utc_unix_ms` helper from `historical_sync.rs` (accessible via `crate::historical_sync`) or inline the same arithmetic, then divide by 1000 and cast to `u32`.
-
-**Iterations exhausted:** 1/3 — the test correctly identifies the bug on first run; no further test iterations are possible without fixing the implementation.
+**Test status:** PASSING — `r22_shadows_r17_in_same_unix_second_for_hrv_features` green.
 
 ## Sign-Off
 
-Automated: 8 tests covering 8 requirements
-Escalated: 1 item — BLE5-01 R22/R17 dedup (implementation bug in `chrono_captured_at_to_unix` stub)
+Automated: 9 tests covering 9 requirements (4 in bridge_tests.rs + 5 in protocol_tests.rs)
+Escalated: 0 — all gaps resolved

@@ -1949,7 +1949,7 @@ fn plausible_unix_timestamp_seconds(seconds: u32) -> bool {
     (946_684_800..=4_102_444_800).contains(&seconds)
 }
 
-fn parse_rfc3339_utc_unix_ms(value: &str) -> Option<i64> {
+pub(crate) fn parse_rfc3339_utc_unix_ms(value: &str) -> Option<i64> {
     let value = value.strip_suffix('Z')?;
     let (date, time) = value.split_once('T')?;
     let mut date_parts = date.split('-');
