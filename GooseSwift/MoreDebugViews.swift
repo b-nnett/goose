@@ -77,6 +77,12 @@ struct MoreDebugView: View {
           status: model.ble.isHistoricalSyncing ? .pending : (model.ble.lastHistoricalSyncCompletedAt == nil ? .pending : .ready)
         )
         MoreInfoRow(
+          title: "Invalid Frames",
+          value: "\(model.ble.invalidFrameCount) rejected this session",
+          systemImage: "xmark.circle",
+          status: model.ble.invalidFrameCount == 0 ? .ready : .blocked
+        )
+        MoreInfoRow(
           title: "RR Watch",
           value: model.respiratoryPacketWatchStatus,
           systemImage: "lungs",
