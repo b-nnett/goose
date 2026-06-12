@@ -9,6 +9,7 @@ struct HealthView: View {
   @State private var cachedLandingSnapshots: [HealthMetricSnapshot] = []
   @State private var cachedVitalSnapshots: [HealthMetricSnapshot] = []
   @State private var bpmRefreshTask: Task<Void, Never>?
+  @State private var showingManualWorkout = false
 
   var body: some View {
     ScrollView {
@@ -48,6 +49,14 @@ struct HealthView: View {
       HealthRouteContentView(route: route, store: store)
     }
     .toolbar {
+      ToolbarItem(placement: .topBarLeading) {
+        Button {
+          showingManualWorkout = true
+        } label: {
+          Image(systemName: "figure.run.circle")
+        }
+        .accessibilityLabel("Log Workout")
+      }
       ToolbarItem(placement: .topBarTrailing) {
         Button {
           refreshDashboard()
@@ -56,6 +65,9 @@ struct HealthView: View {
         }
         .accessibilityLabel("Refresh Health")
       }
+    }
+    .sheet(isPresented: $showingManualWorkout) {
+      ManualWorkoutEntrySheet(store: store)
     }
     .onAppear {
       model.recordUIAction("page.opened", detail: "Health")

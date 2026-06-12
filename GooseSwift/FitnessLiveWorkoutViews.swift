@@ -206,6 +206,7 @@ struct FitnessPageCarousel: View {
 }
 
 struct FitnessOverviewPage: View {
+  @Environment(GooseAppModel.self) private var model
   let activity: ActivityKind
   let currentHeartRate: Int?
   let averageHeartRate: Int?
@@ -238,6 +239,11 @@ struct FitnessOverviewPage: View {
 
           FitnessPaceBlock(value: averageHeartRate.map(String.init) ?? "--", label: "AVERAGE\nHR", color: .white)
             .padding(.bottom, 88)
+
+          if model.liveWorkoutStrain > 0 {
+            FitnessPaceBlock(value: String(format: "%.1f", model.liveWorkoutStrain), label: "STRAIN", color: .white)
+              .padding(.bottom, 76)
+          }
 
           FitnessNumberUnit(value: "\(activeCalories)", unit: "KCAL", color: .white, size: 72, unitSize: 40)
             .padding(.bottom, 18)
