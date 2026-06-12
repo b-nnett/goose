@@ -9,6 +9,6 @@ import Foundation
 //    documented in the same file.
 //
 // Do not add functional implementation until both prerequisites are complete.
-final class GooseWakeWindowManager {
+actor GooseWakeWindowManager {
   // Stub — not yet functional. See comment above.
 }
