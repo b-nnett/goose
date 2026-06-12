@@ -261,7 +261,7 @@ Plans:
 **Wave 1** *(parallel)*
 
 - [ ] 72-01-PLAN.md — DATA-03: Rust metric_series.query_range bridge method + store.rs query function + round-trip test
-- [ ] 72-02-PLAN.md — DATA-03: ANS Balance tiles in StressV2OverviewPage + TrendsDashboardView + ManualWorkoutEntrySheet + pbxproj
+- [x] 72-02-PLAN.md — DATA-03: ANS Balance tiles in StressV2OverviewPage + TrendsDashboardView + ManualWorkoutEntrySheet + pbxproj
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -310,7 +310,7 @@ Plans:
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 4/4 | Complete   | 2026-06-12 |
-| 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
+| 72. Screens on New Foundation + Service Layer | v10.0 | 1/3 | In Progress|  |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
 
 ## Backlog
@@ -348,7 +348,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 4/4 plans complete
+**Plans:** 1/3 plans executed
 Plans:
 **Wave 1**
 

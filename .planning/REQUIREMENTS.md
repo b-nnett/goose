@@ -29,7 +29,7 @@
 
 - [ ] **DATA-01**: App persiste diário de comportamentos (Y/N diários), log de treino com sport tag, dados Apple Health diários, e séries de métricas genéricas em SQLite (schema v20 — 4 tabelas com migration arm condicional)
 - [ ] **DATA-02**: Ecrã de workout mostra strain acumulado em tempo real durante sessão activa (GooseStrainAccumulator Swift-side; publica via Task @MainActor)
-- [ ] **DATA-03**: Utilizador vê ecrã Stress/ANS com tiles ANS, dashboard Trends histórico e sheet de entrada manual de workout
+- [x] **DATA-03**: Utilizador vê ecrã Stress/ANS com tiles ANS, dashboard Trends histórico e sheet de entrada manual de workout
 - [x] **DATA-04**: Ecrã de HR carrega sem lag em sessões longas (HR sample decimation via stride/LTTB preservando extremos locais)
 
 ### ARCH — Arquitectura / Testabilidade
