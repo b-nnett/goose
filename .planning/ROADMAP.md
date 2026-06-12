@@ -186,7 +186,14 @@ Plans:
   3. `cargo test` passes in full, including migration tests verifying the v19→v20 migration arm is idempotent
   4. Multiple concurrent GooseRustBridge instances writing to metricSeries produce no duplicate rows (idempotent insert pattern)
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1** *(parallel — Rust and Swift are independent)*
+
+- [ ] 69-01-PLAN.md — DATA-01: schema v20 migration (4 tables) + 4 bridge upsert methods + migration tests
+- [ ] 69-02-PLAN.md — DATA-02: GooseStrainAccumulator actor + GooseAppModel wiring (liveWorkoutStrain)
 
 ### Phase 70: Haptic Primitive + Breathe Screen
 
