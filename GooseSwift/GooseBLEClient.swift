@@ -42,8 +42,6 @@ import OSLog
   var hardwareRevision: String?
   var softwareRevision: String?
   var manufacturerName: String?
-  var isHistoricalSyncing = false
-  var historicalSyncStatus = "idle"
   var historicalPacketCount = 0
   var lastHistoricalSyncCompletedAt: Date?
   var lastHistoricalRangeCommandStatus = "No GET_DATA_RANGE response"
@@ -99,6 +97,12 @@ import OSLog
   )
   let hrMonitorManager = GooseBLEHRMonitorManager()
   let bondingManager = GooseBLEBondingManager()
+  let historicalManager = GooseBLEHistoricalManager()
+
+  // Proxy computed properties — all historical read call sites across extensions use these.
+  var isHistoricalSyncing: Bool { historicalManager.isHistoricalSyncing }
+  var historicalSyncStatus: String { historicalManager.historicalSyncStatus }
+  var historicalSyncRunID: UUID { historicalManager.historicalSyncRunID }
   let notificationContextLock = NSLock()
   var notificationContextActiveDeviceName = "WHOOP"
   var notificationContextConnectionState = "disconnected"
@@ -266,23 +270,8 @@ import OSLog
   var clientHelloSentForCurrentConnection = false
   var readySyncWorkItem: DispatchWorkItem?
   var syncClearWorkItem: DispatchWorkItem?
-  var historicalCommandTimeoutWorkItem: DispatchWorkItem?
-  var historicalIdleWorkItem: DispatchWorkItem?
-  var historicalRangeRetryWorkItem: DispatchWorkItem?
-  var pendingHistoricalCommand: PendingHistoricalCommand?
-  var pendingHistoricalFrames: [(hex: String, capturedAt: String)] = []
-  var lastHandledWasHistoricalDataPacket = false
   let historicalDirectWriteBridge = GooseRustBridge()
   var historicalDirectWriteDatabasePath: String = ""
-  var nextHistoricalCommandSequence: UInt8 = 57
-  var historicalPacketsReceivedThisSync = 0
-  var historicalRangePendingResponses = 0
-  var historicalRangeRetryCount = 0
-  var historicalTransferRequestAttemptCount = 0
-  var historyEndAckQueued = false
-  var historyEndAckSentThisBurst = false
-  var pendingHistoryEndAckPayload: [UInt8]?
-  var gen4HistoricalPageSeq: UInt32 = 0
   var lastHeartRateLogAt: Date?
   var lastHeartRateLogBPM: Int?
   var lastHeartRateLogSource = ""
@@ -305,23 +294,6 @@ import OSLog
   var lastPublishedHRVRMSSD: Double?
   var lastHRVPublishedAt = Date.distantPast
   var lastHRVLogAt: Date?
-  var historyEndReceived = false
-  var historyCompleteReceived = false
-  var historyStartReceived = false
-  var historicalDataResultAckEnabled = true
-  var lastHistoricalPacketCountPublishedAt = Date.distantPast
-  var lastHistoricalSyncProgressCallbackAt = Date.distantPast
-  var lastHistoricalSyncProgressCallbackStatus = ""
-  var lastHistoricalSyncProgressCallbackDetail = ""
-  var coalescedHistoricalSyncProgressCallbackCount = 0
-  let requestHistoricalRangeBeforeTransfer = true
-  let historicalCommandResponseTimeout: TimeInterval = 7
-  let historicalPendingResponseGrace: TimeInterval = 25
-  let historicalRangeRetryDelay: TimeInterval = 1
-  let historicalRangeMaxRetries = 2
-  let historicalTransferMaxRequestAttempts = 3
-  var historicalSyncRunID = UUID()
-  var historicalRangePollOnly = false
   var autoStartedPhysiologyCapture = false
   var autoConnectForPhysiologyCapture = false
   var nextSensorCommandSequence: UInt8 = 180
@@ -1010,6 +982,22 @@ import OSLog
     bondingManager.onBondingStateChange = { [weak self] newState in
       guard let self else { return }
       self.updateConnectionState(newState.connectionStateString)
+    }
+    historicalManager.onSyncStateChange = { [weak self] _ in
+      // @Observable tracks historicalManager.isHistoricalSyncing via the proxy var;
+      // the callback exists for future explicit observers if needed.
+    }
+    historicalManager.onSyncCompleted = { [weak self] completedAt in
+      guard let self else { return }
+      Task { @MainActor in
+        self.lastHistoricalSyncCompletedAt = completedAt
+      }
+    }
+    historicalManager.onPacketCountChange = { [weak self] count in
+      guard let self else { return }
+      Task { @MainActor in
+        self.historicalPacketCount = count
+      }
     }
     loadRememberedDevice()
     loadPersistedBatterySample()

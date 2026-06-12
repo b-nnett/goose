@@ -172,6 +172,7 @@
 		E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000007 /* GeminiOAuthWebView.swift */; };
 		E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000008 /* CoachSettingsSheet.swift */; };
 		E1000000000000000000009 /* GooseBLEBondingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000009 /* GooseBLEBondingManager.swift */; };
+		E100000000000000000000E /* GooseBLEHistoricalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000E /* GooseBLEHistoricalManager.swift */; };
 		E100000000000000000000A /* GooseUploadWatermark.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000A /* GooseUploadWatermark.swift */; };
 		E100000000000000000000B /* GooseNetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000B /* GooseNetworkMonitor.swift */; };
 		E100000000000000000000C /* GooseAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000C /* GooseAppDelegate.swift */; };
@@ -384,6 +385,7 @@
 		E2000000000000000000007 /* GeminiOAuthWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiOAuthWebView.swift; sourceTree = "<group>"; };
 		E2000000000000000000008 /* CoachSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsSheet.swift; sourceTree = "<group>"; };
 		E2000000000000000000009 /* GooseBLEBondingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEBondingManager.swift; sourceTree = "<group>"; };
+		E200000000000000000000E /* GooseBLEHistoricalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEHistoricalManager.swift; sourceTree = "<group>"; };
 		E200000000000000000000A /* GooseUploadWatermark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseUploadWatermark.swift; sourceTree = "<group>"; };
 		E200000000000000000000B /* GooseNetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseNetworkMonitor.swift; sourceTree = "<group>"; };
 		E200000000000000000000C /* GooseAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseAppDelegate.swift; sourceTree = "<group>"; };
@@ -614,6 +616,7 @@
 				E2000000000000000000007 /* GeminiOAuthWebView.swift */,
 				E2000000000000000000008 /* CoachSettingsSheet.swift */,
 				E2000000000000000000009 /* GooseBLEBondingManager.swift */,
+				E200000000000000000000E /* GooseBLEHistoricalManager.swift */,
 				E200000000000000000000A /* GooseUploadWatermark.swift */,
 				E200000000000000000000B /* GooseNetworkMonitor.swift */,
 				E200000000000000000000C /* GooseAppDelegate.swift */,
@@ -975,6 +978,7 @@
 				E1000000000000000000007 /* GeminiOAuthWebView.swift in Sources */,
 				E1000000000000000000008 /* CoachSettingsSheet.swift in Sources */,
 				E1000000000000000000009 /* GooseBLEBondingManager.swift in Sources */,
+				E100000000000000000000E /* GooseBLEHistoricalManager.swift in Sources */,
 				E100000000000000000000A /* GooseUploadWatermark.swift in Sources */,
 				E100000000000000000000B /* GooseNetworkMonitor.swift in Sources */,
 				E100000000000000000000C /* GooseAppDelegate.swift in Sources */,
