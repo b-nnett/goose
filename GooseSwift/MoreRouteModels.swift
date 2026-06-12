@@ -16,6 +16,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   case support
   case about
   case developer
+  case breathe
 
   var id: String { rawValue }
 
@@ -36,6 +37,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .support: String(localized: "Support")
     case .about: String(localized: "About")
     case .developer: String(localized: "Developer")
+    case .breathe: String(localized: "Breathe")
     }
   }
 
@@ -56,6 +58,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .support: String(localized: "Logs, support bundles, and troubleshooting")
     case .about: String(localized: "App, Rust core, and licenses")
     case .developer: String(localized: "Capture, exports, bridge diagnostics, and debug tools")
+    case .breathe: String(localized: "Paced breathing with haptics")
     }
   }
 
@@ -76,6 +79,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .support: "lifepreserver"
     case .about: "info.circle"
     case .developer: "hammer"
+    case .breathe: "wind"
     }
   }
 
@@ -96,6 +100,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
     case .support: \.support
     case .about: \.about
     case .developer: \.developer
+    case .breathe: \.breathe
     }
   }
 
@@ -105,6 +110,7 @@ enum MoreRoute: String, CaseIterable, Identifiable, Hashable {
   static let supportRoutes: [MoreRoute] = [.support, .about]
   static let developerRoutes: [MoreRoute] = [.developer]
   static let developerToolRoutes: [MoreRoute] = [.connectionLab, .capture, .localStore, .rawExport, .algorithms, .debug]
+  static let wellnessRoutes: [MoreRoute] = [.breathe]
 }
 
 struct MoreRouteStatus: Equatable {
@@ -123,6 +129,7 @@ struct MoreRouteStatus: Equatable {
   var support: MoreStatusKind
   var about: MoreStatusKind
   var developer: MoreStatusKind
+  var breathe: MoreStatusKind
 }
 
 enum MoreStatusKind: String, CaseIterable {
