@@ -213,7 +213,7 @@ Plans:
 
 **Wave 1** *(parallel)*
 
-- [ ] 70-01-PLAN.md — HAP-01: GooseBLEClient+Haptics.swift with buzz(loops:) — fire-and-forget BLE cmd 0x13
+- [x] 70-01-PLAN.md — HAP-01: GooseBLEClient+Haptics.swift with buzz(loops:) — fire-and-forget BLE cmd 0x13
 - [ ] 70-02-PLAN.md — HAP-02: BreatheView.swift + MoreRoute.breathe navigation wiring + MoreDataStore updates
 
 ### Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation
@@ -287,7 +287,7 @@ Plans:
 | 67. WHOOP 5.0 Protocol Fixes | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
-| 70. Haptic Primitive + Breathe Screen | v10.0 | 0/TBD | Not started | - |
+| 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/TBD | Not started | - |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
