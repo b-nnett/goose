@@ -61,67 +61,42 @@ final class GooseBLEHistoricalManager {
   let historicalRangeMaxRetries = 2
   let historicalTransferMaxRequestAttempts = 3
 
-  // MARK: - Internal lock
-
-  private let lock = NSLock()
-
   // MARK: - Callbacks
+  // All mutation methods and callbacks must be called on the main thread.
+  // CoreBluetooth delegates are already bounced to main before reaching this class.
 
-  // Called on main thread when isHistoricalSyncing changes.
   var onSyncStateChange: ((Bool) -> Void)?
-  // Called on main thread when a sync completes; provides the completion date.
   var onSyncCompleted: ((Date) -> Void)?
-  // Called on main thread when the packet count changes during sync.
   var onPacketCountChange: ((Int) -> Void)?
 
   // MARK: - Mutation methods
 
   /// Begin a new historical sync: assign a new run ID, mark syncing, set status.
   func beginSync(runID: UUID) {
-    lock.withLock {
-      historicalSyncRunID = runID
-      isHistoricalSyncing = true
-      historicalSyncStatus = "syncing"
-    }
-    let isSyncing = lock.withLock { isHistoricalSyncing }
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      self.onSyncStateChange?(isSyncing)
-    }
+    historicalSyncRunID = runID
+    isHistoricalSyncing = true
+    historicalSyncStatus = "syncing"
+    onSyncStateChange?(true)
   }
 
   /// Mark sync complete: set status "synced", call completion callback with date.
   func completeSync(completedAt: Date) {
-    lock.withLock {
-      isHistoricalSyncing = false
-      historicalSyncStatus = "synced"
-    }
-    let isSyncing = lock.withLock { isHistoricalSyncing }
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      self.onSyncStateChange?(isSyncing)
-      self.onSyncCompleted?(completedAt)
-    }
+    isHistoricalSyncing = false
+    historicalSyncStatus = "synced"
+    onSyncStateChange?(false)
+    onSyncCompleted?(completedAt)
   }
 
   /// Mark sync failed: set isHistoricalSyncing = false and status to the given string.
   func failSync(status: String) {
-    lock.withLock {
-      isHistoricalSyncing = false
-      historicalSyncStatus = status
-    }
-    let isSyncing = lock.withLock { isHistoricalSyncing }
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      self.onSyncStateChange?(isSyncing)
-    }
+    isHistoricalSyncing = false
+    historicalSyncStatus = status
+    onSyncStateChange?(false)
   }
 
   /// Set a transient status string without changing isHistoricalSyncing (e.g. "waiting", "idle").
   func setStatus(_ status: String) {
-    lock.withLock {
-      historicalSyncStatus = status
-    }
+    historicalSyncStatus = status
   }
 
   /// Publish current packet count to GooseBLEClient via callback.

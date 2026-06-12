@@ -98,7 +98,7 @@ import OSLog
   let hrMonitorManager = GooseBLEHRMonitorManager()
   let bondingManager = GooseBLEBondingManager()
   let historicalManager = GooseBLEHistoricalManager()
-  var dataValidator = GooseBLEDataValidator()
+  let dataValidator = GooseBLEDataValidator()
 
   // Proxy computed properties — all historical read call sites across extensions use these.
   var isHistoricalSyncing: Bool { historicalManager.isHistoricalSyncing }
@@ -1002,7 +1002,7 @@ import OSLog
       }
     }
     dataValidator.onInvalidFrame = { [weak self] in
-      Task { @MainActor in
+      DispatchQueue.main.async {
         self?.invalidFrameCount += 1
       }
     }

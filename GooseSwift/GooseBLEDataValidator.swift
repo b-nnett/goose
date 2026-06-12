@@ -6,7 +6,7 @@ import OSLog
 // malformed at a structural level without inspecting packet type or semantics.
 // Structural invariants only: device_id non-nil, payload non-nil, payload non-empty.
 // NO packet-type whitelist (CONTEXT decision — a whitelist would silently break WHOOP 5.0 frames).
-struct GooseBLEDataValidator {
+final class GooseBLEDataValidator {
   // Called on the background queue that runs validation.
   // Consumer must hop to main for any @Observable / @MainActor state mutation.
   var onInvalidFrame: (() -> Void)?
