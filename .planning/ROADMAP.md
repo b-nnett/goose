@@ -254,8 +254,18 @@ Plans:
   3. A Manual Workout Entry sheet allows the user to log a workout with sport tag, duration, and perceived effort — the entry is persisted to the workout table
   4. `GooseBLEManaging`, `GooseRustBridging`, and `HealthDataStoring` protocols exist; mock implementations exist in the test target; at least 2 unit tests use the mocks and pass with `cargo test` or Swift test runner
 
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
+
+Plans:
+
+**Wave 1** *(parallel)*
+
+- [ ] 72-01-PLAN.md — DATA-03: Rust metric_series.query_range bridge method + store.rs query function + round-trip test
+- [ ] 72-02-PLAN.md — DATA-03: ANS Balance tiles in StressV2OverviewPage + TrendsDashboardView + ManualWorkoutEntrySheet + pbxproj
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 72-03-PLAN.md — ARCH-01: GooseRustBridging + GooseBLEManaging + HealthDataStoring protocols + mocks + 2 unit tests
 
 ### Phase 73: Smart Alarm + Wake-Window Engine
 
