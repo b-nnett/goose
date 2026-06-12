@@ -131,6 +131,7 @@ struct CoachSleepRouteView: View {
     guard let start = sleep?.startLabel else { return "—" }
     // Parse HH:mm and subtract 30 min
     let fmt = DateFormatter()
+    fmt.locale = Locale(identifier: "en_US_POSIX")
     fmt.dateFormat = "HH:mm"
     guard let date = fmt.date(from: start) else { return "30min antes de \(start)" }
     let adjusted = date.addingTimeInterval(-30 * 60)
