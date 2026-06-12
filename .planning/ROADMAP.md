@@ -280,7 +280,15 @@ Plans:
   3. (HAP-04 — RE-gated) `GooseWakeWindowManager` exists and monitors sleep state via bridge polling; it fires `buzz(loops:)` at the lightest-sleep moment within the user's alarm window
   4. (HAP-04 — RE-gated) The wake-window wire format is derived from confirmed `SetAlarmInfoCommandPacketRev4` field layout — no speculative byte assignments
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1** *(parallel)*
+
+- [ ] 73-01-PLAN.md — HAP-03: Wake Alarm UI in CoachSleepRouteView + GooseAppModel alarm state properties
+- [ ] 73-02-PLAN.md — HAP-04 stub: GooseWakeWindowManager.swift (RE-gated, compilable stub + pbxproj registration)
+
 **UI hint**: yes
 
 ## Progress
@@ -311,7 +319,7 @@ Plans:
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 4/4 | Complete   | 2026-06-12 |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 1/3 | In Progress|  |
-| 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
+| 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/2 | Not started | - |
 
 ## Backlog
 
