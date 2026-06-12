@@ -580,17 +580,13 @@ _ = try await bridge.requestAsync(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Where exactly does the "Log Workout" button appear?**
-   - What we know: CONTEXT.md says "from the Fitness/Activity tab" or HomeView — Claude's discretion
-   - What's unclear: There is no dedicated FitnessView; the closest is the Strain or Activity section in HomeView
-   - Recommendation: Add a toolbar button (`ToolbarItem(placement: .topBarTrailing)`) in `HealthMetricFamilyView` when `route == .strain`, or a dedicated "Log" row in `HealthView`'s "Explore Health" section. A floating button in HomeView is the most discoverable.
+   - RESOLVED: "Log Workout" appears as a dedicated row in `HealthView`'s "Explore Health" section (same pattern as other HealthRoute entries). Tapping presents `ManualWorkoutEntrySheet` as a `.sheet` modal. This is implemented in Plan 72-02 Task 1.
 
 2. **TrendsDashboardView — what does `HealthDataStore.snapshot(for: .trends)` return?**
-   - What we know: `HealthRouteShortcutSection` needs a `HealthMetricSnapshot` for `.trends` to populate the shortcut card
-   - What's unclear: `snapshot(for:)` is a large switch — `.trends` case doesn't exist yet
-   - Recommendation: Add a minimal stub snapshot (title: "Trends", value: "7 days", status: "Recovery · HRV · Strain") to `HealthDataStore`'s snapshot method.
+   - RESOLVED: A minimal stub snapshot with `title: "Trends"`, `value: "7 days"`, `status: "Recovery · HRV · Strain"` is added to `HealthDataStore`'s snapshot switch in Plan 72-02 Task 1. The full trends data is loaded separately by `TrendsDashboardView` via `fetchTrendsSeries`.
 
 ---
 
