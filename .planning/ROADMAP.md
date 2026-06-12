@@ -122,7 +122,7 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 - [ ] **Phase 70: Haptic Primitive + Breathe Screen** — buzz(loops:) cmd 0x13 + Breathe UI with paced haptic cues
 - [x] **Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation** — contextual nudges, Interval Timer, Metric Explorer, iOS local notifications, HR chart performance (completed 2026-06-12)
 - [ ] **Phase 72: Screens on New Foundation + Service Layer** — Stress/ANS view, Trends dashboard, Manual Workout Entry, protocol-based service layer + mocks
-- [ ] **Phase 73: Smart Alarm + Wake-Window Engine** — HAP-03 single-shot alarm UI + HAP-04 RE-gated wake-window engine
+- [x] **Phase 73: Smart Alarm + Wake-Window Engine** — HAP-03 single-shot alarm UI + HAP-04 RE-gated wake-window engine (completed 2026-06-12)
 
 ## Phase Details
 
@@ -286,8 +286,8 @@ Plans:
 
 **Wave 1** *(parallel)*
 
-- [ ] 73-01-PLAN.md — HAP-03: Wake Alarm UI in CoachSleepRouteView + GooseAppModel alarm state properties
-- [ ] 73-02-PLAN.md — HAP-04 stub: GooseWakeWindowManager.swift (RE-gated, compilable stub + pbxproj registration)
+- [x] 73-01-PLAN.md — HAP-03: Wake Alarm UI in CoachSleepRouteView + GooseAppModel alarm state properties
+- [x] 73-02-PLAN.md — HAP-04 stub: GooseWakeWindowManager.swift (RE-gated, compilable stub + pbxproj registration)
 
 **UI hint**: yes
 
@@ -319,7 +319,7 @@ Plans:
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 4/4 | Complete   | 2026-06-12 |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 1/3 | In Progress|  |
-| 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/2 | Not started | - |
+| 73. Smart Alarm + Wake-Window Engine | v10.0 | 2/2 | Complete   | 2026-06-12 |
 
 ## Backlog
 
@@ -356,7 +356,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 1/3 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 **Wave 1**
 

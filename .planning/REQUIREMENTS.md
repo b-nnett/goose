@@ -16,7 +16,7 @@
 
 - [x] **HAP-01**: App consegue vibrar a pulseira WHOOP 5.0 via BLE cmd 0x13 (buzz(loops:) primitive; pré-requisito para HAP-02/03/04 e FEAT-02)
 - [ ] **HAP-02**: Utilizador consegue usar ecrã Breathe com feedback haptic paceado (AdvancedHaptic/HapticHeartbeat; requer HAP-01)
-- [ ] **HAP-03**: Utilizador consegue agendar alarme de vibração na pulseira a hora fixa (smart alarm — single-shot BLE write; requer HAP-01)
+- [x] **HAP-03**: Utilizador consegue agendar alarme de vibração na pulseira a hora fixa (smart alarm — single-shot BLE write; requer HAP-01)
 - [ ] **HAP-04**: Pulseira vibra no momento óptimo dentro de uma janela de despertar (wake-window engine; RE-gated — requer sessões BTSnoop + Ghidra de SetAlarmInfoCommandPacketRev4)
 
 ### FEAT — Features / Coach / Notificações
