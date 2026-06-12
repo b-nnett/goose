@@ -165,6 +165,37 @@ final class HeartRateSeriesStore: @unchecked Sendable {
       .sorted { $0.capturedAt < $1.capturedAt }
   }
 
+  func decimatedSamples(from start: Date, to end: Date, maxCount: Int = 500) -> [HeartRateSamplePoint] {
+    let raw = samples(from: start, to: end)
+    guard raw.count > 1000 else { return raw }
+    let stride = max(1, raw.count / maxCount)
+    var result: [HeartRateSamplePoint] = []
+    result.reserveCapacity(raw.count / stride * 3)
+    var i = 0
+    while i < raw.count {
+      let windowEnd = min(i + stride, raw.count)
+      let window = raw[i..<windowEnd]
+      let first = raw[i]
+      result.append(first)
+      if let maxSample = window.max(by: { $0.bpm < $1.bpm }), maxSample.id != first.id {
+        result.append(maxSample)
+      }
+      if let minSample = window.min(by: { $0.bpm < $1.bpm }),
+         minSample.id != first.id,
+         minSample.id != result.last?.id {
+        result.append(minSample)
+      }
+      i += stride
+    }
+    return result.sorted { $0.capturedAt < $1.capturedAt }
+  }
+
+  func decimatedSamples(forDayContaining date: Date = Date(), calendar: Calendar = .current, maxCount: Int = 500) -> [HeartRateSamplePoint] {
+    let dayStart = calendar.startOfDay(for: date)
+    let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86400)
+    return decimatedSamples(from: dayStart, to: dayEnd, maxCount: maxCount)
+  }
+
   func summary(forDayContaining date: Date = Date(), calendar: Calendar = .current) -> String {
     let ranges = hourlyRanges(forDayContaining: date, calendar: calendar)
     return Self.summary(from: ranges)
