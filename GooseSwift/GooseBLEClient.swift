@@ -98,6 +98,7 @@ import OSLog
   let hrMonitorManager = GooseBLEHRMonitorManager()
   let bondingManager = GooseBLEBondingManager()
   let historicalManager = GooseBLEHistoricalManager()
+  var dataValidator = GooseBLEDataValidator()
 
   // Proxy computed properties — all historical read call sites across extensions use these.
   var isHistoricalSyncing: Bool { historicalManager.isHistoricalSyncing }
@@ -283,6 +284,7 @@ import OSLog
   var lastNotificationSyncPublishedAt = Date.distantPast
   var notificationSideEffectSkipCount = 0
   var notificationSideEffectSkipBytes = 0
+  var invalidFrameCount = 0
   var lastNotificationSideEffectSkipLoggedAt = Date.distantPast
   var restingHeartRateWindowBPM: [Int] = []
   var lastRestingHeartRateEstimateBPM: Double?
@@ -997,6 +999,11 @@ import OSLog
       guard let self else { return }
       Task { @MainActor in
         self.historicalPacketCount = count
+      }
+    }
+    dataValidator.onInvalidFrame = { [weak self] in
+      Task { @MainActor in
+        self?.invalidFrameCount += 1
       }
     }
     loadRememberedDevice()
