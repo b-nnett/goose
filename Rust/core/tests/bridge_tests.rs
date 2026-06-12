@@ -22,8 +22,8 @@ use goose_core::{
     fixtures::build_fixture_index,
     metrics::{GOOSE_HRV_V0_ID, GOOSE_HRV_V0_VERSION, built_in_algorithm_definitions},
     protocol::{
-        DeviceType, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
-        build_v5_payload_frame, parse_frame_hex,
+        DeviceType, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA, PACKET_TYPE_R22_REALTIME_DATA,
+        PACKET_TYPE_REALTIME_RAW_DATA, build_v5_payload_frame, parse_frame_hex,
     },
     recovery_rollup::{
         GOOSE_RECOVERY_UNAVAILABLE_STATUS_V0_ID, GOOSE_RECOVERY_UNAVAILABLE_STATUS_V0_VERSION,
@@ -9735,5 +9735,266 @@ fn bridge_band_sleep_no_duplicate() {
         result2["unchanged_session_count"], 1,
         "second insert should have unchanged_session_count=1, got: {:?}",
         result2
+    );
+}
+
+// ── Nyquist gap tests: Phase 67 BLE5-01 / BLE5-02 ────────────────────────────
+
+fn r22_frame_hex() -> String {
+    // R22 realtime packet: battery 80%, HR 132.9 BPM (same fixture as protocol_tests)
+    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x31, 0x05];
+    hex::encode(build_v5_payload_frame(&payload))
+}
+
+/// BLE5-01 gap 1 — body_summary_kind routing
+/// Importing an R22 frame and requesting a correlation report must produce a
+/// summary entry whose body_summary_kind is "r22_whoop5_hr".  Without the
+/// bridge.rs arm the kind would be "unknown" and this test fails.
+#[test]
+fn r22_import_produces_body_summary_kind_r22_whoop5_hr() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    let import = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "r22-kind-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test",
+            "frames": [{
+                "evidence_id": "r22-kind-evidence",
+                "frame_id": "r22-kind-evidence.frame.0",
+                "source": "ios.corebluetooth.notification",
+                "captured_at": "2026-05-28T04:00:00Z",
+                "device_model": "WHOOP 5.0 Goose",
+                "frame_hex": r22_frame_hex(),
+                "sensitivity": "user-owned-capture",
+                "device_type": "GOOSE"
+            }]
+        }
+    }));
+    assert!(import.ok, "import failed: {:?}", import.error);
+
+    let corr = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "r22-kind-correlation",
+        "method": "capture.correlation_report",
+        "args": {
+            "database_path": db_path,
+            "start": "2026-05-28T00:00:00Z",
+            "end": "2026-05-29T00:00:00Z",
+            "min_owned_captures": 1
+        }
+    }));
+    assert!(corr.ok, "correlation failed: {:?}", corr.error);
+    let report = corr.result.unwrap();
+
+    let summaries = report["summaries"].as_array().unwrap();
+    let r22_summary = summaries
+        .iter()
+        .find(|s| s["body_summary_kind"] == "r22_whoop5_hr");
+    assert!(
+        r22_summary.is_some(),
+        "expected a summary with body_summary_kind=r22_whoop5_hr, got summaries: {:?}",
+        summaries
+    );
+}
+
+/// BLE5-01 gap 2 — R22/R17 same-second dedup
+/// When an R22 and an R17 frame share the same captured_at second, the R17
+/// frame must be suppressed from the HRV trusted set. Because
+/// chrono_captured_at_to_unix is a stub that always returns Err, r22_seconds
+/// is never populated and the dedup is a no-op — this test is expected to
+/// FAIL until the stub is replaced with a real implementation.
+#[test]
+fn r22_shadows_r17_in_same_unix_second_for_hrv_features() {
+    let tempdir = tempfile::tempdir().unwrap();
+    let db = tempdir.path().join("goose.sqlite");
+    let db_path = db.display().to_string();
+
+    // Import R17 (carries RR intervals) and R22 at the same captured_at second.
+    let import = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "r22-dedup-import",
+        "method": "capture.import_frame_batch",
+        "args": {
+            "database_path": db_path,
+            "parser_version": "goose-core/bridge-test",
+            "frames": [
+                {
+                    "evidence_id": "r22-dedup-r17",
+                    "frame_id": "r22-dedup-r17.frame.0",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-05-28T04:00:00Z",
+                    "device_model": "WHOOP 5.0 Goose",
+                    "frame_hex": r17_frame_hex(&[800, 810, 790, 800]),
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "GOOSE"
+                },
+                {
+                    "evidence_id": "r22-dedup-r22",
+                    "frame_id": "r22-dedup-r22.frame.0",
+                    "source": "ios.corebluetooth.notification",
+                    "captured_at": "2026-05-28T04:00:00Z",
+                    "device_model": "WHOOP 5.0 Goose",
+                    "frame_hex": r22_frame_hex(),
+                    "sensitivity": "user-owned-capture",
+                    "device_type": "GOOSE"
+                }
+            ]
+        }
+    }));
+    assert!(import.ok, "import failed: {:?}", import.error);
+
+    let hrv = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "r22-dedup-hrv",
+        "method": "metrics.hrv_features",
+        "args": {
+            "database_path": db_path,
+            "start": "2026-05-28T00:00:00Z",
+            "end": "2026-05-29T00:00:00Z",
+            "min_owned_captures": 1,
+            "require_trusted_evidence": true,
+            "min_rr_intervals_to_compute": 1,
+            "baseline_min_days": 1,
+            "require_baseline": false
+        }
+    }));
+    assert!(hrv.ok, "hrv_features failed: {:?}", hrv.error);
+    let report = hrv.result.unwrap();
+
+    // If R22 correctly shadows R17, the R17 frame is dropped → no trusted RR intervals
+    // and feature_count must be 0.  If the dedup stub is broken, R17 survives and
+    // feature_count is 1 (BLOCKER: chrono_captured_at_to_unix always returns Err).
+    assert_eq!(
+        report["trusted_feature_count"], 0,
+        "R17 frame was NOT suppressed by R22 dedup — chrono_captured_at_to_unix stub must be fixed. Report: {:?}",
+        report
+    );
+}
+
+/// BLE5-02 gap 3 — stale-clock guard: 300s grid snap
+/// A timestamp-evidence row whose device clock diverges from captured_at by
+/// more than 86 400 s is snapped to (device_ts / 300) * 300. The test
+/// supplies sample_time equal to that snapped value — the row must be
+/// confirmed (motion_timestamp_evidence_count == 1).
+#[test]
+fn stale_device_clock_snaps_to_300s_grid_for_timestamp_confirmation() {
+    // captured_at wall-clock: 2026-01-01T20:00:00Z = 1767297600 s
+    // device timestamp (motion): 946685800 s (2000-01-01 ~00:16:40Z — plausible but stale by >> 86 400 s)
+    //   snapped = (946685800 / 300) * 300 = 946685700 = 2000-01-01T00:15:00Z
+    // device timestamp (HR): 946686100 s
+    //   snapped = (946686100 / 300) * 300 = 946686000 = 2000-01-01T00:20:00Z
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "stale-clock-snap-1",
+        "method": "historical_sync.validate_physical_evidence",
+        "args": {
+            "schema": "goose.historical-sync-physical-validation.v1",
+            "generation": "gen5",
+            "capture_session_id": "stale-clock-test-session",
+            "timestamp_evidence": [
+                {
+                    "packet_kind": "raw_motion_k21",
+                    "source_signal": "raw_motion_k21",
+                    "captured_at": "2026-01-01T20:00:00Z",
+                    "sample_time": "2000-01-01T00:15:00Z",
+                    "sample_time_source": "device_timestamp",
+                    "device_timestamp_seconds": 946685800,
+                    "device_timestamp_subseconds": 0,
+                    "capture_session_id": "stale-clock-test-session"
+                },
+                {
+                    "packet_kind": "normal_history",
+                    "source_signal": "heart_rate",
+                    "captured_at": "2026-01-01T20:00:00Z",
+                    "sample_time": "2000-01-01T00:20:00Z",
+                    "sample_time_source": "device_timestamp",
+                    "device_timestamp_seconds": 946686100,
+                    "device_timestamp_subseconds": 0,
+                    "capture_session_id": "stale-clock-test-session"
+                }
+            ]
+        }
+    }));
+    assert!(response.ok, "validate_physical_evidence failed: {:?}", response.error);
+    let result = response.result.unwrap();
+
+    // The stale-clock guard must snap device_timestamp_seconds=946685800 → 946685700
+    // and device_timestamp_seconds=946686100 → 946686000.
+    // sample_time matches the snapped value → rows confirmed.
+    assert_eq!(
+        result["motion_timestamp_evidence_count"], 1,
+        "stale-clock guard did not snap motion timestamp to 300s grid. Result: {:?}",
+        result
+    );
+    assert_eq!(
+        result["heart_rate_timestamp_evidence_count"], 1,
+        "stale-clock guard did not snap HR timestamp to 300s grid. Result: {:?}",
+        result
+    );
+}
+
+/// BLE5-02 gap 4 — EVENT type-48 bypass
+/// An EVENT packet's device_timestamp is a native RTC unix second and must NOT
+/// be snapped even when the device clock is stale. The test deliberately sets
+/// a stale device clock but supplies sample_time equal to the RAW (unsnapped)
+/// device timestamp — confirming the bypass is active.
+#[test]
+fn event_packet_timestamp_bypasses_stale_clock_snap() {
+    // Motion row: fresh clock (captured_at ≈ device_timestamp, difference < 86 400 s — not stale).
+    //   captured_at=2026-01-01T20:00:00Z, device_timestamp=1767304800 (= 2026-01-01T22:00:00Z).
+    //   sample_time must equal device_timestamp directly: "2026-01-01T22:00:00Z".
+    //
+    // EVENT row: stale clock. captured_at=2026-01-01T20:00:00Z, device_timestamp=946685800
+    //   (2000-01-01T00:16:40Z — stale by >> 86 400 s, snapped would be 946685700 = 2000-01-01T00:15:00Z).
+    //   Because it is an EVENT packet, the bypass applies: sample_time must equal the RAW
+    //   device_timestamp "2000-01-01T00:16:40Z", NOT the snapped "2000-01-01T00:15:00Z".
+    let response = request(serde_json::json!({
+        "schema": "goose.bridge.request.v1",
+        "request_id": "event-bypass-1",
+        "method": "historical_sync.validate_physical_evidence",
+        "args": {
+            "schema": "goose.historical-sync-physical-validation.v1",
+            "generation": "gen5",
+            "capture_session_id": "event-bypass-test-session",
+            "timestamp_evidence": [
+                {
+                    "packet_kind": "raw_motion_k21",
+                    "source_signal": "raw_motion_k21",
+                    "captured_at": "2026-01-01T20:00:00Z",
+                    "sample_time": "2026-01-01T22:00:00Z",
+                    "sample_time_source": "device_timestamp",
+                    "device_timestamp_seconds": 1767304800,
+                    "device_timestamp_subseconds": 0,
+                    "capture_session_id": "event-bypass-test-session"
+                },
+                {
+                    "packet_kind": "event",
+                    "source_signal": "heart_rate",
+                    "captured_at": "2026-01-01T20:00:00Z",
+                    "sample_time": "2000-01-01T00:16:40Z",
+                    "sample_time_source": "device_timestamp",
+                    "device_timestamp_seconds": 946685800,
+                    "device_timestamp_subseconds": 0,
+                    "capture_session_id": "event-bypass-test-session"
+                }
+            ]
+        }
+    }));
+    assert!(response.ok, "validate_physical_evidence failed: {:?}", response.error);
+    let result = response.result.unwrap();
+
+    // The EVENT row must be confirmed using the raw device_timestamp (946685800 s = "2000-01-01T00:16:40Z"),
+    // NOT the snapped value (946685700 s = "2000-01-01T00:15:00Z").
+    // If the bypass is missing, the stale guard snaps 946685800 → 946685700, which does NOT match
+    // sample_time, so heart_rate_timestamp_evidence_count stays 0.
+    assert_eq!(
+        result["heart_rate_timestamp_evidence_count"], 1,
+        "EVENT packet timestamp was snapped instead of bypassed. Result: {:?}",
+        result
     );
 }
