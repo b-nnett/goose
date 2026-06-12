@@ -12,12 +12,10 @@ final class WorkoutEntryViewModel: ObservableObject {
 
   var isFormValid: Bool { durationMinutes >= 1 }
 
-  // Use GooseRustBridge directly — GooseRustBridging protocol lands in Plan 72-03
-  // TODO(72-03): switch to GooseRustBridging protocol for mock injection
-  var bridge: GooseRustBridge
+  var bridge: any GooseRustBridging
   var databasePath: String
 
-  init(bridge: GooseRustBridge, databasePath: String) {
+  init(bridge: any GooseRustBridging, databasePath: String) {
     self.bridge = bridge
     self.databasePath = databasePath
   }
