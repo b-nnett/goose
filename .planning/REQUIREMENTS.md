@@ -9,8 +9,8 @@
 
 - [ ] **BLE5-01**: Utilizador com WHOOP 5.0 vê métricas em tempo real (R22 type 0x10 parsed; R17/R22 dual-stream dedup incluído na mesma fase)
 - [ ] **BLE5-02**: Histórico por segundo WHOOP 5.0 importado sem duplicados (v18 decode + stale-clock dedup via sequence_id)
-- [ ] **BLE5-03**: Sync histórico BLE gerido por GooseBLEHistoricalManager dedicado (desacoplado de GooseBLEClient; proxy computed property preserva call sites)
-- [ ] **BLE5-04**: Frame BLE inválida rejeitada antes de chegar ao Rust/SQLite (GooseBLEDataValidator — invariantes estruturais apenas, sem packet-type whitelist)
+- [x] **BLE5-03**: Sync histórico BLE gerido por GooseBLEHistoricalManager dedicado (desacoplado de GooseBLEClient; proxy computed property preserva call sites)
+- [x] **BLE5-04**: Frame BLE inválida rejeitada antes de chegar ao Rust/SQLite (GooseBLEDataValidator — invariantes estruturais apenas, sem packet-type whitelist)
 
 ### HAP — Haptics / Hardware WHOOP 5.0
 

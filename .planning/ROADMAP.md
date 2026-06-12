@@ -272,7 +272,7 @@ Plans:
 | 65. Generic BLE State Machine | v9.0 | 1/1 | Complete | 2026-06-11 |
 | 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
 | 67. WHOOP 5.0 Protocol Fixes | v10.0 | 0/TBD | Not started | - |
-| 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete   | 2026-06-12 |
+| 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 0/TBD | Not started | - |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 0/TBD | Not started | - |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/TBD | Not started | - |
