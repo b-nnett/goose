@@ -75,6 +75,10 @@ struct MoreView: View {
         }
       }
 
+      Section("Wellness") {
+        routeRows(MoreRoute.wellnessRoutes)
+      }
+
       Section("Settings") {
         routeRows(MoreRoute.settingsRoutes)
       }
@@ -161,6 +165,8 @@ struct MoreView: View {
       MoreAboutView(store: store)
     case .developer:
       MoreDeveloperView(routes: MoreRoute.developerToolRoutes, routeStatus: store.routeStatus)
+    case .breathe:
+      BreatheView()
     }
   }
 
