@@ -25,7 +25,9 @@ final class MoreDataStore: ObservableObject {
     support: .pending,
     about: .ready,
     developer: .pending,
-    breathe: .ready
+    breathe: .ready,
+    intervalTimer: .ready,
+    metricExplorer: .ready
   )
 
   @Published var databasePath: String
@@ -162,7 +164,9 @@ final class MoreDataStore: ObservableObject {
       support: .pending,
       about: .ready,
       developer: .pending,
-      breathe: .ready
+      breathe: .ready,
+      intervalTimer: .ready,
+      metricExplorer: .ready
     )
     routeStatus = newStatus
   }
