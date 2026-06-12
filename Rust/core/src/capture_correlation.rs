@@ -673,6 +673,7 @@ fn body_summary_kind(summary: &DataPacketBodySummary) -> &'static str {
         DataPacketBodySummary::RawMotionK21 { .. } => "raw_motion_k21",
         DataPacketBodySummary::V24History { .. } => "v24_history",
         DataPacketBodySummary::R22Whoop5Hr { .. } => "r22_whoop5_hr",
+        DataPacketBodySummary::V18History { .. } => "v18_history",
     }
 }
 

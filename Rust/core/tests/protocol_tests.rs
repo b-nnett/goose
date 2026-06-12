@@ -152,6 +152,9 @@ fn parses_event_header_and_preserves_unknown_event_body() {
 
 #[test]
 fn parses_history_packet_stable_header_and_hr_marker() {
+    // v18 is now its own parser (split from 7|9|12|18 NormalHistory arm).
+    // A short v18 payload produces V18History with v18_payload_too_short warning;
+    // the outer header fields (packet_k, hr_marker_offset, etc.) remain unchanged.
     let frame = build_v5_payload_frame(&[
         PACKET_TYPE_HISTORICAL_DATA,
         18,
@@ -177,27 +180,39 @@ fn parses_history_packet_stable_header_and_hr_marker() {
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
     assert_eq!(parsed.packet_type_name.as_deref(), Some("HISTORICAL_DATA"));
-    assert_eq!(
-        parsed.parsed_payload,
-        Some(ParsedPayload::DataPacket {
-            packet_k: Some(18),
-            domain: Some("normal_history_with_hr_marker".to_string()),
-            status_or_stream: Some(1),
-            counter_or_page: Some(0x01020304),
-            timestamp_seconds: Some(0x11223344),
-            timestamp_subseconds: Some(0x5566),
-            hr_marker_offset: Some(14),
-            hr_present_marker: Some(0x4d),
-            body_offset: 13,
-            body_hex: "aa4dbbccddeeff".to_string(),
-            body_summary: Some(DataPacketBodySummary::NormalHistory {
-                hr_present: Some(true),
-                marker_offset: Some(14),
-                marker_value: Some(0x4d),
-            }),
-            warnings: Vec::new(),
-        })
-    );
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket {
+            packet_k,
+            domain,
+            status_or_stream,
+            counter_or_page,
+            timestamp_seconds,
+            timestamp_subseconds,
+            hr_marker_offset,
+            hr_present_marker,
+            body_offset,
+            body_summary,
+            ..
+        } => {
+            assert_eq!(packet_k, Some(18));
+            assert_eq!(domain.as_deref(), Some("normal_history_with_hr_marker"));
+            assert_eq!(status_or_stream, Some(1));
+            assert_eq!(counter_or_page, Some(0x01020304));
+            assert_eq!(timestamp_seconds, Some(0x11223344));
+            assert_eq!(timestamp_subseconds, Some(0x5566));
+            assert_eq!(hr_marker_offset, Some(14));
+            assert_eq!(hr_present_marker, Some(0x4d));
+            assert_eq!(body_offset, 13);
+            // v18 body: too short payload → V18History with warning (body has only 7 bytes)
+            match body_summary.unwrap() {
+                DataPacketBodySummary::V18History { warnings, .. } => {
+                    assert!(warnings.contains(&"v18_payload_too_short".to_string()));
+                }
+                other => panic!("expected V18History, got {other:?}"),
+            }
+        }
+        other => panic!("expected DataPacket, got {other:?}"),
+    }
 }
 
 #[test]
@@ -497,7 +512,8 @@ fn truncated_non_data_frame_fails_instead_of_becoming_decoded_evidence() {
 
 #[test]
 fn short_data_packets_preserve_raw_body_and_warn() {
-    let frame = build_v5_payload_frame(&[PACKET_TYPE_HISTORICAL_DATA, 18, 1, 2]);
+    // Packet k=9 (NormalHistory) with a very short payload — existing behaviour unchanged.
+    let frame = build_v5_payload_frame(&[PACKET_TYPE_HISTORICAL_DATA, 9, 1, 2]);
     let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
 
     assert!(
@@ -513,19 +529,19 @@ fn short_data_packets_preserve_raw_body_and_warn() {
     assert_eq!(
         parsed.parsed_payload,
         Some(ParsedPayload::DataPacket {
-            packet_k: Some(18),
+            packet_k: Some(9),
             domain: Some("normal_history_with_hr_marker".to_string()),
             status_or_stream: Some(1),
             counter_or_page: None,
             timestamp_seconds: None,
             timestamp_subseconds: None,
-            hr_marker_offset: Some(14),
+            hr_marker_offset: Some(17),
             hr_present_marker: None,
             body_offset: 4,
             body_hex: String::new(),
             body_summary: Some(DataPacketBodySummary::NormalHistory {
                 hr_present: None,
-                marker_offset: Some(14),
+                marker_offset: Some(17),
                 marker_value: None,
             }),
             warnings: vec![

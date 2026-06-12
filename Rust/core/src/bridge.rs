@@ -158,6 +158,7 @@ use crate::{
         ExternalSleepSessionInput, ExternalSleepSessionRow, ExternalSleepStageInput,
         ExternalSleepStageRow, GooseStore, GravityRow, OvernightHistoricalRangePollInput,
         OvernightRawNotificationInput, OvernightSyncSessionInput, SleepCorrectionLabelInput,
+        StepCounterSampleInput,
     },
     timeline::{
         observability_timeline_from_rows, packet_timeline_between,
@@ -3071,6 +3072,7 @@ fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
         Some(DataPacketBodySummary::RawMotionK21 { .. }) => "raw_motion_k21",
         Some(DataPacketBodySummary::V24History { .. }) => "v24_history",
         Some(DataPacketBodySummary::R22Whoop5Hr { .. }) => "r22_whoop5_hr",
+        Some(DataPacketBodySummary::V18History { .. }) => "v18_history",
         None => "none",
     }
 }
@@ -3321,6 +3323,7 @@ fn upload_get_recent_decoded_streams_bridge(
     let mut resp: Vec<serde_json::Value> = Vec::new();
     let mut gravity: Vec<serde_json::Value> = Vec::new();
     let mut gravity2: Vec<serde_json::Value> = Vec::new();
+    let mut step: Vec<(f64, i64)> = Vec::new();
 
     for frame in &frames {
         // Skip CRC-failed frames (matches server-side rule)
@@ -3509,6 +3512,58 @@ fn upload_get_recent_decoded_streams_bridge(
                                 hr.push(json!({"ts": ts, "bpm": bpm as u8}));
                             }
                         }
+                        DataPacketBodySummary::V18History {
+                            hr: v18_hr,
+                            rr_intervals_ms,
+                            gravity_x,
+                            gravity_y,
+                            gravity_z,
+                            skin_temp_raw,
+                            step_motion_counter,
+                            ..
+                        } => {
+                            // V18 WHOOP 5.0 historical packet: push all biometric fields.
+                            // No skin_contact byte in v18 — HR/RR/gravity not gated on contact.
+
+                            // HR
+                            if let (Some(ts), Some(bpm)) = (ts_unix, *v18_hr) {
+                                hr.push(json!({"ts": ts, "bpm": bpm}));
+                            }
+
+                            // RR intervals — accumulate with per-interval timestamps
+                            if let Some(ts_base) = ts_unix {
+                                let mut t = ts_base;
+                                for &ms in rr_intervals_ms.iter() {
+                                    rr.push(json!({"ts": t, "interval_ms": ms}));
+                                    t += ms as f64 / 1000.0;
+                                }
+                            }
+
+                            // Gravity triplet (f32 LE, already in g units — no IMU_LSB_PER_G conversion)
+                            if let (Some(ts), Some(x), Some(y), Some(z)) =
+                                (ts_unix, *gravity_x, *gravity_y, *gravity_z)
+                            {
+                                gravity.push(json!({
+                                    "ts": ts,
+                                    "x": x as f64,
+                                    "y": y as f64,
+                                    "z": z as f64,
+                                }));
+                            }
+
+                            // Skin temperature — raw u16 persisted only when degC is within physiological gate.
+                            if let (Some(ts), Some(raw)) = (ts_unix, *skin_temp_raw) {
+                                let deg_c = raw as f32 / 128.0;
+                                if (5.0..=45.0).contains(&deg_c) {
+                                    skin_temp.push(json!({"ts": ts, "raw": raw, "contact": 1}));
+                                }
+                            }
+
+                            // Step motion counter — accumulate (ts, count) for batch persist below.
+                            if let (Some(ts), Some(count)) = (ts_unix, *step_motion_counter) {
+                                step.push((ts, count as i64));
+                            }
+                        }
                     }
                 }
 
@@ -3594,6 +3649,32 @@ fn upload_get_recent_decoded_streams_bridge(
             })
             .collect();
         let _ = store.insert_gravity2_batch(&args.device_id, &gravity2_tuples);
+    }
+
+    // Persist step counter rows extracted from V18History frames.
+    for (ts, count) in &step {
+        let sample_time_unix_ms = (*ts * 1_000.0) as i64;
+        let sample_id = format!("v18_step:{}:{}", args.device_id, sample_time_unix_ms);
+        let provenance = serde_json::json!({
+            "source": "v18_historical_frame",
+            "device_id": args.device_id,
+        })
+        .to_string();
+        let _ = store.insert_step_counter_sample(StepCounterSampleInput {
+            sample_id: &sample_id,
+            sample_time_unix_ms,
+            counter_value: *count,
+            cadence_spm: None,
+            activity_state: None,
+            source_kind: "device_counter",
+            packet_family: "v18_history",
+            json_path: "body_summary.step_motion_counter",
+            frame_id: None,
+            evidence_id: None,
+            capture_session_id: None,
+            quality_flags_json: "[]",
+            provenance_json: &provenance,
+        });
     }
 
     let result = json!({

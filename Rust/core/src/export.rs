@@ -2396,6 +2396,10 @@ fn export_sensor_samples(
                 // R22 WHOOP 5.0 realtime data is surfaced via the upload pipeline.
                 // Sensor sample export path does not export R22 frames — skip gracefully.
             }
+            DataPacketBodySummary::V18History { .. } => {
+                // V18 WHOOP 5.0 historical data is persisted via the upload pipeline.
+                // Sensor sample export path does not export V18 frames — skip gracefully.
+            }
         }
     }
     Ok(rows)

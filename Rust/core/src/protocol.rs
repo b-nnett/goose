@@ -196,6 +196,16 @@ pub enum DataPacketBodySummary {
         extra: Option<[u8; 2]>,
         warnings: Vec<String>,
     },
+    V18History {
+        hr: Option<u8>,
+        rr_intervals_ms: Vec<u16>,
+        gravity_x: Option<f32>,
+        gravity_y: Option<f32>,
+        gravity_z: Option<f32>,
+        skin_temp_raw: Option<u16>,
+        step_motion_counter: Option<u16>,
+        warnings: Vec<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -575,7 +585,7 @@ fn parse_data_packet_body_summary(
     };
 
     match packet_k {
-        7 | 9 | 12 | 18 => (
+        7 | 9 | 12 => (
             Some(DataPacketBodySummary::NormalHistory {
                 hr_present: hr_present_marker.map(|marker| marker != 0),
                 marker_offset: hr_marker_offset,
@@ -583,6 +593,7 @@ fn parse_data_packet_body_summary(
             }),
             Vec::new(),
         ),
+        18 => parse_v18_body(payload),
         17 => parse_r17_body_summary(payload),
         10 => parse_k10_raw_motion_summary(payload),
         21 => parse_k21_raw_motion_summary(payload),
@@ -848,6 +859,63 @@ fn parse_v24_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
 /// Exposed for integration tests only. Do not call from production code.
 pub fn parse_v24_body_for_test(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
     parse_v24_body_summary(payload)
+}
+
+fn parse_v18_body(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {
+    // Skip the 3-byte data-packet header (packet_type + packet_k + status).
+    // All field offsets below are relative to `data` (i.e. body-relative).
+    let data = payload.get(3..).unwrap_or(&[]);
+    let mut warnings = Vec::new();
+
+    // Minimum length guard: skin_temp_raw at body offset 73 reads data[73..75] — 75 bytes needed.
+    if data.len() < 75 {
+        warnings.push("v18_payload_too_short".to_string());
+        return (
+            Some(DataPacketBodySummary::V18History {
+                hr: None,
+                rr_intervals_ms: Vec::new(),
+                gravity_x: None,
+                gravity_y: None,
+                gravity_z: None,
+                skin_temp_raw: None,
+                step_motion_counter: None,
+                warnings: warnings.clone(),
+            }),
+            warnings,
+        );
+    }
+
+    let hr = data.get(22).copied();
+
+    let rr_count = data.get(23).copied().unwrap_or(0) as usize;
+    let rr_count = rr_count.min(4);
+    let rr_intervals_ms = (0..rr_count)
+        .filter_map(|i| read_u16_le(data, 24 + 2 * i))
+        .filter(|&v| v != 0)
+        .collect::<Vec<u16>>();
+
+    let gravity_x = read_f32_le(data, 45);
+    let gravity_y = read_f32_le(data, 49);
+    let gravity_z = read_f32_le(data, 53);
+
+    let step_motion_counter = read_u16_le(data, 57);
+
+    // skin_temp_raw stored as raw u16; degC = raw / 128.0, gate 5..=45 applied at persistence site.
+    let skin_temp_raw = read_u16_le(data, 73);
+
+    (
+        Some(DataPacketBodySummary::V18History {
+            hr,
+            rr_intervals_ms,
+            gravity_x,
+            gravity_y,
+            gravity_z,
+            skin_temp_raw,
+            step_motion_counter,
+            warnings: warnings.clone(),
+        }),
+        warnings,
+    )
 }
 
 fn summarize_i16_series(
