@@ -4,14 +4,14 @@ milestone: v10.0
 milestone_name: Protocol Parity, Haptics & Feature Completeness
 status: executing
 stopped_at: v10.0 roadmap written (ROADMAP.md + REQUIREMENTS.md traceability + STATE.md)
-last_updated: "2026-06-12T13:45:45.420Z"
-last_activity: 2026-06-12 -- Phase 70 execution started
+last_updated: "2026-06-12T14:56:47.319Z"
+last_activity: 2026-06-12 -- Phase 71 execution started
 progress:
   total_phases: 7
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 7
-  percent: 43
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 8
+  percent: 57
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** Phase 70 — Haptic Primitive + Breathe Screen
+**Current focus:** Phase 71 — Coach VOW + NoopApp Features + Notifications + HR Decimation
 
 ## Current Position
 
-Phase: 70 (Haptic Primitive + Breathe Screen) — EXECUTING
-Plan: 2 of 2
-Status: Ready to execute
-Last activity: 2026-06-12 -- Phase 70 execution started
+Phase: 71 (Coach VOW + NoopApp Features + Notifications + HR Decimation) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 71
+Last activity: 2026-06-12 -- Phase 71 execution started
 
 ## Performance Metrics
 
