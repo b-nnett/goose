@@ -37,6 +37,7 @@ import OSLog
   var batteryUpdatedAt: Date?
   var batteryIsCharging: Bool?
   var batteryPowerStatus = "Unknown"
+  var batteryLowNotificationFired = false
   var firmwareVersion: String?
   var modelNumber: String?
   var hardwareRevision: String?

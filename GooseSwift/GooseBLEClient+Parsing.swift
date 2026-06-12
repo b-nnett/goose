@@ -470,6 +470,7 @@ extension GooseBLEClient {
     batteryUpdatedAt = nil
     batteryIsCharging = nil
     batteryPowerStatus = "Unknown"
+    batteryLowNotificationFired = false
     firmwareVersion = nil
     modelNumber = nil
     hardwareRevision = nil
