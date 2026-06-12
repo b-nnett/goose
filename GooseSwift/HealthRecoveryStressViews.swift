@@ -378,6 +378,34 @@ struct StressV2OverviewPage: View {
 
             StressV2BreakdownSection(palette: palette, summary: summary)
 
+            SleepV2SectionHeader(title: "ANS Balance", palette: palette)
+              .padding(.top, 24)
+            HStack(spacing: 12) {
+              SleepV2StatCard(
+                palette: palette,
+                systemImage: "waveform.path.ecg",
+                label: "HRV (RMSSD)",
+                value: {
+                  if let v = HRVSeriesStore.shared.dailyEstimate()?.rmssdMS {
+                    return "\(Int(v.rounded())) ms"
+                  }
+                  return "No data"
+                }()
+              )
+              SleepV2StatCard(
+                palette: palette,
+                systemImage: "heart.fill",
+                label: "Resting HR",
+                value: {
+                  if let estimate = HeartRateSeriesStore.shared.restingEstimate() {
+                    return "\(Int(estimate.bpm.rounded())) bpm"
+                  }
+                  return "No data"
+                }()
+              )
+            }
+            .frame(height: 96)
+
             SleepV2SectionHeader(title: "Trends", palette: palette)
 
             if trendRows.isEmpty {

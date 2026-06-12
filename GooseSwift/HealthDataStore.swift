@@ -82,6 +82,12 @@ final class HealthDataStore {
   // Stored here (extensions cannot add stored properties to @Observable classes).
   var imuStepCountResult: IMUStepCountResult?
 
+  // Trends 7-day series cache (DATA-03)
+  // Stored here because Swift extensions cannot add stored properties to @Observable classes.
+  var recoveryTrendPoints: [(date: String, value: Double)] = []
+  var hrvTrendPoints: [(date: String, value: Double)] = []
+  var strainTrendPoints: [(date: String, value: Double)] = []
+
   static let liveHRVRMSSDDefaultsKey = "goose.swift.liveHRVRMSSD"
   static let liveHRVRRIntervalCountDefaultsKey = "goose.swift.liveHRVRRIntervalCount"
   static let liveHRVRMSSDSampleCountDefaultsKey = "goose.swift.liveHRVRMSSDSampleCount"

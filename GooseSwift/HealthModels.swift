@@ -9,6 +9,7 @@ enum HealthRoute: String, CaseIterable, Identifiable, Hashable {
   case recovery
   case strain
   case stress
+  case trends
   case cardioLoad
   case energyBank
   case packetInputs
@@ -25,6 +26,7 @@ enum HealthRoute: String, CaseIterable, Identifiable, Hashable {
     case .recovery: "Recovery"
     case .strain: "Strain"
     case .stress: "Stress"
+    case .trends: "Trends"
     case .cardioLoad: "Cardio Load"
     case .energyBank: "Energy Bank"
     case .packetInputs: "Packet Inputs"
@@ -41,6 +43,7 @@ enum HealthRoute: String, CaseIterable, Identifiable, Hashable {
     case .recovery: "battery.100percent"
     case .strain: "figure.run"
     case .stress: "waveform.path.ecg"
+    case .trends: "chart.line.uptrend.xyaxis"
     case .cardioLoad: "heart.circle"
     case .energyBank: "bolt.circle"
     case .packetInputs: "square.stack.3d.up"

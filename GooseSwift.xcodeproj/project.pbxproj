@@ -184,6 +184,8 @@
 		E100000000000000000000B /* GooseNetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000B /* GooseNetworkMonitor.swift */; };
 		E100000000000000000000C /* GooseAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000C /* GooseAppDelegate.swift */; };
 		E100000000000000000000D /* GooseHRSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000D /* GooseHRSanitizer.swift */; };
+		E10000000000000000000010 /* TrendsDashboardViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000010 /* TrendsDashboardViews.swift */; };
+		E10000000000000000000011 /* ManualWorkoutEntryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000011 /* ManualWorkoutEntryViews.swift */; };
 		T10000000000000000000001 /* WearableDescriptorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000002 /* WearableDescriptorTests.swift */; };
 		T10000000000000000000002 /* GooseBLETypesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000003 /* GooseBLETypesTests.swift */; };
 		T10000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = T20000000000000000000005 /* XCTest.framework */; };
@@ -404,6 +406,8 @@
 		E200000000000000000000B /* GooseNetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseNetworkMonitor.swift; sourceTree = "<group>"; };
 		E200000000000000000000C /* GooseAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseAppDelegate.swift; sourceTree = "<group>"; };
 		E200000000000000000000D /* GooseHRSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseHRSanitizer.swift; sourceTree = "<group>"; };
+		E20000000000000000000010 /* TrendsDashboardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsDashboardViews.swift; sourceTree = "<group>"; };
+		E20000000000000000000011 /* ManualWorkoutEntryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualWorkoutEntryViews.swift; sourceTree = "<group>"; };
 		F20000000000000000000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		F20000000000000000000002 /* Local.xcconfig.template */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.template; sourceTree = "<group>"; };
 		F20000000000000000000003 /* SigningExtension.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SigningExtension.xcconfig; sourceTree = "<group>"; };
@@ -642,6 +646,8 @@
 				E200000000000000000000B /* GooseNetworkMonitor.swift */,
 				E200000000000000000000C /* GooseAppDelegate.swift */,
 				E200000000000000000000D /* GooseHRSanitizer.swift */,
+				E20000000000000000000010 /* TrendsDashboardViews.swift */,
+				E20000000000000000000011 /* ManualWorkoutEntryViews.swift */,
 				D20000000000000000000037 /* GooseBLEClient+Parsing.swift */,
 				D20000000000000000000038 /* GooseBLEClient+CentralDelegate.swift */,
 				D20000000000000000000039 /* GooseBLEClient+PeripheralDelegate.swift */,
@@ -1009,6 +1015,8 @@
 				E100000000000000000000B /* GooseNetworkMonitor.swift in Sources */,
 				E100000000000000000000C /* GooseAppDelegate.swift in Sources */,
 				E100000000000000000000D /* GooseHRSanitizer.swift in Sources */,
+				E10000000000000000000010 /* TrendsDashboardViews.swift in Sources */,
+				E10000000000000000000011 /* ManualWorkoutEntryViews.swift in Sources */,
 				A1000000000000000000002D /* OpenAICoachResponsesClient.swift in Sources */,
 				A10000000000000000000040 /* CoachLocalToolContext.swift in Sources */,
 				A10000000000000000000027 /* CoachTips.swift in Sources */,

@@ -1146,4 +1146,31 @@ extension HealthDataStore {
     return result
   }
 
+  // MARK: - Trends Series (DATA-03)
+
+  func fetchTrendsSeries(metricName: String, days: Int = 7) async throws -> [(date: String, value: Double)] {
+    let calendar = Calendar.current
+    let now = Date()
+    let startDate = calendar.date(byAdding: .day, value: -(days - 1), to: now) ?? now
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    let start = formatter.string(from: startDate)
+    let end = formatter.string(from: now)
+    let result = try await bridge.requestAsync(
+      method: "metric_series.query_range",
+      args: [
+        "database_path": databasePath,
+        "metric_name": metricName,
+        "start_date": start,
+        "end_date": end,
+      ]
+    )
+    let rows = result["rows"] as? [[String: Any]] ?? []
+    return rows.compactMap { row in
+      guard let date = row["date"] as? String,
+            let value = row["value"] as? Double else { return nil }
+      return (date: date, value: value)
+    }
+  }
+
 }

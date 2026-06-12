@@ -352,6 +352,8 @@ struct HealthRouteContentView: View {
       HealthMonitorView(store: store)
     case .sleep, .recovery, .strain, .stress:
       HealthMetricFamilyView(route: route, store: store, externalSelectedDate: selectedDate)
+    case .trends:
+      TrendsDashboardView(store: store)
     case .cardioLoad:
       CardioLoadView(store: store)
     case .energyBank:
