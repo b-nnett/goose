@@ -6942,6 +6942,100 @@ impl GooseStore {
             sig_quality,
         })
     }
+
+    pub fn insert_journal(
+        &self,
+        date: &str,
+        source: &str,
+        behaviors_json: &str,
+        notes: Option<&str>,
+    ) -> GooseResult<bool> {
+        let rows = self.conn.execute(
+            "INSERT OR REPLACE INTO journal (date, source, behaviors_json, notes)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![date, source, behaviors_json, notes],
+        )?;
+        Ok(rows > 0)
+    }
+
+    pub fn insert_workout(
+        &self,
+        date: &str,
+        source: &str,
+        sport: &str,
+        start_time: &str,
+        end_time: &str,
+        duration_s: f64,
+        activity_session_id: Option<&str>,
+        avg_hr_bpm: Option<f64>,
+        max_hr_bpm: Option<f64>,
+        strain: Option<f64>,
+        calories_kcal: Option<f64>,
+        distance_m: Option<f64>,
+        notes: Option<&str>,
+        provenance_json: &str,
+    ) -> GooseResult<bool> {
+        let rows = self.conn.execute(
+            "INSERT OR REPLACE INTO workout
+             (date, source, sport, start_time, end_time, duration_s,
+              activity_session_id, avg_hr_bpm, max_hr_bpm, strain,
+              calories_kcal, distance_m, notes, provenance_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+            params![
+                date,
+                source,
+                sport,
+                start_time,
+                end_time,
+                duration_s,
+                activity_session_id,
+                avg_hr_bpm,
+                max_hr_bpm,
+                strain,
+                calories_kcal,
+                distance_m,
+                notes,
+                provenance_json,
+            ],
+        )?;
+        Ok(rows > 0)
+    }
+
+    pub fn insert_apple_daily(
+        &self,
+        date: &str,
+        source: &str,
+        steps: Option<i64>,
+        active_kcal: Option<f64>,
+        basal_kcal: Option<f64>,
+        avg_hr_bpm: Option<f64>,
+        max_hr_bpm: Option<f64>,
+        vo2max: Option<f64>,
+        weight_kg: Option<f64>,
+    ) -> GooseResult<bool> {
+        let rows = self.conn.execute(
+            "INSERT OR REPLACE INTO apple_daily
+             (date, source, steps, active_kcal, basal_kcal, avg_hr_bpm, max_hr_bpm, vo2max, weight_kg)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![date, source, steps, active_kcal, basal_kcal, avg_hr_bpm, max_hr_bpm, vo2max, weight_kg],
+        )?;
+        Ok(rows > 0)
+    }
+
+    pub fn insert_metric_series(
+        &self,
+        source: &str,
+        metric_name: &str,
+        date: &str,
+        value: f64,
+    ) -> GooseResult<bool> {
+        let rows = self.conn.execute(
+            "INSERT OR IGNORE INTO metric_series (source, metric_name, date, value)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![source, metric_name, date, value],
+        )?;
+        Ok(rows > 0)
+    }
 }
 
 impl GooseStore {
@@ -9014,8 +9108,8 @@ mod exercise_session_tests {
             .query_row("PRAGMA user_version", [], |row| row.get(0))
             .expect("failed to read user_version");
         assert_eq!(
-            version, 19,
-            "PRAGMA user_version should be 19 after v19 migration"
+            version, 20,
+            "PRAGMA user_version should be 20 after v20 migration"
         );
     }
 
@@ -9104,9 +9198,9 @@ mod sync_schema_tests {
     }
 
     #[test]
-    fn test_schema_version_is_19() {
+    fn test_schema_version_is_20() {
         let store = make_store();
-        assert_eq!(store.schema_version().unwrap(), 19);
+        assert_eq!(store.schema_version().unwrap(), 20);
     }
 
     #[test]
