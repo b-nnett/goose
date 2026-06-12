@@ -1169,7 +1169,7 @@ pub fn run_heart_rate_feature_report(
     options: HeartRateFeatureOptions,
 ) -> GooseResult<HeartRateFeatureReport> {
     let trusted_frames =
-        trusted_frames_for_summary_kinds(correlation, &["normal_history", "raw_motion_k10"]);
+        trusted_frames_for_summary_kinds(correlation, &["normal_history", "v18_history", "raw_motion_k10"]);
     let mut issues = Vec::new();
     if options.require_trusted_evidence && !correlation.pass {
         issues.push("capture_correlation_report_not_passed".to_string());
@@ -1564,7 +1564,7 @@ pub fn run_vital_event_feature_report(
 ) -> GooseResult<VitalEventFeatureReport> {
     let trusted_frames = trusted_frames_for_summary_kinds(
         correlation,
-        &["event_temperature_level", "normal_history"],
+        &["event_temperature_level", "normal_history", "v18_history"],
     );
     let mut issues = Vec::new();
     if options.require_trusted_evidence && !correlation.pass {
@@ -4136,6 +4136,18 @@ fn heart_rate_plan_from_row(row: &DecodedFrameRow) -> GooseResult<Option<HeartRa
             device_timestamp_seconds: timestamp_seconds,
             device_timestamp_subseconds: timestamp_subseconds,
         }),
+        DataPacketBodySummary::V18History {
+            hr: Some(v18_hr),
+            ..
+        } => Some(HeartRatePlan {
+            body_summary_kind: "v18_history",
+            source_signal: "v18_history_hr",
+            quality_flag: "preliminary_v18_history_hr",
+            marker_offset: 22, // data[22] = payload[25] in V18 body
+            marker_value: v18_hr,
+            device_timestamp_seconds: timestamp_seconds,
+            device_timestamp_subseconds: timestamp_subseconds,
+        }),
         DataPacketBodySummary::RawMotionK10 {
             heart_rate: Some(heart_rate),
             ..
@@ -4193,11 +4205,16 @@ fn vital_event_plan_from_payload(parsed_payload: &Option<ParsedPayload>) -> Opti
 fn skin_temperature_plan_from_payload(
     parsed_payload: &Option<ParsedPayload>,
 ) -> Option<SkinTemperaturePlan> {
+    // Accept NormalHistory or V18History — skin temp is extracted from raw payload bytes,
+    // not from body_summary struct fields.
     let Some(ParsedPayload::DataPacket {
         packet_k: Some(packet_k),
         timestamp_seconds,
         timestamp_subseconds,
-        body_summary: Some(DataPacketBodySummary::NormalHistory { .. }),
+        body_summary: Some(
+            DataPacketBodySummary::NormalHistory { .. }
+            | DataPacketBodySummary::V18History { .. },
+        ),
         ..
     }) = parsed_payload
     else {
@@ -4232,11 +4249,16 @@ fn skin_temperature_plan_from_payload(
 fn respiratory_rate_plan_from_payload(
     parsed_payload: &Option<ParsedPayload>,
 ) -> Option<RespiratoryRatePlan> {
+    // Accept NormalHistory or V18History — resp rate is extracted from raw payload bytes
+    // (raw_absolute_offset: 39), not from body_summary struct fields.
     let Some(ParsedPayload::DataPacket {
         packet_k: Some(packet_k),
         timestamp_seconds,
         timestamp_subseconds,
-        body_summary: Some(DataPacketBodySummary::NormalHistory { .. }),
+        body_summary: Some(
+            DataPacketBodySummary::NormalHistory { .. }
+            | DataPacketBodySummary::V18History { .. },
+        ),
         ..
     }) = parsed_payload
     else {
