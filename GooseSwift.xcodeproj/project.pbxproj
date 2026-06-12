@@ -200,6 +200,11 @@
 		T10000000000000000000009 /* ClaudeProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000B /* ClaudeProviderTests.swift */; };
 		T1000000000000000000000A /* CustomEndpointProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000C /* CustomEndpointProviderTests.swift */; };
 		T1000000000000000000000B /* GeminiProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000D /* GeminiProviderTests.swift */; };
+		T1000000000000000000000C /* MockBLEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000E /* MockBLEClient.swift */; };
+		T1000000000000000000000D /* MockHealthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000000000000000000000F /* MockHealthStore.swift */; };
+		T1000000000000000000000E /* MockRustBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000010 /* MockRustBridge.swift */; };
+		T1000000000000000000000F /* TrendsFetchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000011 /* TrendsFetchTests.swift */; };
+		T10000000000000000000010 /* WorkoutEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T20000000000000000000012 /* WorkoutEntryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -430,6 +435,11 @@
 		T2000000000000000000000B /* ClaudeProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProviderTests.swift; sourceTree = "<group>"; };
 		T2000000000000000000000C /* CustomEndpointProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpointProviderTests.swift; sourceTree = "<group>"; };
 		T2000000000000000000000D /* GeminiProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiProviderTests.swift; sourceTree = "<group>"; };
+		T2000000000000000000000E /* MockBLEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBLEClient.swift; sourceTree = "<group>"; };
+		T2000000000000000000000F /* MockHealthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockHealthStore.swift; sourceTree = "<group>"; };
+		T20000000000000000000010 /* MockRustBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockRustBridge.swift; sourceTree = "<group>"; };
+		T20000000000000000000011 /* TrendsFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsFetchTests.swift; sourceTree = "<group>"; };
+		T20000000000000000000012 /* WorkoutEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutEntryTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -730,6 +740,11 @@
 				T2000000000000000000000B /* ClaudeProviderTests.swift */,
 				T2000000000000000000000C /* CustomEndpointProviderTests.swift */,
 				T2000000000000000000000D /* GeminiProviderTests.swift */,
+				T2000000000000000000000E /* MockBLEClient.swift */,
+				T2000000000000000000000F /* MockHealthStore.swift */,
+				T20000000000000000000010 /* MockRustBridge.swift */,
+				T20000000000000000000011 /* TrendsFetchTests.swift */,
+				T20000000000000000000012 /* WorkoutEntryTests.swift */,
 				T20000000000000000000004 /* Info.plist */,
 			);
 			path = GooseSwiftTests;
@@ -1082,6 +1097,11 @@
 				T10000000000000000000009 /* ClaudeProviderTests.swift in Sources */,
 				T1000000000000000000000A /* CustomEndpointProviderTests.swift in Sources */,
 				T1000000000000000000000B /* GeminiProviderTests.swift in Sources */,
+				T1000000000000000000000C /* MockBLEClient.swift in Sources */,
+				T1000000000000000000000D /* MockHealthStore.swift in Sources */,
+				T1000000000000000000000E /* MockRustBridge.swift in Sources */,
+				T1000000000000000000000F /* TrendsFetchTests.swift in Sources */,
+				T10000000000000000000010 /* WorkoutEntryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
