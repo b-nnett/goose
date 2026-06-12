@@ -1,446 +1,378 @@
-# Pitfalls Research — v5.0 Metrics Accuracy
+# Pitfalls Research
 
-**Domain:** Biometric algorithm accuracy additions to existing Rust core + Swift iOS system
-**Researched:** 2026-06-06
-**Confidence:** HIGH — all pitfalls derived from direct inspection of the live codebase (`metrics.rs`, `protocol.rs`, `energy_rollup.rs`, `recovery_rollup.rs`, `metric_features.rs`, `bridge.rs`, `GooseBLEClient.swift`) plus established algorithm literature on HRV ectopic filtering, EWMA personalisation, TRIMP, Cole-Kripke actigraphy, and IMU BLE framing.
-
----
-
-## Critical Pitfalls (silent failures)
-
-Mistakes that pass tests but produce wrong results — the most dangerous category because they ship undetected.
+**Domain:** WHOOP iOS BLE app — v10.0 feature additions (haptics, packet parsers, notifications, SQLite, DI)
+**Researched:** 2026-06-12
+**Confidence:** HIGH — derived entirely from live codebase inspection + seed files; no speculative content
 
 ---
 
-### Pitfall 1: Lipponen-Tarvainen ectopic filter removes valid RR intervals from athletes with normal sinus arrhythmia
+## Critical Pitfalls
+
+### Pitfall 1: Calling buzz() or any haptic BLE write from @MainActor inline
 
 **What goes wrong:**
-The Kubios ectopic filter (Lipponen-Tarvainen 2019) classifies beats as ectopic using a local reference interval computed from the surrounding N beats. For athletes with high respiratory sinus arrhythmia (RSA), RR intervals during deep breathing can vary ±300 ms legitimately. The filter's default thresholds (typically ±20% of local reference, or a fixed 200 ms deviation) correctly handle average-population physiology but aggressively remove physiologically valid intervals from trained athletes. The result is an artificially elevated RMSSD (fewer intervals → smaller squared differences → lower sum → but also fewer valid pairs, which can inflate or deflate depending on which end of the distribution is trimmed). This never triggers a test failure — the algorithm runs, produces a number, and the number is plausible.
-
-**Root cause:**
-The filter is defined with population-average thresholds. The current `goose_hrv_v0` uses a simple range filter (300–2000 ms), which is correct as a first pass but does not implement ectopic detection at all. Adding Lipponen-Tarvainen without a per-user threshold adaptation will silently over-filter athletic users.
-
-**Consequences:**
-HRV appears artificially low on nights when a trained user has strong RSA. Recovery score is suppressed. The user sees "low recovery" on nights when they are physiologically well-rested. This is a trust-destroying error — the number looks plausible but is wrong in a systematic direction.
-
-**Prevention:**
-(a) Implement the filter with adaptive thresholds (local reference ± user-specific percentile from 30-night history, not a fixed population constant). (b) Add a `ectopic_filter_removal_fraction` field to `HrvOutput` — any session where >5% of intervals are removed should emit a `high_ectopic_removal_rate` quality flag. (c) Cross-validate output RMSSD against the reference Python tool (`Rust/core/tools/reference/`) on at least 5 real overnight sessions before shipping.
-
-**Detection:**
-Quality flag `high_ectopic_removal_rate` present in output but score still shown to user without warning. Comparison against `pyhrv` reference on the same interval sequence showing >3 ms RMSSD difference.
-
----
-
-### Pitfall 2: EWMA personal baseline converges to wrong steady state when the first N nights are non-representative
-
-**What goes wrong:**
-The EWMA baseline for HRV uses the formula `baseline_t = α * hrv_t + (1-α) * baseline_{t-1}`. The choice of α and the initialisation value are critical. If the initial baseline is set from night 1 (which may be a night with illness, travel, or alcohol), all subsequent values are anchored to a depressed baseline. A user who starts healthy will have their baseline slowly drift up; a user who starts sick will have their baseline suppressed for weeks. The logistic squash applied to `hrv / baseline` will then produce systematically high recovery scores (if baseline is too low) or systematically low scores (if baseline is too high) for the first 2–4 weeks.
-
-**Root cause:**
-EWMA is state that must be persisted in SQLite (Rust core is stateless per bridge call — this is explicitly documented in `CLAUDE.md`). The risk is that the initialisation value is set once and never audited. If the Rust bridge writes the first baseline value without checking whether night 1 is a representative sample (minimum confidence threshold), the error propagates indefinitely.
-
-**Consequences:**
-Recovery scores are systematically biased for new users. A user who wears the device for the first time after a poor night will see inflated recovery scores for weeks because their baseline is depressed. This is a silent failure — every individual score looks reasonable, only the long-term trend is wrong.
-
-**Prevention:**
-(a) Do not initialise the EWMA until at least `baseline_min_days` nights (currently 7 in `HrvFeatureOptions.baseline_min_days`) are collected. Use a simple mean of the first 7 nights as the cold-start value, not the first night. (b) Store `baseline_cold_start_night_count` and `baseline_initialised_at` in SQLite alongside the baseline value. (c) Flag nights used for baseline initialisation as `excluded_from_baseline` if their confidence is below threshold — mirror the existing `excluded_from_baseline` field in `SleepNightHistoryInput`.
-
-**Detection:**
-Baseline value in SQLite is identical to night-1 HRV. `baseline_initialised_at` is set to a night with quality flag `low_interval_count`. Run a 90-night simulation with synthetic data: inject a low-HRV night 1, verify baseline does not reach true steady state within 14 nights.
-
----
-
-### Pitfall 3: Strain Banister TRIMP sex constant applied to wrong variable produces a plausible but wrong number
-
-**What goes wrong:**
-Banister TRIMP uses the formula `TRIMP = duration × ΔHR × 0.64 × e^(1.92 × ΔHR)` for males and `0.86 × e^(1.67 × ΔHR)` for females, where `ΔHR = (average_HR - resting_HR) / (max_HR - resting_HR)` (heart rate reserve fraction). The current `goose_strain_v0` uses simplified zone-load weights `[1.0, 2.0, 3.0, 4.0, 5.0]` and does not implement TRIMP at all. Adding TRIMP means introducing the sex constant. The pitfall: applying the male constant to a female user (or vice versa) produces a strain score that is off by ~15-25% for moderate-intensity sessions. This is not caught by any range check because 0–21 is still a valid output range.
-
-**Root cause:**
-`StrainInput` has no `profile_sex` field. `EnergyDailyRollupOptions` has `profile_sex: Option<&'a str>` — the energy rollup already handles sex. If sex is not threaded into the strain computation, the algorithm silently defaults to a single constant, which is biologically incorrect for 50% of users.
-
-**Consequences:**
-Female users systematically see lower strain scores for the same effort level. They may under-recover because their training load appears lighter than it is. This is a clinical-quality error for a health metric.
-
-**Prevention:**
-(a) Add `profile_sex: Option<String>` to `StrainInput` before implementing TRIMP. (b) Emit a `sex_unknown_using_population_average_trimp_constant` quality flag when sex is not provided. (c) Never silently default to the male constant — use the midpoint of male/female constants (approximately `0.75 × e^(1.79 × ΔHR)`) as the population-average fallback and document this. (d) Add a test that passes identical HR data with `sex: "male"` vs `sex: "female"` and asserts the outputs differ by the expected ratio.
-
-**Detection:**
-Test `goose_strain_v0` with `profile_sex = None` — if the output is identical to `profile_sex = Some("male")`, the sex constant is not being used. Run a manual calculation on a 60-minute session at 70% HRR: male TRIMP ≈ 63, female ≈ 47 — verify the Rust output matches within 2%.
-
----
-
-### Pitfall 4: Calorie coefficients from Ghidra reverse-engineering are floating-point approximations — small errors compound over multi-hour sessions
-
-**What goes wrong:**
-Binary reverse-engineering via Ghidra produces floating-point constants that may differ from the source-code values by 1–3 ULPs (units in the last place) due to compiler optimisations, FMA fusion, and constant folding. The current `resting_kcal` uses `weight_kg * 22.0` (a clearly intentional round number — simplified RMR). The `active_kcal` formula uses `3.5 * weight_kg / 200.0` (the MET-to-kcal conversion). These are standard values. However, if the Ghidra-extracted coefficients for a new formula are `0.01748` instead of `0.0175`, the error is 0.11% per interval. For a 3-hour workout with 10,800 one-second samples, this compounds to a final calorie error of ~12 kcal — which is within typical tolerance, but if multiple coefficients are off, errors add.
-
-**Root cause:**
-Floating-point constants extracted from compiled binaries are not exact. Ghidra may display `0.01748046875` (the nearest float32 representation of 0.0175) rather than the exact source value `0.0175`. The implementer may copy the Ghidra hex representation directly into Rust as `f64`, causing a systematic bias.
-
-**Consequences:**
-Calorie output is off by 1–5% from WHOOP's official value. Validation tests against official labels pass within tolerance (±30 kcal by default in the energy capture validation) but the bias is real and grows with session duration.
-
-**Prevention:**
-(a) For each Ghidra-extracted constant, verify against the nearest "clean" rational number (e.g., is `0.01748046875` meant to be `7/400 = 0.0175`?). Use the clean form in Rust source if it differs by less than 0.1%. (b) Document each constant with its source: `// MET-to-kcal: 3.5 mL·kg⁻¹·min⁻¹ O2 × weight_kg / 200 (Ainsworth et al. 1993)`. (c) Run validation against at least 10 official label pairs spanning 30 min – 3 hr sessions before accepting the formula.
-
-**Detection:**
-Compare `active_kcal` output from Rust against a Python reference implementation of the same formula using Python's `float` (IEEE 754 double) — if they differ by more than 0.01 kcal for identical inputs, a coefficient is wrong.
-
----
-
-### Pitfall 5: Cole-Kripke actigraphy applied to WHOOP IMU gravity data instead of wrist-worn actigraph data — calibration mismatch
-
-**What goes wrong:**
-The Cole-Kripke algorithm was derived from and validated on data from wrist-worn actigraph devices (e.g., Actiwatch) that measure acceleration in counts per epoch. The WHOOP IMU produces raw I16 samples in `g × 1000` units (approximately) at a much higher sampling rate. The Cole-Kripke threshold for classifying an epoch as "wake" vs "sleep" was calibrated on the actigraph's native count scale. Applying the same threshold to WHOOP IMU data without unit conversion and normalisation will produce systematically incorrect sleep/wake classifications. Motion during light sleep will look like deep wakefulness.
-
-**Root cause:**
-The `I16SeriesSummary` currently captures only 8 samples (preview). The plan to extend to 100 samples gives enough data to compute epoch-level activity counts, but the conversion from raw I16 acceleration to Cole-Kripke compatible counts requires a device-specific scaling factor that must be validated empirically against polysomnography or at minimum against a reference actigraph worn simultaneously.
-
-**Consequences:**
-Sleep staging is wrong in the most important direction: wake is classified as sleep (the algorithm was tuned to be sensitive, so it tends to miss wake epochs in low-motion contexts). This artificially inflates sleep duration and improves the sleep score. Users see a better sleep score than reality — a pleasant error that is hard to discover without ground truth.
-
-**Prevention:**
-(a) Do not use Cole-Kripke with its published coefficients on raw WHOOP IMU data. Either: derive your own calibration coefficients using paired WHOOP + Actiwatch data, or use a device-agnostic model. (b) Before shipping, validate on at least 5 overnight sessions with a reference (even self-reported sleep diary is better than nothing). (c) Emit a `staging_method_actigraphy_uncalibrated` quality flag when the classifier is used without validated device-specific scaling. (d) Implement the physiological reimposition rules (minimum REM/deep durations, sleep cycle constraints) as hard constraints that override the actigraphy output — this reduces but does not eliminate the calibration error.
-
-**Detection:**
-Compare computed sleep stages against WHOOP app official stages for the same night. For a night where WHOOP reports 45 min deep, 90 min REM — if Cole-Kripke reports 20 min deep, 60 min REM, the classifier is over-detecting wake. Compare at least 3 nights before accepting the implementation.
-
----
-
-### Pitfall 6: EWMA baseline update is written to SQLite on every bridge call — double-update when rollup is called twice for the same date
-
-**What goes wrong:**
-The recovery rollup pipeline calls `write_metric = true` to persist the daily metric. If the bridge method for recovery daily rollup is called twice for the same `date_key` (which can happen if the UI retries after a timeout, or if two async bridge calls overlap), the EWMA state is updated twice: `baseline_new = α * hrv_today + (1-α) * baseline_old` is applied twice, pulling the baseline further toward today's value than intended. After N retry calls, the baseline is permanently biased toward the most recent day.
-
-**Root cause:**
-`upsert_daily_recovery_metric` in `store.rs` is idempotent for the metric row (UPSERT by primary key), but the EWMA state update (a separate write to a baseline table) may not be idempotent. If the baseline update is a simple `UPDATE SET baseline = ?` without a "only update if this day is newer than last_updated_date" guard, double-calls corrupt the baseline.
-
-**Consequences:**
-EWMA baseline is biased toward the most recent day. Recovery score is overly responsive to single-day changes. A bad night causes a sharp baseline drop that takes weeks to recover instead of being smoothed out.
-
-**Prevention:**
-(a) Make EWMA baseline updates idempotent: include a `last_updated_date_key` column in the baseline table and guard `UPDATE SET baseline = ? WHERE last_updated_date_key < ?`. (b) Log a `baseline_update_skipped_already_current` event when the guard triggers — this makes double-calls visible. (c) Add an integration test that calls the rollup bridge method twice for the same date and asserts the baseline value is identical after both calls.
-
-**Detection:**
-Call `metrics.recovery_daily_rollup` twice with `write_metric: true` for the same date. Query the baseline table before and after the second call — if the value changed, the update is not idempotent.
-
----
-
-## Integration Pitfalls
-
-Mistakes specific to adding these algorithms to the existing Rust/Swift system.
-
----
-
-### Pitfall 7: Extending I16SeriesSummary from 8-sample preview to 100 full samples — JSON payload size causes FFI buffer overflow at the Swift boundary
-
-**What goes wrong:**
-`I16SeriesSummary.preview` currently holds at most 8 samples (enforced at line 678 of `protocol.rs`). The `DataPacketBodySummary::RawMotionK10` and `RawMotionK21` variants each embed `Vec<I16SeriesSummary>` (up to 3 axes). Extending to 100 samples means each `I16SeriesSummary` grows from ~50 bytes JSON to ~600 bytes JSON. A K21 packet with 3 axes becomes ~1.8 KB of JSON just for the IMU sample data, versus ~150 bytes today. The `goose_bridge_handle_json` FFI returns a `*mut c_char` allocated by Rust and freed by Swift via `goose_bridge_free_string`. If the Swift side has any hardcoded buffer assumption (e.g., a `Data(bytes:count:)` allocation with a fixed upper bound), large IMU payloads will silently truncate.
-
-**Root cause:**
-The bridge protocol was designed for small payloads (metric scores, status reports). The preview was intentionally kept small (8 samples) to control JSON size. Extending to 100 samples is a 12× increase in the IMU portion of the JSON, which compounds if the caller requests multiple frames in a batch.
-
-**Consequences:**
-Silent JSON truncation. The Swift side parses a truncated JSON string and either throws a decode error (best case) or produces a partially-decoded struct with trailing fields as `nil` or `0` (worst case, if using permissive decoding). The `parsed_count` field in `I16SeriesSummary` will appear to confirm 100 samples were parsed when only 50 were present in the truncated payload.
-
-**Prevention:**
-(a) Measure the JSON size of a K10/K21 packet with 100 samples before shipping. Add a test that calls the bridge with a K21 frame and asserts `result.len() > 1500` (a lower bound confirming the samples are present). (b) Add a `max_preview_count` parameter to the bridge call that allows the caller to request 8 (existing behavior) or 100 (new behavior) — the existing 8-sample path remains the default and does not break existing tests. (c) Verify on device that `goose_bridge_handle_json` response is fully received by checking that the last byte of the JSON is `}` before parsing.
-
-**Detection:**
-Parse the JSON response from a K21 batch bridge call. Check `result.parsed_payload.body_summary.axes[0].preview.count` — if it is less than 100 when 100 were requested, truncation occurred.
-
----
-
-### Pitfall 8: body_hex field in DataPacket payload is included in round-trip JSON tests — removing or modifying it for K10/K21 breaks existing protocol_tests.rs assertions
-
-**What goes wrong:**
-`protocol_tests.rs` line 192 asserts `body_hex: "aa4dbbccddeeff".to_string()` for a `NormalHistory` packet. K10 and K21 tests (lines 334–451) assert on `body_summary` but do NOT currently assert `body_hex` for those variants (the tests use `..` pattern matching that ignores `body_hex`). However, any refactoring that changes `body_hex` to be empty (or conditionally absent) for K10/K21 frames — for example, to reduce payload size — will pass the current tests but change the JSON schema that Swift decodes. Existing Swift code that reads `parsedPayload.body_hex` for debug display will silently get an empty string.
-
-**Root cause:**
-The `DataPacket` variant serialises `body_hex` as a `String` field unconditionally. If the intent is to exclude `body_hex` from K10/K21 frames to reduce JSON size when serving 100-sample IMU data, the field must be removed from the struct and the `#[serde(skip_serializing_if)]` attribute used, or the Swift decoder updated simultaneously. No test currently enforces the K10/K21 `body_hex` value.
-
-**Consequences:**
-Swift's `ParsedPayload` decode (if it uses a Codable struct matching the JSON) will either fail to decode (if the field is now absent but expected) or silently use the wrong value. This is a cross-language API contract break that is undetectable from the Rust test suite alone.
-
-**Prevention:**
-(a) Do NOT remove or conditionally skip `body_hex` for K10/K21 without simultaneously updating the Swift decoder and adding an explicit round-trip test. (b) Add protocol_tests.rs assertions for `body_hex` in K10 and K21 test cases — even if the value is just `assert!(body_hex.starts_with("..."))` — to make the field part of the tested contract. (c) Any change to `DataPacket`'s serialised fields requires a Swift decoder audit.
-
-**Detection:**
-Add a test that serialises a K10 frame to JSON and deserialises it back using `serde_json::from_str::<ParsedFrame>` — if `body_hex` is present in the original struct but missing in the round-trip, the serde annotation is wrong.
-
----
-
-### Pitfall 9: TOGGLE_IMU_MODE (command 106) sent automatically in startCapture breaks existing WHOOP protocol state machine
-
-**What goes wrong:**
-`TOGGLE_IMU_MODE_ON` (command 106, payload `true`) and `TOGGLE_IMU_MODE_OFF` (command 106, payload `false`) exist as `SensorStreamCommandKind` instances in `GooseBLEClient.swift` (lines 533, 550) but are never sent automatically in the production `startCapture` path — only in explicit debug/historical contexts. The WHOOP firmware responds to command 106 by switching the realtime stream from standard data packets to IMU data packets (type 51: `PACKET_TYPE_REALTIME_IMU_DATA_STREAM`). Sending `TOGGLE_IMU_MODE_ON` without accounting for the stream type change means the existing `NotificationFrameParser` receives IMU packet type 51 but dispatches it through the standard packet parsing path, which expects types 40 (realtime data) or 43 (raw). The frame is parsed incorrectly, producing garbled `ParsedPayload` values, without any error — `packet_type_name` will be `None` (type 51 has no name in the current `command_name` match) and the packet will fall through to `Raw { ... }`.
-
-**Root cause:**
-Command 106 was added to the command catalog as a debug command (`risk_gate: CriticalStateChange` in `commands.rs` line 865–866). The BLE timing for toggling IMU mode (whether to wait for a command response before the stream changes, or whether the change is immediate) is not documented in the existing codebase. Sending it during a live capture without a corresponding stream-type handler will produce silent data corruption.
-
-**Consequences:**
-All packets during IMU mode are stored as `Raw` frames. The HRV pipeline receives no new RR intervals during the IMU window. The sleep staging pipeline has no IMU data. The user sees a capture session with a gap in heart rate data coinciding exactly with the IMU mode window. This is detectable only by inspecting `decoded_frames` for the session.
-
-**Prevention:**
-(a) Do not send TOGGLE_IMU_MODE automatically in `startCapture` until `PACKET_TYPE_REALTIME_IMU_DATA_STREAM` (type 51) parsing is fully implemented and tested. (b) Add type 51 to the `data_packet_domain` match in `protocol.rs` and implement `parse_k_imup_body_summary` before sending the command in production. (c) Use a feature flag (`imu_mode_enabled: Bool` in `MoreDataStore` or `GooseAppModel`) that defaults to `false` and is only set to `true` by an explicit test session, not by normal `startCapture`.
-
-**Detection:**
-Send `TOGGLE_IMU_MODE_ON` in a test session. Query `SELECT packet_type, COUNT(*) FROM decoded_frames WHERE session_id = ?` — if all records after the toggle have `packet_type = NULL` (Raw frames), the parser is not handling type 51.
-
----
-
-### Pitfall 10: EWMA baseline state stored in SQLite as a single row — concurrent bridge calls from multiple GooseRustBridge instances produce a read-modify-write race
-
-**What goes wrong:**
-The Rust core is stateless per bridge call, but multiple `GooseRustBridge` instances exist simultaneously (`GooseAppModel`, `HealthDataStore`, `OvernightSQLiteMirrorQueue`, `CaptureFrameWriteQueue`). SQLite serialises writes, but a read-modify-write sequence (1. read current baseline, 2. compute new baseline, 3. write new baseline) is not atomic unless wrapped in a `BEGIN EXCLUSIVE` transaction. If two bridge instances call the EWMA update simultaneously (e.g., `GooseAppModel` triggers a recovery rollup while `OvernightSQLiteMirrorQueue` triggers a nightly sync), the sequence interleaves: both read the same old baseline, both compute a new value, and the last writer wins — dropping one night's update.
-
-**Root cause:**
-`rusqlite` with `bundled` feature opens the database in WAL mode by default (or serialised mode). SQLite WAL mode allows concurrent reads but serialises writes. However, a read-modify-write at the Rust function level is not atomic at the SQLite level unless the entire operation is inside a transaction. The existing `upsert_daily_recovery_metric` uses UPSERT which is atomic, but any new EWMA state table update must also be atomic.
-
-**Consequences:**
-EWMA baseline loses update steps unpredictably under concurrent bridge usage. The baseline drifts more slowly than expected (half the nightly updates are lost). This shows up as a "sluggish personalisation" symptom — the algorithm takes twice as many nights to converge.
-
-**Prevention:**
-(a) Wrap the EWMA read-modify-write in a `BEGIN EXCLUSIVE` transaction in Rust. (b) Alternatively, use SQLite's `UPDATE SET baseline = α * ? + (1-α) * baseline WHERE ...` in a single atomic statement — this avoids the Rust-level race entirely. (c) Add a test that spawns two threads calling the EWMA update simultaneously and asserts the final baseline is exactly the correct two-step application.
-
-**Detection:**
-Log `baseline_before` and `baseline_after` for each update. If two calls on the same night produce the same `baseline_before`, the race occurred.
-
----
-
-### Pitfall 11: Changing I16SeriesSummary.preview from Vec<i16> to a larger Vec breaks existing JSON snapshot tests in protocol_tests.rs
-
-**What goes wrong:**
-`protocol_tests.rs` line 271 asserts `preview: vec![1000, -1000, 200]` for an r17 packet with exactly 3 samples. K10 tests at line 334+ assert specific preview values for the first 8 samples. Any change that extends `preview` to 100 elements will break all existing assertions that check `preview` contents. Even a change that makes preview length configurable (but defaults to 8) is safe only if the test-facing API is unchanged. A change to the serialised field name (e.g., renaming `preview` to `samples`) will silently break Swift decoding without a Rust compile error.
-
-**Root cause:**
-`I16SeriesSummary` is `#[derive(Serialize, Deserialize)]` with default field naming. Any rename or structural change to `preview` is a breaking JSON schema change. The existing test assertions are tight: they check exact `Vec<i16>` contents, not just lengths.
-
-**Consequences:**
-All 40+ integration tests that parse K10, K21, or r17 frames fail at CI. This is a test failure (visible) but the fix may inadvertently change the JSON schema in a way that breaks Swift without a corresponding test.
-
-**Prevention:**
-(a) Add a `#[serde(rename = "preview")]` or `#[serde(alias = "preview")]` annotation before changing the field. (b) Use a separate `full_samples: Option<Vec<i16>>` field (always `None` in the 8-sample mode, populated in the 100-sample mode) rather than extending `preview`. This is a non-breaking addition. (c) Run `cargo test` before and after any `I16SeriesSummary` change — but also check the Swift `Codable` struct for the field name.
-
-**Detection:**
-`cargo test -- protocol_tests` after the change. Any failure on preview contents = breaking change. Zero failures = likely safe, but still audit the Swift decoder.
-
----
-
-## Algorithm Implementation Traps
-
-Common mistakes in each algorithm family.
-
----
-
-### HRV — Lipponen-Tarvainen
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Using population-average thresholds | Over-filters athletic users; artificially lowers RMSSD | Per-user threshold from 30-night baseline |
-| Applying the filter on already-filtered intervals | Double-filtering removes more intervals than intended | Apply ectopic filter first, range filter second — never reverse |
-| Using `f32` for intermediate squared differences | RMSSD squared differences at 2000 ms = 4,000,000 — overflows f32 at 16,777,216 | Use `f64` for all intermediate accumulations; the existing `sum: i64` in `I16SeriesSummary` is a correct precedent |
-| Counting ectopic beats as invalid intervals | Ectopic beats should be interpolated (Kubios) or excluded; they affect SDNN differently from RMSSD | Follow the Lipponen-Tarvainen paper: interpolate for SDNN, exclude for RMSSD |
-| Not flagging sessions with >5% ectopic removal | Quality degradation is invisible | Always emit `high_ectopic_removal_fraction` quality flag when >5% removed |
-
----
-
-### Recovery — EWMA baseline
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Initialising baseline from night 1 | Cold-start bias for 2–4 weeks | Require 7 nights before baseline is active |
-| Using too-small α (e.g., 0.05) | Baseline too sluggish; misses seasonal changes | α = 0.1–0.15 is typical for 7–14 day effective window |
-| Using too-large α (e.g., 0.3) | Baseline too reactive; daily noise passes through | Validate α against 90-night simulation: baseline should not change by >20% in one week |
-| Non-idempotent baseline write | Double-update from retry | `UPDATE SET baseline = ? WHERE last_updated_date < ?` guard |
-| Logistic squash with wrong inflection point | Recovery scores cluster near 50% or near extremes | Verify sigmoid inflection at HRV = baseline: f(1.0) should equal 0.5 |
-| Baseline computed from non-sleep windows | Daytime HRV is lower; using it depresses baseline | Only use overnight/sleep window HRV for baseline |
-
----
-
-### Calories — coefficient validation
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Using Ghidra float32 literals as f64 | Off-by-epsilon per sample, compounding over sessions | Snap to nearest clean rational (1/57, 7/400, etc.); verify against Python float |
-| Applying RMR formula (Mifflin-St Jeor) without sex | 15–20% RMR error for females | Use `profile_sex` as a required parameter; emit `sex_missing` quality flag |
-| Mixing kcal/min with kcal/hour in MET conversions | 60× error in active calorie output | Always work in kcal/min units internally; only convert for display |
-| Applying Harris-Benedict (1919) instead of Mifflin-St Jeor (1990) | 5–10% RMR overestimate | Use Mifflin-St Jeor; it's the ADA standard post-1990 |
-| Zone MET values not matching device's HR zone boundaries | WHOOP zones are HRR-based, not absolute HR | Validate zone MET assignments against HR reserve fraction, not absolute BPM |
-
----
-
-### Strain — TRIMP constants
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Applying male constant to female user | ~15-25% strain underestimate for women | `profile_sex` required in `StrainInput`; emit `sex_unknown` quality flag |
-| Using `average_hr` instead of `average_hr_reserve` in TRIMP | Absolute HR is not effort; must use HRR fraction | `ΔHR = (avg_hr - resting) / (max - resting)`; verify this is in [0,1] |
-| Applying denominator calibration before 14 days of data | Least-squares with <14 points is unstable | Require minimum N sessions; use uncalibrated formula until N is reached |
-| Least-squares calibration including outlier sessions | Illness/travel sessions distort calibration | Exclude sessions with quality flags before calibration |
-| Confusing `score_0_to_21` with raw TRIMP minutes | Outputs are in different units | Keep raw TRIMP in `zone_load` field; scale to 0–21 range separately |
-
----
-
-### Sleep — Cole-Kripke actigraphy
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Using published Cole-Kripke coefficients on WHOOP IMU | Device-specific calibration mismatch; over-detects sleep | Validate on 5+ nights against WHOOP official stages |
-| Applying filter on 1-second epochs with 100-sample IMU data | Cole-Kripke was designed for 1-minute epochs | Aggregate 100 1-second samples → 1-minute epoch before applying |
-| Physiological constraints not applied | Impossible stage sequences (REM directly after wake) | Hard-code: min 10 min in any stage, REM not in first 60 min, transitions must be monotone |
-| Sleep/wake threshold not adapted per user | High-motion sleepers are over-classified as awake | User-specific motion percentile threshold from 7-night baseline |
-| I16 samples in raw ADU, not calibrated g | Motion intensity unit is wrong without calibration | WHOOP IMU: divide I16 by device sensitivity (nominally 1000 for ±16g range) |
-
----
-
-### IMU pipeline — I16SeriesSummary extension
-
-| Trap | What Goes Wrong | How to Catch |
-|------|----------------|--------------|
-| Changing `preview: Vec<i16>` in-place | Breaks all K10/K21 round-trip tests | Add `full_samples: Option<Vec<i16>>` as a new optional field |
-| Requesting 100 samples from 8-byte BLE MTU fragment | BLE notification is 20 bytes max; need reassembly | `FrameAccumulator` already handles reassembly; verify reassembled frame has 100 samples before parsing |
-| Assuming IMU mode produces only type-51 packets | Some firmware versions interleave type-40 | Handle both types simultaneously during IMU mode |
-| Forgetting to send TOGGLE_IMU_MODE_OFF on session end | Device stays in IMU mode after disconnect | Add `stopImuMode()` call in `stopCapture()` and in `didDisconnectPeripheral` |
-| I16 sum overflow at 100 samples | sum = 100 × 32767 = 3,276,700; fits i32 but not i16 | `I16SeriesSummary.sum` is already `i64` — correct; do not change to i32 |
-
----
-
-## Prevention Strategy
-
-How to catch each class of pitfall before it reaches production.
-
-### 1. Algorithm Cross-Validation Baseline
-
-Before shipping any algorithm, run it against the Python reference tools (`Rust/core/tools/reference/`) on at least 5 real sessions. The comparison must be documented:
-
+`writeValue(_:for:type:)` blocks the calling thread while CoreBluetooth serialises the ATT packet. If `buzz(loops:)` is called directly from a SwiftUI button action (which runs on the main actor), you block the main thread for the duration of the BLE write, which causes dropped frames and a UI freeze perceptible to the user. If Breathe or Interval Timer calls `buzz` on a timed schedule (e.g., every 4 seconds), the cumulative main-thread pressure is even worse.
+
+**Why it happens:**
+The haptic seed shows `activePeripheral.writeValue(frame, for: commandCharacteristic, type: writeType)` as the implementation. Every existing command write in `GooseBLEClient+Commands.swift` (`writeAlarmCommand`, `writeSensorStreamCommands`, `writeClockCommand`) guards against this with the pattern:
+```swift
+if !Thread.isMainThread {
+  DispatchQueue.main.async { [weak self] in ... }
+  return
+}
 ```
-Session ID | Python RMSSD | Rust RMSSD | Delta | Quality Flags Match?
-```
+But this guard only redirects *off-main* calls back to main, it does not dispatch *from* main to a background queue. The writes themselves execute on main. For one-shot commands this is acceptable. For the Breathe timer calling `buzz` at 4–8 Hz over a 4-minute session, this accumulates 60–120 main-thread write calls, each holding the lock until CoreBluetooth ACKs or times out.
 
-Any delta >1 ms for HRV, >2 kcal for calories, >0.5 points for strain — investigate before shipping.
+**How to avoid:**
+Introduce `canSendHaptic: Bool` computed property on `GooseBLEClient` mirroring the existing `canWriteAlarm` pattern. Gate the haptic write with: connected + commandCharacteristic set + connectionState == "ready" + NOT isHistoricalSyncing. For timed patterns (Breathe, Interval Timer), schedule buzz calls via `DispatchQueue.main.asyncAfter` with a cancellable `DispatchWorkItem`, never from a Swift `Timer` or `Task.sleep` that doesn't dispatch back to main first. Keep writes fire-and-forget (`.withoutResponse`) for haptic commands — no pending-command tracking needed since there is no strap ACK for 0x13.
 
-### 2. Quality Flag Coverage Test
+**Warning signs:**
+- Breathe or Interval Timer timer fires on a non-main queue and calls `buzz` directly.
+- `writeValue` is called from inside `Task { ... }` without an explicit `DispatchQueue.main.async` wrapper.
+- UI jank appears during a Breathe session in the simulator.
 
-Every algorithm implementation must have a test that exercises every defined quality flag path:
-
-```rust
-// Must trigger "high_ectopic_removal_rate" quality flag:
-let input = HrvInput { rr_intervals_ms: vec![800.0, 400.0, 800.0, ...], ... }; // >5% ectopic
-let result = goose_hrv_v1(&input);
-assert!(result.quality_flags.contains("high_ectopic_removal_rate"));
-```
-
-### 3. Idempotency Tests for SQLite Writes
-
-Every new SQLite write that carries state (EWMA baseline, calibration coefficients) must have an idempotency test:
-
-```rust
-call_rollup_bridge(date_key, write_metric: true);
-let baseline_after_first = read_baseline();
-call_rollup_bridge(date_key, write_metric: true); // same date
-let baseline_after_second = read_baseline();
-assert_eq!(baseline_after_first, baseline_after_second);
-```
-
-### 4. Protocol Round-Trip Tests for I16SeriesSummary Changes
-
-Any change to `I16SeriesSummary` must pass:
-
-```rust
-let frame = build_k10_frame_with_n_samples(100);
-let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
-let json = serde_json::to_string(&parsed).unwrap();
-let reparsed: ParsedFrame = serde_json::from_str(&json).unwrap();
-assert_eq!(parsed, reparsed); // round-trip must be lossless
-```
-
-### 5. Sex-Dependent Constant Tests
-
-For any algorithm that uses sex-dependent constants:
-
-```rust
-let male_result = goose_strain_v0(&input_with_sex("male"));
-let female_result = goose_strain_v0(&input_with_sex("female"));
-assert_ne!(male_result.output.score_0_to_21, female_result.output.score_0_to_21);
-// Verify the ratio matches the theoretical TRIMP constant ratio
-```
-
-### 6. Coefficient Precision Verification
-
-For each Ghidra-extracted constant:
-
-```python
-# Python reference script to verify coefficient precision
-import struct
-ghidra_value = 0.01748046875  # from Ghidra hex
-target_value = 7/400  # nearest clean rational = 0.0175
-relative_error = abs(ghidra_value - target_value) / target_value
-assert relative_error < 0.001, f"Coefficient error {relative_error:.4%} exceeds 0.1%"
-```
-
-### 7. Concurrent Bridge Call Test
-
-For any EWMA baseline update:
-
-```rust
-use std::thread;
-let db_path = temp_db_path();
-let handle1 = thread::spawn(|| call_recovery_rollup(db_path, date_key));
-let handle2 = thread::spawn(|| call_recovery_rollup(db_path, date_key));
-handle1.join(); handle2.join();
-let baseline = read_baseline(db_path, date_key);
-assert_eq!(baseline, expected_single_update_value); // not double-updated
-```
+**Phase to address:**
+HAP-01 (buzz primitive) — get the threading model right before Breathe/Interval Timer build on top of it.
 
 ---
 
-## Phase-Specific Warnings
+### Pitfall 2: Haptic command not gated during historical sync — corrupts sync state machine
 
-| Phase Topic | Pitfall # | Likely Pitfall | Mitigation |
-|-------------|-----------|----------------|------------|
-| HRV Lipponen-Tarvainen filter | 1 | Athletic users over-filtered; RMSSD artificially depressed | Adaptive thresholds; 5-night cross-validation before shipping |
-| EWMA personal baseline | 2, 6, 10 | Cold-start bias; double-update corruption; concurrent write race | 7-night cold-start guard; idempotent write; `BEGIN EXCLUSIVE` transaction |
-| Calorie coefficient validation | 4 | Ghidra float approximations compound over long sessions | Snap to clean rationals; 10-session validation against official labels |
-| Strain TRIMP sex constants | 3 | Male constant applied to female users | `profile_sex` in `StrainInput`; sex-mismatch quality flag; ratio test |
-| Cole-Kripke sleep staging | 5 | Device calibration mismatch; epochs at wrong timescale | No published coefficients on raw WHOOP IMU; 5-night validation; `uncalibrated` quality flag |
-| IMU I16SeriesSummary extension | 7, 8, 11 | JSON payload overflow; `body_hex` schema break; protocol test failures | Add `full_samples` optional field; run `cargo test` after every struct change; measure JSON size |
-| TOGGLE_IMU_MODE in startCapture | 9 | Type-51 packets parsed as Raw; gaps in HRV data | Feature flag defaults off; implement type-51 parsing first |
-| Gen4 upstream arithmetic fixes | — | `as u16` truncation on large frame lengths; wrapping instead of trapping arithmetic | Review every `as u16`/`as u8` cast in `protocol.rs` for Gen4 path; use `u16::try_from(x)?` |
-| body_hex K10/K21 exclusion | 8 | Silent Swift decoder break; existing round-trip tests don't cover K10/K21 body_hex | Add explicit `body_hex` assertions to K10/K21 tests before any change |
-| Retain cycles in Swift closures | — | `[weak self]` missing in async closure that captures `GooseAppModel` or `HealthDataStore` | Audit every new `Task { [weak self] in ... }` that captures an algorithm result closure |
+**What goes wrong:**
+`GooseBLEClient` gates every existing write type (`canWriteAlarm`, `canSyncClock`, `canSyncHistorical`) with `!isHistoricalSyncing`. If `buzz(loops:)` is implemented without this guard, a user tapping "Breathe" mid-sync will inject a cmd 0x13 frame into the BLE pipe while the strap is mid-history-stream. The strap processes it as an interleaved command response, which may cause the historical sync state machine (`GooseBLEClient+HistoricalHandlers.swift`) to misinterpret the next command-response packet — specifically where `puffinCommandResponse` (type 38) is checked as a sequenced ack.
+
+**Why it happens:**
+The haptic seed says "fire-and-forget" and "no pending-command tracking needed." This is correct for the ACK side, but the seed does not mention the `isHistoricalSyncing` gate. Because buzz is simpler than alarm/clock writes, implementers may skip the guard thinking it doesn't matter.
+
+**How to avoid:**
+Add `canSendHaptic: Bool` that includes `&& !isHistoricalSyncing`, exactly as `canWriteAlarm` does. Silently drop the buzz call (log it) when syncing is active. Surface "Haptic unavailable during sync" in the Breathe UI.
+
+**Warning signs:**
+- `historicalSyncStatus` flips to a parse-error state immediately after a Breathe session started mid-sync.
+- `lastHighFrequencyHistorySyncResponse` shows an unexpected sequence number.
+- `isHistoricalSyncing` is not included in `canSendHaptic`.
+
+**Phase to address:**
+HAP-01 — add the guard before HAP-02 (Breathe) depends on it.
+
+---
+
+### Pitfall 3: R22 HR from 0x10 and R17 HR from 0x9a/0x9b deduplicated wrong — WHOOP 5.0 counts twice
+
+**What goes wrong:**
+The seed for BLE5-01 notes that the BTSnoop capture shows WHOOP 5.0 streams R17 on `0x0027` (packet type `0x9a`/`0x9b`) AND R22 on `0x0022` (packet type `0x10`) simultaneously. If both are added as trusted sources in `trusted_frames_for_summary_kinds` without a mutual-exclusion or source-priority rule, the HR pipeline will receive two samples per second during overlap periods — one from R17, one from R22. This produces doubled RR interval counts and inflates RMSSD, which corrupts HRV for WHOOP 5.0 users.
+
+**Why it happens:**
+The Rust parser currently only handles R17, so this was never a problem. Once R22 is added, both packet types pass validation and route into the same HR/RR pipeline. The data model has no concept of "same physical sample from two channels."
+
+**How to avoid:**
+When both R17 and R22 are present, treat R22 as authoritative (it is the WHOOP 5.0 primary channel) and demote R17 to fallback. Implement this in the Rust trusted-source priority logic: if an R22 sample arrives within 1.5s of an R17 sample with the same BPM ±2, suppress the R17. Add a `r22_whoop5_hr` vs `r17_optical_or_labrador_filtered` source label to every HR sample in the database so the dedup can be audited. Add a test fixture with interleaved R17 + R22 frames.
+
+**Warning signs:**
+- HR sample rate doubles from ~1/s to ~2/s for WHOOP 5.0 users after adding R22 support.
+- RMSSD on WHOOP 5.0 reads 40–60% higher than expected.
+- The diagnostic counter shows both R17 and R22 sample counts increasing together.
+
+**Phase to address:**
+BLE5-01 (R22 parser) — the dedup rule must be in the same phase as the parser, not deferred.
 
 ---
 
-## Confidence Assessment
+### Pitfall 4: v18 historical timestamp conversion runs through the same stale-clock path as v7/v9/v12 — silent time-series corruption
 
-| Area | Confidence | Basis |
-|------|------------|-------|
-| HRV ectopic filter pitfalls | HIGH | Direct code inspection shows current HRV uses simple range filter; Lipponen-Tarvainen threshold literature well-established |
-| EWMA baseline pitfalls | HIGH | Stateless bridge architecture confirmed in `CLAUDE.md`; idempotency gap visible in `recovery_rollup.rs` UPSERT pattern |
-| Calorie coefficient pitfalls | HIGH | `energy_rollup.rs` shows current formula; Ghidra float-to-double precision is a known embedded reverse-engineering problem |
-| Strain sex constant pitfalls | HIGH | `StrainInput` confirmed to have no `profile_sex` field; `EnergyDailyRollupOptions` does; gap is real |
-| Cole-Kripke actigraphy pitfalls | MEDIUM | IMU data structure confirmed (I16SeriesSummary); Cole-Kripke calibration requirement is algorithm literature; no empirical validation data available |
-| IMU JSON payload pitfalls | HIGH | `preview: Vec<i16>` capped at 8 confirmed in `protocol.rs` line 678; JSON size estimate is straightforward arithmetic |
-| TOGGLE_IMU_MODE pitfalls | HIGH | Command 106 present but confirmed as never sent in production `startCapture`; type-51 parsing not implemented |
-| Concurrent bridge pitfalls | MEDIUM | Multiple bridge instances confirmed from `CLAUDE.md`; SQLite WAL concurrency is well-understood; exact bridge call sequence for EWMA not yet implemented |
+**What goes wrong:**
+The v18 decode seed identifies that `historical_sync.rs` converts device-epoch timestamps to wall-clock using an offset. When the strap RTC is stale (lost power, battery replacement), the offset is garbage and produces timestamps years in the past or future. Rows with corrupted timestamps insert successfully (SQLite has no timestamp constraints), and then corrupt the sleep staging, strain, and HRV pipelines that window by wall-clock time.
+
+The additional risk: EVENT (type-48) packets have timestamps that are already native RTC unix seconds. If the v18 decode feeds EVENT-style timestamps through the same epoch→wall-clock offset path, they get double-offset and produce timestamps ±decades off.
+
+**Why it happens:**
+The stale-clock dedup (300s grid snap) and the EVENT bypass are both mentioned in the seed as fixes needed in `historical_sync.rs`. When implementing the v18 arm in `protocol.rs`, implementers may stop at the field offsets and forget to wire the timestamp through the corrected converter, especially if the corrected converter doesn't exist yet because the stale-clock fix hasn't been written.
+
+**How to avoid:**
+Implement the stale-clock fix (86400s threshold → 300s grid snap) and the EVENT type-48 bypass as the first sub-task of BLE5-02, before touching any field parsing. Then implement v18 field parsing as the second sub-task, using the already-fixed converter. Add a Rust test: construct a v18 frame with a stale RTC offset >86400s, assert that the output timestamp is snapped to a 300s grid.
+
+**Warning signs:**
+- After a historical sync on a WHOOP 5.0 that recently lost battery, HR or sleep rows appear with timestamps before 2020 or after 2030.
+- Sleep staging returns no overnight sessions for a WHOOP 5.0 user even though the sync completed successfully.
+- `rr_interval_samples` count increases but HRV score remains stale.
+
+**Phase to address:**
+BLE5-02 — stale-clock fix must be the entry condition for v18 parsing, not a follow-up.
 
 ---
+
+### Pitfall 5: SQLite schema migration not bumped — `open_existing_current` hard-fails on user devices
+
+**What goes wrong:**
+`GooseStore::open_existing_current` returns `Err` if `PRAGMA user_version != CURRENT_SCHEMA_VERSION`. This means if v10.0 adds new tables (DATA-01: journal, workout, appleDaily, metricSeries) without bumping `CURRENT_SCHEMA_VERSION` from 19 to 20 (or higher), the next `GooseStore::open_or_create` will run `migrate()` but `open_existing_current` calls from the health pipeline will reject the database. Conversely, if the version is bumped but the `migrate()` block doesn't include all 4 new `CREATE TABLE` statements, existing databases that already ran an earlier migration will silently skip the new tables (because `CREATE TABLE IF NOT EXISTS` was already in the committed batch).
+
+The current pattern: all DDL is in a single `migrate()` block executed as one `execute_batch`. If any new table's DDL is syntactically invalid (missing comma, wrong type), the entire batch rolls back and the database is left at v19 with no schema changes.
+
+**Why it happens:**
+The monolithic migration style (all versions in one batch with `INSERT OR IGNORE INTO goose_schema_migrations(version)` to mark each version applied) works for fresh installs but has a subtle flaw for upgrades: there are no per-version migration blocks. Every schema change must use `IF NOT EXISTS` or `ADD COLUMN IF NOT EXISTS` to be idempotent. Developers adding a new table sometimes forget that existing prod databases already ran the v1–v19 batch and won't get the new table unless it is added to a new migration branch.
+
+**How to avoid:**
+Add a conditional migration arm: after the monolithic `IF NOT EXISTS` batch, check `schema_version()` and if it equals 19, execute a dedicated v20 DDL block, then `PRAGMA user_version = 20`. Bump `CURRENT_SCHEMA_VERSION` to 20. Write a Rust test that: (1) opens an in-memory store, (2) manually sets `PRAGMA user_version = 19` and does NOT create the new tables, (3) re-runs `migrate()`, (4) asserts the new tables exist and `user_version = 20`.
+
+**Warning signs:**
+- App launches on a device with an existing database and immediately crashes/hangs (bridge returns schema mismatch error).
+- New tables (`journal`, `workout`, `appleDaily`, `metricSeries`) are missing from the database after migration even though the app started successfully.
+- Tests pass on in-memory databases (always fresh) but fail on the real device database.
+
+**Phase to address:**
+DATA-01 (4 new SQLite tables) — migration correctness is the entry condition for all new table features.
+
+---
+
+### Pitfall 6: Local notification fired from the BLE notification queue — permission state unverified
+
+**What goes wrong:**
+`UNUserNotificationCenter.add(_:withCompletionHandler:)` must be called from any thread, but it silently no-ops if the app does not have notification permission. If the sleep summary notification fires from a BLE completion callback (off-main) and permission was never granted (user skipped onboarding), the notification is dropped with no error surfaced to the UI. Worse: the existing onboarding flow in `OnboardingView.swift` already requests `[.alert, .badge, .sound]` and stores `notificationPermissionHandled` in `@AppStorage`. If v10.0 adds a second call to `requestAuthorization` from a different code path (e.g., a "Enable Notifications" button in the More tab), iOS will not re-prompt the user — it returns the current status silently — but the second call site may interpret the silent return as "denied" and incorrectly disable the feature.
+
+**Why it happens:**
+iOS grants the notification permission dialog exactly once. Any subsequent `requestAuthorization` call returns the current status without showing a dialog. Developers building the FEAT-03 notification feature may not know about the onboarding flow that already made the request, and may add a second request thinking it is the first.
+
+**How to avoid:**
+Centralise all notification work behind a single `GooseNotificationScheduler` type that (1) checks `getNotificationSettings` before attempting to schedule, (2) logs the permission status, and (3) never calls `requestAuthorization` — that remains exclusively in `OnboardingView.swift`. The scheduler fires from `DispatchQueue.main.async` even if called from a background queue, so the completion handler is predictable. Add a `notificationsEnabled: Bool` published property to `GooseAppModel` that refreshes from `getNotificationSettings` on foreground.
+
+**Warning signs:**
+- A second `requestAuthorization` call appearing outside `OnboardingView.swift`.
+- Notification scheduling attempted without a prior `getNotificationSettings` check.
+- Sleep summary notification never appears even when BLE sync completes successfully.
+
+**Phase to address:**
+FEAT-03 (iOS local notifications) — architecture review before any notification scheduling code is written.
+
+---
+
+### Pitfall 7: GooseBLEHistoricalManager extracts state that GooseBLEClient still mutates — dual ownership race
+
+**What goes wrong:**
+`GooseBLEClient` currently owns all historical sync state: `isHistoricalSyncing`, `historicalSyncStatus`, `historicalSyncRunID`, `pendingAutomaticHistoricalSyncReason`, and all the handler callbacks in `GooseBLEClient+HistoricalHandlers.swift`. When BLE5-03 extracts this into `GooseBLEHistoricalManager`, if the refactor is done incrementally (manager takes some state, client keeps some state), there will be a window where both types read and write overlapping fields. Because `GooseBLEClient` is `@Observable` and `@unchecked Sendable`, concurrent mutations from different queues (coreBluetoothQueue vs. the manager's queue) will cause a data race that only manifests as sporadic `isHistoricalSyncing` staying `true` after a sync completes.
+
+**Why it happens:**
+The `GooseBLEClient` extension pattern splits behaviour across files but shares state on the parent class. When extracting a manager, the natural first step is to copy the handler functions into the new type and leave the state on the client. This "partial extraction" is the dangerous middle state.
+
+**How to avoid:**
+Do the extraction in a single atomic commit: (1) move all historical state fields from `GooseBLEClient` to `GooseBLEHistoricalManager`, (2) make `GooseBLEClient` hold a `GooseBLEHistoricalManager` instance, (3) proxy `isHistoricalSyncing` and `historicalSyncStatus` as forwarded computed properties on the client for backwards compatibility with the 15+ call sites that reference `ble.isHistoricalSyncing`. Do not leave the extraction half-done across a phase boundary.
+
+**Warning signs:**
+- `ble.isHistoricalSyncing` reads `true` in the UI after a successful sync that produced packets.
+- `canWriteAlarm` / `canSyncClock` / `canSendHaptic` remain blocked after historical sync finishes.
+- Two files both write to a field named `isHistoricalSyncing` on different types.
+
+**Phase to address:**
+BLE5-03 — must be a single atomic refactor, not spread across multiple phases.
+
+---
+
+### Pitfall 8: DI protocol extraction without test targets — protocols become dead abstraction
+
+**What goes wrong:**
+The service-layer-di seed is explicit: "Do not extract protocols as a pure refactor with no tests to back them." If `GooseBLEManaging`, `GooseRustBridging`, and `GooseAppServicing` protocols are extracted but no Swift test target exists, the protocols are never exercised by mocks and drift out of sync with the concrete types. The most common form: a new method is added to `GooseBLEClient` for HAP-01, `GooseBLEManaging` is never updated, and the build still passes because `GooseBLEClient` conforms to the protocol via an existing method with the same signature by coincidence.
+
+**Why it happens:**
+Protocol extraction is low-risk in isolation. The pain only appears when a mock is used in a test and the test fails to compile because the protocol is stale. Without a test target, this feedback loop never closes.
+
+**How to avoid:**
+ARCH-01 must add a Swift test target (`GooseSwiftTests`) as its first deliverable. The test target must contain at least one test that instantiates `GooseBLEClientMock` and calls a method on it — this is the compile-time canary that ensures `GooseBLEManaging` stays in sync. Use `#if DEBUG` for mock types in the main target, test target for actual test functions.
+
+**Warning signs:**
+- ARCH-01 is marked complete but no test target exists in `GooseSwift.xcodeproj`.
+- `GooseBLEManaging` has fewer methods than `GooseBLEClient` has public BLE write methods.
+- `GooseBLEClientMock` compiles but is never instantiated in any test function.
+
+**Phase to address:**
+ARCH-01 — test target creation is the entry condition, not the exit condition.
+
+---
+
+### Pitfall 9: DI circular dependency — GooseAppServicing wraps GooseBLEClient which closes over GooseAppModel
+
+**What goes wrong:**
+The seed proposes `GooseAppServicing` wraps `GooseBLEClient` and `HealthDataStore`. But `GooseBLEClient` already has a callback `onConnectionStateChange` that `GooseAppModel` sets (making the client aware of its owner). If `GooseAppServicing` is injected into `GooseAppModel` and `GooseAppServicing` in turn holds a reference to `GooseBLEClient` which holds `onConnectionStateChange: ((String) -> Void)?` (a closure capturing `GooseAppModel`), there is a reference cycle: `GooseAppModel → GooseAppServicing → GooseBLEClient → closure → GooseAppModel`. This cycle prevents deallocation and leaks all three objects.
+
+**Why it happens:**
+The callback pattern (`onConnectionStateChange`) was explicitly chosen over Combine to match the rest of the codebase. It works without a service layer. When a service layer is added as a wrapper, the closure capture creates an implicit retain cycle that `[weak self]` on the closure alone does not break, because the closure is stored on the client (not the model), and the model holds the service, which holds the client.
+
+**How to avoid:**
+Make all callbacks on `GooseBLEClient` use `[weak self]` captures that reference `GooseAppModel` weakly. Verify with Xcode Memory Graph Debugger after ARCH-01 that `GooseAppModel` deallocates when the view is dismissed in a preview. The service protocol should be a value-type composition (protocol only; the actual instances remain owned by `GooseAppModel`) rather than a reference-type container.
+
+**Warning signs:**
+- Xcode Memory Graph shows `GooseBLEClient` retained after disconnection.
+- `GooseAppModel` `deinit` never fires during preview/test teardown.
+- `onConnectionStateChange` closure is set without `[weak self]` on the `GooseAppModel` capture.
+
+**Phase to address:**
+ARCH-01 — memory graph check is a required step before the phase is complete.
+
+---
+
+### Pitfall 10: Swift-side BLE validator rejects valid Gen5 frames due to packet type whitelist
+
+**What goes wrong:**
+BLE5-04 adds a Swift-side validator before Rust/SQLite ingestion. If the validator uses a hard-coded whitelist of known packet types (e.g., `[0x9a, 0x9b, 0xaa, 0x26, 0x38]`) and R22 (`0x10`) is not added to that whitelist when BLE5-01 lands, all R22 frames from WHOOP 5.0 will be dropped at the Swift gate before reaching the Rust parser that was built to handle them. This produces the same symptom as if BLE5-01 was never implemented: blank metrics for WHOOP 5.0 users.
+
+**Why it happens:**
+BLE5-04 (validator) and BLE5-01 (R22 parser) may be implemented in different phases or treated as independent work items. The validator's whitelist is not automatically updated when the Rust parser gains support for a new packet type. `OvernightRawNotificationStorageClassifier` in `NotificationFrameParsing.swift` already has a `Set<UInt8>` of packet types — a new validator modelled on that will inherit the same coupling.
+
+**How to avoid:**
+Do not use a whitelist in the Swift validator. Instead, validate structural invariants only: minimum frame length, magic byte (`0xaa` header presence for Gen4/Gen5 packets, or first byte `0x10` for R22), plausible payload length range (1–512 bytes). Let the Rust parser be the authority on packet types — it already returns `warnings` for unknown types. The Swift validator's job is to prevent obviously malformed bytes (empty data, length overflow) from reaching Rust, not to gatekeep packet types.
+
+**Warning signs:**
+- WHOOP 5.0 R22 frames are logged as "dropped by validator" even after BLE5-01 is shipped.
+- The validator contains a `Set<UInt8>` of expected packet type bytes.
+- BLE5-04 is shipped before BLE5-01 with no plan to coordinate their allowed-type lists.
+
+**Phase to address:**
+BLE5-04 — define the validator contract (structural only, no type whitelist) before implementation begins.
+
+---
+
+### Pitfall 11: Realtime strain accumulator mutated from BLE notification queue and read from @MainActor — unsynchronised shared state
+
+**What goes wrong:**
+DATA-02 (realtime strain accumulation) requires updating a running strain total from every HR sample that arrives on the BLE notification queue (which runs on `notificationIngestQueue`, a private `DispatchQueue`). If the accumulator is a plain `var` on `GooseAppModel` (which is `@Observable` and therefore implicitly `@MainActor` for mutation), mutating it from the notification queue is a data race. If it is moved to a private property with an `NSLock`, every BLE sample incurs a lock acquisition — which is acceptable at 1 Hz but becomes a concern during historical sync where HR samples arrive in bursts.
+
+**Why it happens:**
+`GooseAppModel`'s `@Observable` properties are implicitly main-actor isolated. Existing pipelines (e.g., `WhoopDataSignalPipeline`) accept data on their own queue and dispatch results to main via `Task { @MainActor in ... }`. A new strain accumulator that skips this pattern will compile without warnings (Swift does not statically detect `@unchecked Sendable` races) but will race at runtime.
+
+**How to avoid:**
+Model the realtime strain accumulator as a separate `actor` type (`GooseStrainAccumulator`) that accepts HR samples via `async func ingest(hr: Int, timestamp: Date)` and publishes the running total via an `AsyncStream<Double>` consumed on `@MainActor`. This keeps accumulation logic off the main thread, serialised by the actor, and the published value arrives on main automatically.
+
+**Warning signs:**
+- Strain accumulator property is declared on `GooseAppModel` with no actor isolation boundary.
+- BLE notification handler calls `appModel.currentStrain += delta` directly without dispatching to main.
+- Thread Sanitiser (TSan) reports a data race on the strain field during a workout session.
+
+**Phase to address:**
+DATA-02 — actor design must be decided before any accumulation logic is written.
+
+---
+
+### Pitfall 12: HR decimation applied to the persistence layer instead of the chart view model — destroys raw data fidelity
+
+**What goes wrong:**
+The hr-decimation seed is explicit: "The remaining problem is chart render performance at high zoom-out." The fix belongs in `GooseHRDecimator` applied before chart views, not in `HeartRateSeriesStores.swift`'s underlying storage or in the Rust bridge query. If decimation is applied at the store insert layer, raw 1-second samples are permanently discarded. Sleep staging (Cole-Kripke) and HRV (RMSSD) both require the raw 1s samples — destroying them produces wrong metrics.
+
+**Why it happens:**
+The seed mentions `maxSamples = 100_000` and `prune()` already on `HeartRateSeriesStores`. A developer seeing this may extend `prune()` to also decimate, thinking it is consistent with existing memory management. The distinction between "prune old samples" (time-based) and "decimate fine samples" (resolution-based) is easy to blur.
+
+**How to avoid:**
+`GooseHRDecimator` operates only on the `[HRSample]` array passed to SwiftUI Charts. It returns a decimated array for rendering and never writes to `HeartRateSeriesStore`. `HeartRateSeriesStore` continues to hold the full `maxSamples` window of raw 1s data. The SQLite persistence layer (Rust) is never touched by DATA-04.
+
+**Warning signs:**
+- `HeartRateSeriesStore.samples.count` decreases after decimation runs (means data was destroyed).
+- RMSSD changes after DATA-04 is shipped (means raw RR data was affected).
+- `GooseHRDecimator` modifies `HeartRateSeriesStore` directly instead of returning a new array.
+
+**Phase to address:**
+DATA-04 — scope check: "does this touch the store?" is the acceptance criterion.
+
+---
+
+## Technical Debt Patterns
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| `buzz` with no pending-command tracking | Simple implementation | Cannot detect strap ignore or firmware rejection | Acceptable — 0x13 is fire-and-forget per seed; add only if strap ACK is confirmed |
+| Monolithic `migrate()` with single version bump | Fast to write | Any DDL syntax error rolls back entire migration | Must add per-version conditional arms starting with v20 |
+| `GooseBLEHistoricalManager` proxy properties on `GooseBLEClient` | Zero call-site changes | Extra indirection layer; can confuse future readers | Acceptable as a transition shim; document with a comment |
+| DI protocols without `associatedtype` constraints | Simpler protocol | Mock cannot enforce call ordering | Acceptable for v10.0 mocks; add XCTest spy pattern |
+| `GooseHRDecimator` using averaging instead of LTTB | 30 lines vs. 150 | Chart visual quality degrades at high zoom-out on overnight views | Only acceptable if LTTB adds >2h implementation time |
+
+## Integration Gotchas
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| R22 + Rust bridge | Adding `r22_whoop5_hr` to trusted sources without source priority | Add R22 priority rule that suppresses R17 when both arrive within 1.5s |
+| v18 → existing tables | Feeding v18 RR intervals directly to `rr_interval_samples` without device-type tag | Tag all v18-derived rows with `device_generation = "5"` for audit |
+| `UNUserNotificationCenter` | Calling `requestAuthorization` in `GooseNotificationScheduler` | Permission request stays in `OnboardingView.swift` only; scheduler uses `getNotificationSettings` |
+| `GooseBLEHistoricalManager` | Importing `CoreBluetooth` directly into the manager | Manager receives `Data` payloads, not `CBCharacteristic`; keeps CoreBluetooth coupling on `GooseBLEClient` |
+| SQLite v20 migration | Using only `CREATE TABLE IF NOT EXISTS` without a version-conditional arm | Add `if schema_version == 19 { execute v20 DDL; set user_version = 20 }` arm in `migrate()` |
+
+## Performance Traps
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Breathe timer firing `buzz` via `Task.sleep` without main-thread dispatch | Main thread stalls every 4s during Breathe session | Use `DispatchQueue.main.asyncAfter` with cancellable `DispatchWorkItem` | First Breathe session longer than 30s |
+| Realtime strain recalculated via full Rust bridge call on every HR sample | 1–2ms FFI overhead per sample; during historical sync HR arrives in bursts | Swift-side accumulator only; Rust bridge called for persistence, not accumulation | Historical sync with >3600 HR samples |
+| 28,800-point HR array passed to SwiftUI Charts without decimation | Dropped frames on older devices when zoomed out to overnight view | `GooseHRDecimator` applied in chart view model layer only | Users with overnight BLE capture >8h |
+| `GooseAppServicing` protocol surface grows to mirror `GooseBLEClient` | Mocks require implementing 30+ methods; maintenance cost explodes | Narrow protocol to only what tests need (ISP) | When first test suite requires >5 BLE mock methods |
+
+## Security Mistakes
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Biometric data in notification body (e.g., "Your HRV is 42 ms") | Lock screen notification exposes health data to bystanders | Generic body ("Your WHOOP summary is ready"); detail only inside the app |
+| `GooseRustBridgeMock` included in production target | Mock data returned to real users; no actual Rust processing | `#if DEBUG` guard on mock files; mock types only in `GooseSwiftTests` target |
+| Haptic command payload bytes hard-coded without logging | Future firmware update may change byte meaning; unauditable | Log every haptic command frame hex in diagnostics |
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Breathe buzz disabled mid-session because historical sync started automatically | User's paced breathing interrupted without explanation | Prevent auto-sync during active Breathe session, or surface "Sync started — haptics paused" |
+| iOS notification permission denied in onboarding, no re-prompt possible | User misses sleep insights with no recovery path | Surface "Enable notifications" Settings deep link in More tab when `authorizationStatus == .denied` |
+| Realtime strain counter resets on app background because accumulator is in-memory only | Strain reading jumps back to 0 mid-workout | Persist accumulator checkpoint to `UserDefaults` every 60s; restore on foreground |
+| New SQLite tables visible in export but undocumented | User confused by unknown data in privacy export | Add "What's in your export" summary to `MorePrivacyView` listing all tables |
+
+## "Looks Done But Isn't" Checklist
+
+- [ ] **HAP-01 buzz:** Verify `canSendHaptic` includes `!isHistoricalSyncing` guard — trigger a buzz during an active historical sync and confirm the buzz is silently dropped with a log entry, not attempted.
+- [ ] **BLE5-01 R22:** Verify WHOOP 5.0 R17 and R22 dedup is active — connect WHOOP 5.0, confirm `r22_whoop5_hr` source appears in the diagnostic counter and `r17_optical_or_labrador_filtered` count does NOT increase simultaneously.
+- [ ] **BLE5-02 v18:** Verify stale-clock guard is active before v18 field parsing — use a synthetic frame with unix timestamp offset >86400s and assert output timestamp is snapped to 300s grid.
+- [ ] **DATA-01 migration:** Verify v20 migration runs on an existing v19 database — open a Rust test store with `user_version = 19` set manually, run `migrate()`, assert all 4 new tables exist and `user_version = 20`.
+- [ ] **FEAT-03 notifications:** Verify notification permission is NOT requested a second time — after onboarding, trigger "Enable Notifications" in More tab and confirm the iOS permission dialog does NOT reappear; only Settings is opened.
+- [ ] **ARCH-01 DI:** Verify memory cycle is absent — run the app, trigger a BLE connect/disconnect cycle, open Xcode Memory Graph Debugger and confirm zero `GooseBLEClient` instances remain after disconnect.
+- [ ] **DATA-04 decimation:** Verify raw store is unaffected — after `GooseHRDecimator` runs, confirm `HeartRateSeriesStore.samples.count` equals the pre-decimation count.
+- [ ] **BLE5-04 validator:** Verify validator passes R22 frames — send a 4-byte R22 frame (`0x10 0x50 0x31 0x05`) through the validator and confirm it reaches the Rust parser without being rejected.
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| buzz called from @MainActor causing UI freeze | LOW | Wrap buzz trigger in `DispatchQueue.main.async { [weak self] in ... }` — one-line fix |
+| Historical sync corruption from un-gated haptic | MEDIUM | Reset `isHistoricalSyncing = false` from recovery path; add `canSendHaptic` gate; user re-triggers sync |
+| R22 + R17 double-counting in RR pipeline | HIGH | Rust fix + SQLite cleanup of duplicate rows; affected users need manual HRV recalculation |
+| SQLite migration failure on device | HIGH | Ship `GooseStore.repair()` bridge method that drops new v20 tables and re-runs migration; expose in More tab debug tools |
+| Notification permission second-request (silent, no dialog) | LOW | Remove duplicate `requestAuthorization` calls; add Settings deep link for denied state |
+| DI memory cycle | MEDIUM | Add `[weak self]` to all callbacks; run Memory Graph; refactor ownership if cycle persists |
+| v18 stale-clock corruption | HIGH | Write a Rust tool to identify rows with timestamps outside 2020–2030 and DELETE them; re-run historical sync |
+| Decimation applied to store (raw data lost) | CRITICAL | No recovery — raw samples gone; requires full re-sync from strap. Prevent only. |
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| buzz threading / @MainActor | HAP-01 | Breathe timer fires for 60s; no UI jank; Instruments shows no main-thread stall >16ms |
+| haptic not gated during sync | HAP-01 | Buzz triggered mid-sync; `canSendHaptic` returns false; sync completes normally |
+| R22 + R17 dedup | BLE5-01 | WHOOP 5.0 connected; HR sample rate stays at ~1/s not ~2/s; RMSSD unchanged from baseline |
+| v18 stale-clock | BLE5-02 | Synthetic stale-offset frame test passes; real device sync timestamps fall in 2024–2026 range |
+| SQLite v20 migration | DATA-01 | Migration test on v19 seed database passes; `user_version == 20` after open |
+| Notification permission double-request | FEAT-03 | No second permission dialog on any code path; denied state shows Settings deep link |
+| Historical manager dual ownership | BLE5-03 | Single atomic commit; no `isHistoricalSyncing` field on both types simultaneously |
+| DI protocols without tests | ARCH-01 | Test target created before protocol extraction; at least one test compiles and runs |
+| DI circular retain | ARCH-01 | Memory Graph after disconnect shows zero `GooseBLEClient` instances retained |
+| Validator type whitelist | BLE5-04 | Validator code review confirms no `Set<UInt8>` packet-type gate; R22 passes through |
+| Strain accumulator data race | DATA-02 | TSan clean during 10-minute BLE capture session in simulator |
+| HR decimation destroys store | DATA-04 | `HeartRateSeriesStore.samples.count` identical before and after decimation |
 
 ## Sources
 
-- `Rust/core/src/protocol.rs` — `I16SeriesSummary` struct (lines 169–178); preview cap at 8 (line 678); K10/K21 parsing (lines 596–628); `body_hex` in `DataPacket` (line 515)
-- `Rust/core/src/metrics.rs` — `goose_hrv_v0` range filter 300–2000 ms (line 784); `StrainInput` struct (no `profile_sex`); `RecoveryInput` baseline fields; `HrvFeatureOptions.baseline_min_days` (line 77)
-- `Rust/core/src/energy_rollup.rs` — `resting_kcal` formula (`weight_kg * 22.0`, line 1160); `active_kcal` formula (MET conversion, line 1173); `profile_sex` in options (line 45)
-- `Rust/core/src/recovery_rollup.rs` — UPSERT pattern for daily metrics (line 370); rolling average computation (line 1174); idempotency gap in double-call scenario
-- `Rust/core/tests/protocol_tests.rs` — `preview: vec![1000, -1000, 200]` assertion (line 271); K10/K21 tests without `body_hex` assertion (lines 334–451)
-- `GooseSwift/GooseBLEClient.swift` — `TOGGLE_IMU_MODE_ON` command (line 533); command 106 definition (line 591); `startCapture` does not send command 106
-- `GooseSwift/MoreDataStore.swift` — `startCapture` implementation (line 230); no TOGGLE_IMU_MODE call
-- `Rust/core/src/commands.rs` — `toggle_imu_mode` command definition (lines 865–866): `risk_gate: CriticalStateChange`
-- `CLAUDE.md` — "Rust bridge is synchronous: `goose_bridge_handle_json` blocks the calling thread. Never call from `@MainActor` with expensive methods" — multiple `GooseRustBridge` instances architecture confirmed
-- Algorithm literature: Lipponen & Tarvainen (2019) "A robust algorithm for heart rate variability time series artefact correction using novel beat classification" — threshold sensitivity analysis; Banister (1991) "Modeling elite athletic performance" — TRIMP sex constants; Cole et al. (1992) "Automatic sleep/wake identification from wrist activity" — epoch scale and calibration requirements
+- `GooseSwift/GooseBLEClient+Commands.swift` — existing alarm/clock/sensor command guards (`isHistoricalSyncing`, `canWriteAlarm`, threading pattern)
+- `GooseSwift/GooseBLEClient.swift` — `canSendHello`, `canWriteAlarm`, `isHistoricalSyncing`, `@Observable` declaration, `onConnectionStateChange` callback
+- `GooseSwift/GooseBLEClient+HistoricalHandlers.swift` — puffin command response handling, sync state machine
+- `GooseSwift/NotificationFrameParsing.swift` — R17 packet type routing, `OvernightRawNotificationStorageClassifier` packet type Set
+- `Rust/core/src/protocol.rs` — `7 | 9 | 12 | 18` arm discarding v18, R17 parse path, absence of type-0x10 handling
+- `Rust/core/src/store.rs` — `CURRENT_SCHEMA_VERSION = 19`, `open_existing_current` version check, monolithic `migrate()` pattern
+- `GooseSwift/OnboardingView.swift` — single `requestAuthorization` call site with `notificationPermissionHandled` guard
+- `.planning/seeds/haptic-buzz-primitive.md` — cmd 0x13 payload, fire-and-forget design, dependents list
+- `.planning/seeds/whoop5-r22-packet-support.md` — R17/R22 dual-stream finding from BTSnoop
+- `.planning/seeds/whoop5-v18-historical-decode.md` — stale-clock dedup, EVENT type-48 bypass, multi-file timestamp converter warning
+- `.planning/seeds/hr-decimation.md` — chart-layer-only scope, existing `maxSamples` + `prune()` note
+- `.planning/seeds/service-layer-di.md` — "do not extract without tests" constraint, callback reference cycle risk
 
 ---
-
-*Pitfalls research for: v5.0 Metrics Accuracy Algorithms*
-*Researched: 2026-06-06*
+*Pitfalls research for: WHOOP iOS BLE app — v10.0 protocol parity, haptics, notifications, SQLite, DI*
+*Researched: 2026-06-12*

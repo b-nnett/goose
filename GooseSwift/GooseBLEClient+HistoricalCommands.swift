@@ -29,34 +29,33 @@ extension GooseBLEClient {
       return
     }
 
-    historicalSyncRunID = UUID()
-    historicalRangePollOnly = rangeOnly
-    historicalDataResultAckEnabled = acknowledgeHistoricalDataResult
-    isHistoricalSyncing = true
-    historicalSyncStatus = "syncing"
+    let newRunID = UUID()
+    historicalManager.beginSync(runID: newRunID)
+    historicalManager.historicalRangePollOnly = rangeOnly
+    historicalManager.historicalDataResultAckEnabled = acknowledgeHistoricalDataResult
     historicalPacketCount = 0
-    historicalPacketsReceivedThisSync = 0
-    lastHistoricalPacketCountPublishedAt = Date.distantPast
-    lastHistoricalSyncProgressCallbackAt = Date.distantPast
-    lastHistoricalSyncProgressCallbackStatus = ""
-    lastHistoricalSyncProgressCallbackDetail = ""
-    coalescedHistoricalSyncProgressCallbackCount = 0
-    historyEndAckQueued = false
-    historyEndAckSentThisBurst = false
-    pendingHistoryEndAckPayload = nil
-    gen4HistoricalPageSeq = 0
-    historyEndReceived = false
-    historyCompleteReceived = false
-    historyStartReceived = false
-    historicalRangePendingResponses = 0
-    historicalRangeRetryCount = 0
-    historicalTransferRequestAttemptCount = 0
-    pendingHistoricalCommand = nil
-    pendingHistoricalFrames.removeAll()
-    lastHandledWasHistoricalDataPacket = false
-    historicalCommandTimeoutWorkItem?.cancel()
-    historicalIdleWorkItem?.cancel()
-    historicalRangeRetryWorkItem?.cancel()
+    historicalManager.historicalPacketsReceivedThisSync = 0
+    historicalManager.lastHistoricalPacketCountPublishedAt = Date.distantPast
+    historicalManager.lastHistoricalSyncProgressCallbackAt = Date.distantPast
+    historicalManager.lastHistoricalSyncProgressCallbackStatus = ""
+    historicalManager.lastHistoricalSyncProgressCallbackDetail = ""
+    historicalManager.coalescedHistoricalSyncProgressCallbackCount = 0
+    historicalManager.historyEndAckQueued = false
+    historicalManager.historyEndAckSentThisBurst = false
+    historicalManager.pendingHistoryEndAckPayload = nil
+    historicalManager.gen4HistoricalPageSeq = 0
+    historicalManager.historyEndReceived = false
+    historicalManager.historyCompleteReceived = false
+    historicalManager.historyStartReceived = false
+    historicalManager.historicalRangePendingResponses = 0
+    historicalManager.historicalRangeRetryCount = 0
+    historicalManager.historicalTransferRequestAttemptCount = 0
+    historicalManager.pendingHistoricalCommand = nil
+    historicalManager.pendingHistoricalFrames.removeAll()
+    historicalManager.lastHandledWasHistoricalDataPacket = false
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    historicalManager.historicalIdleWorkItem?.cancel()
+    historicalManager.historicalRangeRetryWorkItem?.cancel()
     let toastDetail = rangeOnly
       ? "Polling historical range"
       : (automatic ? "Requesting missed packets" : "Requesting historical packets")
@@ -74,14 +73,14 @@ extension GooseBLEClient {
       return
     }
 
-    let firstCommand = firstCommandOverride ?? (requestHistoricalRangeBeforeTransfer ? .getDataRange : .sendHistoricalData)
+    let firstCommand = firstCommandOverride ?? (historicalManager.requestHistoricalRangeBeforeTransfer ? .getDataRange : .sendHistoricalData)
     if firstCommand == .getDataRange {
       updateHistoricalRangeDebugStatus("started trigger=\(trigger) first=GET_DATA_RANGE")
     }
     record(
       source: "ble.sync",
       title: "historical_sync.started",
-      body: "trigger=\(trigger) first=\(firstCommand.name) range_only=\(rangeOnly) ack_enabled=\(historicalDataResultAckEnabled)"
+      body: "trigger=\(trigger) first=\(firstCommand.name) range_only=\(rangeOnly) ack_enabled=\(historicalManager.historicalDataResultAckEnabled)"
     )
     notifyHistoricalSyncProgress(status: "syncing", detail: "Starting \(firstCommand.name)", terminal: false, failed: false)
     writeHistoricalCommand(firstCommand)
@@ -102,7 +101,7 @@ extension GooseBLEClient {
 
     let commandPayload: [UInt8]
     if kind == .historicalDataResult {
-      commandPayload = pendingHistoryEndAckPayload ?? kind.payload
+      commandPayload = historicalManager.pendingHistoryEndAckPayload ?? kind.payload
     } else if activeDeviceGeneration == .gen4 && (kind == .getDataRange || kind == .sendHistoricalData) {
       commandPayload = [0x00]
     } else {
@@ -115,13 +114,13 @@ extension GooseBLEClient {
       data: commandPayload
     )
     if kind == .sendHistoricalData {
-      historicalTransferRequestAttemptCount += 1
+      historicalManager.historicalTransferRequestAttemptCount += 1
     }
     if kind == .historicalDataResult {
-      pendingHistoricalCommand = nil
-      historicalCommandTimeoutWorkItem?.cancel()
+      historicalManager.pendingHistoricalCommand = nil
+      historicalManager.historicalCommandTimeoutWorkItem?.cancel()
     } else {
-      pendingHistoricalCommand = PendingHistoricalCommand(kind: kind, sequence: sequence)
+      historicalManager.pendingHistoricalCommand = PendingHistoricalCommand(kind: kind, sequence: sequence)
       scheduleHistoricalCommandTimeout(kind: kind, sequence: sequence)
     }
     activePeripheral.writeValue(frame, for: commandCharacteristic, type: writeType)
@@ -151,7 +150,7 @@ extension GooseBLEClient {
         title: "historical_sync.result_ack.sent",
         body: "seq=\(sequence) payload=\(Data(commandPayload).hexString) fire_and_forget=true"
       )
-      if historyCompleteReceived {
+      if historicalManager.historyCompleteReceived {
         completeHistoricalSync(reason: "history_result_ack_sent_after_complete")
       } else {
         scheduleHistoricalIdleCompletion(reason: "history_result_ack_sent")
@@ -160,8 +159,8 @@ extension GooseBLEClient {
   }
 
   func nextHistoricalSequence() -> UInt8 {
-    let sequence = nextHistoricalCommandSequence
-    nextHistoricalCommandSequence = nextHistoricalCommandSequence == UInt8.max ? 57 : nextHistoricalCommandSequence + 1
+    let sequence = historicalManager.nextHistoricalCommandSequence
+    historicalManager.nextHistoricalCommandSequence = historicalManager.nextHistoricalCommandSequence == UInt8.max ? 57 : historicalManager.nextHistoricalCommandSequence + 1
     return sequence
   }
 

@@ -288,47 +288,47 @@ extension GooseBLEClient {
     sequence: UInt8,
     timeout: TimeInterval? = nil
   ) {
-    historicalCommandTimeoutWorkItem?.cancel()
-    let timeoutSeconds = timeout ?? historicalCommandResponseTimeout
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    let timeoutSeconds = timeout ?? historicalManager.historicalCommandResponseTimeout
     let runID = historicalSyncRunID
     let workItem = DispatchWorkItem { [weak self] in
       guard let self,
             self.historicalSyncRunID == runID,
-            let pending = self.pendingHistoricalCommand,
+            let pending = self.historicalManager.pendingHistoricalCommand,
             pending.kind.commandNumber == kind.commandNumber,
             pending.sequence == sequence else {
         return
       }
       if pending.kind == .getDataRange {
-        let timeoutStatus = "timeout seq=\(sequence) pending=\(self.historicalRangePendingResponses) grace=\(Int(timeoutSeconds.rounded()))s"
+        let timeoutStatus = "timeout seq=\(sequence) pending=\(self.historicalManager.historicalRangePendingResponses) grace=\(Int(timeoutSeconds.rounded()))s"
         self.updateHistoricalRangeDebugStatus(timeoutStatus)
         self.record(
           level: .warn,
           source: "ble.sync",
           title: "historical_sync.range.timeout",
-          body: "GET_DATA_RANGE final response timed out after \(self.historicalRangePendingResponses) pending responses and \(Int(timeoutSeconds.rounded()))s grace after sequence \(sequence)."
+          body: "GET_DATA_RANGE final response timed out after \(self.historicalManager.historicalRangePendingResponses) pending responses and \(Int(timeoutSeconds.rounded()))s grace after sequence \(sequence)."
         )
         self.retryHistoricalRangeOrFail(reason: timeoutStatus)
         return
       }
       self.failHistoricalSync("\(kind.name) timed out waiting for command response sequence \(sequence).")
     }
-    historicalCommandTimeoutWorkItem = workItem
+    historicalManager.historicalCommandTimeoutWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + timeoutSeconds, execute: workItem)
   }
 
   func processQueuedHistoricalDataResultAck(reason: String) -> Bool {
-    guard historyEndAckQueued else {
+    guard historicalManager.historyEndAckQueued else {
       return false
     }
 
-    historyEndAckQueued = false
-    guard let ackPayload = pendingHistoryEndAckPayload else {
+    historicalManager.historyEndAckQueued = false
+    guard let ackPayload = historicalManager.pendingHistoryEndAckPayload else {
       record(
         level: .warn,
         source: "ble.sync",
         title: "historical_sync.result_ack.missing_payload",
-        body: "reason=\(reason) packets=\(historicalPacketsReceivedThisSync)"
+        body: "reason=\(reason) packets=\(historicalManager.historicalPacketsReceivedThisSync)"
       )
       if retryHistoricalTransferAfterIdleIfNeeded(reason: "history_result_ack_missing_payload_\(reason)") {
         return true
@@ -337,12 +337,12 @@ extension GooseBLEClient {
       return true
     }
 
-    if !historicalDataResultAckEnabled && historicalPacketsReceivedThisSync > 0 {
+    if !historicalManager.historicalDataResultAckEnabled && historicalManager.historicalPacketsReceivedThisSync > 0 {
       record(
         level: .warn,
         source: "ble.sync",
         title: "historical_sync.result_ack.suppressed",
-        body: "reason=\(reason) packets=\(historicalPacketsReceivedThisSync) payload=\(Data(ackPayload).hexString)"
+        body: "reason=\(reason) packets=\(historicalManager.historicalPacketsReceivedThisSync) payload=\(Data(ackPayload).hexString)"
       )
       if retryHistoricalTransferAfterIdleIfNeeded(reason: "history_result_ack_suppressed_\(reason)") {
         return true
@@ -351,27 +351,27 @@ extension GooseBLEClient {
       return true
     }
 
-    if !historicalDataResultAckEnabled {
+    if !historicalManager.historicalDataResultAckEnabled {
       record(
         level: .warn,
         source: "ble.sync",
         title: "historical_sync.result_ack.metadata_only",
-        body: "reason=\(reason) packets=\(historicalPacketsReceivedThisSync) payload=\(Data(ackPayload).hexString)"
+        body: "reason=\(reason) packets=\(historicalManager.historicalPacketsReceivedThisSync) payload=\(Data(ackPayload).hexString)"
       )
     }
-    historyEndAckSentThisBurst = true
+    historicalManager.historyEndAckSentThisBurst = true
     writeHistoricalCommand(.historicalDataResult)
     return true
   }
 
   func scheduleHistoricalIdleCompletion(reason: String) {
-    historicalIdleWorkItem?.cancel()
+    historicalManager.historicalIdleWorkItem?.cancel()
     let runID = historicalSyncRunID
     let workItem = DispatchWorkItem { [weak self] in
       guard let self,
             self.historicalSyncRunID == runID,
             self.isHistoricalSyncing,
-            self.pendingHistoricalCommand == nil else {
+            self.historicalManager.pendingHistoricalCommand == nil else {
         return
       }
       if self.processQueuedHistoricalDataResultAck(reason: reason) {
@@ -382,16 +382,16 @@ extension GooseBLEClient {
       }
       self.completeHistoricalSync(reason: reason)
     }
-    historicalIdleWorkItem = workItem
+    historicalManager.historicalIdleWorkItem = workItem
     DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: workItem)
   }
 
   func retryHistoricalTransferAfterIdleIfNeeded(reason: String) -> Bool {
-    guard !historicalRangePollOnly,
-          historicalPacketsReceivedThisSync == 0 else {
+    guard !historicalManager.historicalRangePollOnly,
+          historicalManager.historicalPacketsReceivedThisSync == 0 else {
       return false
     }
-    if activeDeviceGeneration == .gen4 && historyCompleteReceived {
+    if activeDeviceGeneration == .gen4 && historicalManager.historyCompleteReceived {
       record(
         source: "ble.sync",
         title: "historical_sync.gen4.retry_skipped",
@@ -400,26 +400,26 @@ extension GooseBLEClient {
       completeHistoricalSync(reason: "gen4_history_complete_metadata_only")
       return true
     }
-    guard historicalTransferRequestAttemptCount < historicalTransferMaxRequestAttempts else {
-      let metadataSummary = historyStartReceived || historyEndReceived || historyCompleteReceived
+    guard historicalManager.historicalTransferRequestAttemptCount < historicalManager.historicalTransferMaxRequestAttempts else {
+      let metadataSummary = historicalManager.historyStartReceived || historicalManager.historyEndReceived || historicalManager.historyCompleteReceived
         ? "transfer metadata was received but no historical packet bodies arrived"
         : "a historical transfer never started"
       failHistoricalSync(
-        "GET_DATA_RANGE/SEND_HISTORICAL_DATA produced no historical packet bodies after \(historicalTransferRequestAttemptCount) attempts; \(metadataSummary). Last idle reason: \(reason)."
+        "GET_DATA_RANGE/SEND_HISTORICAL_DATA produced no historical packet bodies after \(historicalManager.historicalTransferRequestAttemptCount) attempts; \(metadataSummary). Last idle reason: \(reason)."
       )
       return true
     }
 
-    historicalSyncStatus = "waiting"
-    let nextAttempt = historicalTransferRequestAttemptCount + 1
-    let metadataSummary = historyStartReceived || historyEndReceived || historyCompleteReceived
+    historicalManager.setStatus("waiting")
+    let nextAttempt = historicalManager.historicalTransferRequestAttemptCount + 1
+    let metadataSummary = historicalManager.historyStartReceived || historicalManager.historyEndReceived || historicalManager.historyCompleteReceived
       ? "metadata-only"
       : "no-start"
     let retryLabel = activeDeviceGeneration == .gen4 ? "gen4 cmd34→22→23" : "GET_DATA_RANGE then SEND_HISTORICAL_DATA"
-    publishSyncToast(phase: .syncing, detail: "Retrying historical transfer \(nextAttempt)/\(historicalTransferMaxRequestAttempts)")
+    publishSyncToast(phase: .syncing, detail: "Retrying historical transfer \(nextAttempt)/\(historicalManager.historicalTransferMaxRequestAttempts)")
     notifyHistoricalSyncProgress(
       status: "waiting",
-      detail: "Retrying \(retryLabel) \(nextAttempt)/\(historicalTransferMaxRequestAttempts) after \(metadataSummary) transfer",
+      detail: "Retrying \(retryLabel) \(nextAttempt)/\(historicalManager.historicalTransferMaxRequestAttempts) after \(metadataSummary) transfer",
       terminal: false,
       failed: false
     )
@@ -427,37 +427,37 @@ extension GooseBLEClient {
       level: .warn,
       source: "ble.sync",
       title: "historical_sync.transfer.retry",
-      body: "attempt=\(nextAttempt)/\(historicalTransferMaxRequestAttempts) first=\(retryLabel) reason=\(reason) previous=\(metadataSummary) history_start=\(historyStartReceived) history_end=\(historyEndReceived) history_complete=\(historyCompleteReceived)"
+      body: "attempt=\(nextAttempt)/\(historicalManager.historicalTransferMaxRequestAttempts) first=\(retryLabel) reason=\(reason) previous=\(metadataSummary) history_start=\(historicalManager.historyStartReceived) history_end=\(historicalManager.historyEndReceived) history_complete=\(historicalManager.historyCompleteReceived)"
     )
-    historyStartReceived = false
-    historyEndReceived = false
-    historyCompleteReceived = false
-    historyEndAckQueued = false
-    historyEndAckSentThisBurst = false
-    pendingHistoryEndAckPayload = nil
+    historicalManager.historyStartReceived = false
+    historicalManager.historyEndReceived = false
+    historicalManager.historyCompleteReceived = false
+    historicalManager.historyEndAckQueued = false
+    historicalManager.historyEndAckSentThisBurst = false
+    historicalManager.pendingHistoryEndAckPayload = nil
     if activeDeviceGeneration == .gen4 {
-      historicalTransferRequestAttemptCount += 1
+      historicalManager.historicalTransferRequestAttemptCount += 1
     }
     writeHistoricalCommand(.getDataRange)
     return true
   }
 
   func retryHistoricalRangeOrFail(reason: String) {
-    pendingHistoricalCommand = nil
-    historicalCommandTimeoutWorkItem?.cancel()
-    guard historicalRangeRetryCount < historicalRangeMaxRetries else {
-      failHistoricalSync("GET_DATA_RANGE did not return a final range after \(historicalRangeRetryCount) retries: \(reason).")
+    historicalManager.pendingHistoricalCommand = nil
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    guard historicalManager.historicalRangeRetryCount < historicalManager.historicalRangeMaxRetries else {
+      failHistoricalSync("GET_DATA_RANGE did not return a final range after \(historicalManager.historicalRangeRetryCount) retries: \(reason).")
       return
     }
 
-    historicalRangeRetryCount += 1
-    let retryNumber = historicalRangeRetryCount
-    historicalSyncStatus = "waiting"
-    updateHistoricalRangeDebugStatus("retry \(retryNumber)/\(historicalRangeMaxRetries) after \(reason)")
-    publishSyncToast(phase: .syncing, detail: "GET_DATA_RANGE retry \(retryNumber)/\(historicalRangeMaxRetries)")
+    historicalManager.historicalRangeRetryCount += 1
+    let retryNumber = historicalManager.historicalRangeRetryCount
+    historicalManager.setStatus("waiting")
+    updateHistoricalRangeDebugStatus("retry \(retryNumber)/\(historicalManager.historicalRangeMaxRetries) after \(reason)")
+    publishSyncToast(phase: .syncing, detail: "GET_DATA_RANGE retry \(retryNumber)/\(historicalManager.historicalRangeMaxRetries)")
     notifyHistoricalSyncProgress(
       status: "waiting",
-      detail: "Retrying GET_DATA_RANGE \(retryNumber)/\(historicalRangeMaxRetries)",
+      detail: "Retrying GET_DATA_RANGE \(retryNumber)/\(historicalManager.historicalRangeMaxRetries)",
       terminal: false,
       failed: false
     )
@@ -465,22 +465,22 @@ extension GooseBLEClient {
       level: .warn,
       source: "ble.sync",
       title: "historical_sync.range.retry",
-      body: "retry=\(retryNumber)/\(historicalRangeMaxRetries) reason=\(reason)"
+      body: "retry=\(retryNumber)/\(historicalManager.historicalRangeMaxRetries) reason=\(reason)"
     )
 
-    historicalRangeRetryWorkItem?.cancel()
+    historicalManager.historicalRangeRetryWorkItem?.cancel()
     let runID = historicalSyncRunID
     let workItem = DispatchWorkItem { [weak self] in
       guard let self,
             self.historicalSyncRunID == runID,
             self.isHistoricalSyncing,
-            self.pendingHistoricalCommand == nil else {
+            self.historicalManager.pendingHistoricalCommand == nil else {
         return
       }
       self.writeHistoricalCommand(.getDataRange)
     }
-    historicalRangeRetryWorkItem = workItem
-    DispatchQueue.main.asyncAfter(deadline: .now() + historicalRangeRetryDelay, execute: workItem)
+    historicalManager.historicalRangeRetryWorkItem = workItem
+    DispatchQueue.main.asyncAfter(deadline: .now() + historicalManager.historicalRangeRetryDelay, execute: workItem)
   }
 
 }

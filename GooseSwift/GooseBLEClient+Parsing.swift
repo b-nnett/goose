@@ -475,7 +475,7 @@ extension GooseBLEClient {
     hardwareRevision = nil
     softwareRevision = nil
     manufacturerName = nil
-    historicalSyncStatus = "idle"
+    historicalManager.setStatus("idle")
     historicalPacketCount = 0
     liveHeartRateBPM = nil
     liveHeartRateSource = "waiting"
@@ -698,8 +698,8 @@ extension GooseBLEClient {
         pageOldest: pageOldest,
         pageEnd: pageEnd,
         pagesBehind: pagesBehind,
-        pendingResponseCount: historicalRangePendingResponses,
-        retryCount: historicalRangeRetryCount,
+        pendingResponseCount: historicalManager.historicalRangePendingResponses,
+        retryCount: historicalManager.historicalRangeRetryCount,
         notes: notes
       )
     )

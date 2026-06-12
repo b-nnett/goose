@@ -23,12 +23,12 @@ extension GooseBLEClient {
     case V5PacketType.commandResponse, V5PacketType.puffinCommandResponse:
       handleHistoricalCommandResponse(payload)
     case V5PacketType.historicalData, V5PacketType.historicalIMUDataStream:
-      historicalPacketsReceivedThisSync &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
+      historicalManager.historicalPacketsReceivedThisSync &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
       publishHistoricalPacketCountIfNeeded()
       scheduleHistoricalIdleCompletion(reason: "historical_data_idle")
       notifyHistoricalSyncProgress(
         status: "syncing",
-        detail: "Received historical packet \(historicalPacketsReceivedThisSync)",
+        detail: "Received historical packet \(historicalManager.historicalPacketsReceivedThisSync)",
         terminal: false,
         failed: false
       )
@@ -36,15 +36,15 @@ extension GooseBLEClient {
         level: .debug,
         source: "ble.sync",
         title: "historical_sync.packet",
-        body: "\(characteristic.uuid.uuidString) count=\(historicalPacketsReceivedThisSync)"
+        body: "\(characteristic.uuid.uuidString) count=\(historicalManager.historicalPacketsReceivedThisSync)"
       )
       // Direct write: accumulate frame hex and flush in batches, bypassing the unbounded
       // async notification pipeline that causes jetsam kills on long syncs (WHOOP pattern:
       // createWhoopStatusPacketEntityWithData → immediate CoreData write per packet).
       let hex = frame.map { String(format: "%02x", $0) }.joined()
       let capturedAtISO = ISO8601DateFormatter().string(from: Date())
-      pendingHistoricalFrames.append((hex: hex, capturedAt: capturedAtISO))
-      lastHandledWasHistoricalDataPacket = true
+      historicalManager.pendingHistoricalFrames.append((hex: hex, capturedAt: capturedAtISO))
+      historicalManager.lastHandledWasHistoricalDataPacket = true
       flushPendingHistoricalFramesIfNeeded()
     case V5PacketType.metadata, V5PacketType.puffinMetadata:
       handleHistoricalMetadata(payload)
@@ -55,24 +55,24 @@ extension GooseBLEClient {
 
   func publishHistoricalPacketCountIfNeeded(force: Bool = false, at date: Date = Date()) {
     guard force
-      || date.timeIntervalSince(lastHistoricalPacketCountPublishedAt) >= Self.historicalPacketCountPublishInterval else {
+      || date.timeIntervalSince(historicalManager.lastHistoricalPacketCountPublishedAt) >= Self.historicalPacketCountPublishInterval else {
       return
     }
 
-    lastHistoricalPacketCountPublishedAt = date
-    historicalPacketCount = historicalPacketsReceivedThisSync
+    historicalManager.lastHistoricalPacketCountPublishedAt = date
+    historicalPacketCount = historicalManager.historicalPacketsReceivedThisSync
   }
 
   func flushPendingHistoricalFramesIfNeeded(force: Bool = false) {
-    guard force || pendingHistoricalFrames.count >= Self.historicalFrameFlushBatchSize else {
+    guard force || historicalManager.pendingHistoricalFrames.count >= Self.historicalFrameFlushBatchSize else {
       return
     }
-    guard !pendingHistoricalFrames.isEmpty, !historicalDirectWriteDatabasePath.isEmpty else {
-      pendingHistoricalFrames.removeAll()
+    guard !historicalManager.pendingHistoricalFrames.isEmpty, !historicalDirectWriteDatabasePath.isEmpty else {
+      historicalManager.pendingHistoricalFrames.removeAll()
       return
     }
-    let frames = pendingHistoricalFrames
-    pendingHistoricalFrames.removeAll()
+    let frames = historicalManager.pendingHistoricalFrames
+    historicalManager.pendingHistoricalFrames.removeAll()
     let deviceUUID = selectedDeviceID?.uuidString
     let deviceType: String
     switch activeDeviceGeneration {
@@ -106,7 +106,7 @@ extension GooseBLEClient {
         level: .debug,
         source: "ble.sync",
         title: "historical_sync.direct_write.flushed",
-        body: "count=\(frames.count) total=\(historicalPacketsReceivedThisSync)"
+        body: "count=\(frames.count) total=\(historicalManager.historicalPacketsReceivedThisSync)"
       )
     } catch {
       record(level: .warn, source: "ble.sync", title: "historical_sync.direct_write.error", body: error.localizedDescription)
@@ -428,7 +428,7 @@ extension GooseBLEClient {
 
   func handleHistoricalCommandResponse(_ payload: [UInt8]) {
     guard payload.count >= 5,
-          let pending = pendingHistoricalCommand,
+          let pending = historicalManager.pendingHistoricalCommand,
           payload[2] == pending.kind.commandNumber,
           payload[3] == pending.sequence else {
       return
@@ -437,10 +437,10 @@ extension GooseBLEClient {
     // Gen4 cmd 22 replies with body `<echoed_seq> 02 0b 00 00`. The 0x02 in
     // the result-code slot is a Gen4 success ack, not Gen5 PENDING — so we
     // bypass the Gen5 result-code logic and immediately advance to cmd 23.
-    // gen4HistoricalPageSeq was set by the preceding cmd 34 response.
+    // historicalManager.gen4HistoricalPageSeq was set by the preceding cmd 34 response.
     if activeDeviceGeneration == .gen4 && pending.kind == .sendHistoricalData {
-      historicalCommandTimeoutWorkItem?.cancel()
-      pendingHistoricalCommand = nil
+      historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+      historicalManager.pendingHistoricalCommand = nil
       record(
         source: "ble.sync",
         title: "historical_sync.gen4.transfer_ack",
@@ -449,9 +449,9 @@ extension GooseBLEClient {
       record(
         source: "ble.sync",
         title: "historical_sync.gen4.transfer_armed",
-        body: "next_seq=\(gen4HistoricalPageSeq)"
+        body: "next_seq=\(historicalManager.gen4HistoricalPageSeq)"
       )
-      pendingHistoryEndAckPayload = gen4PageRequestPayload(seq: gen4HistoricalPageSeq)
+      historicalManager.pendingHistoryEndAckPayload = gen4PageRequestPayload(seq: historicalManager.gen4HistoricalPageSeq)
       writeHistoricalCommand(.historicalDataResult)
       return
     }
@@ -485,8 +485,8 @@ extension GooseBLEClient {
       return
     }
 
-    historicalCommandTimeoutWorkItem?.cancel()
-    pendingHistoricalCommand = nil
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    historicalManager.pendingHistoricalCommand = nil
     guard resultCode == 1 else {
       if pending.kind == .getDataRange {
         let reason = "rejected seq=\(pending.sequence) result=\(result)(\(resultCode))\(detail)"
@@ -561,20 +561,20 @@ extension GooseBLEClient {
           | (UInt32(payload[11]) << 8)
           | (UInt32(payload[12]) << 16)
           | (UInt32(payload[13]) << 24)
-        gen4HistoricalPageSeq = lastSynced &+ 1
+        historicalManager.gen4HistoricalPageSeq = lastSynced &+ 1
         record(
           source: "ble.sync",
           title: "historical_sync.gen4.range",
-          body: "last_synced=\(lastSynced) next_seq=\(gen4HistoricalPageSeq)"
+          body: "last_synced=\(lastSynced) next_seq=\(historicalManager.gen4HistoricalPageSeq)"
         )
-        if historicalRangePollOnly {
+        if historicalManager.historicalRangePollOnly {
           completeHistoricalSync(reason: "gen4_range_poll_complete")
           return
         }
         writeHistoricalCommand(.sendHistoricalData)
         return
       }
-      if historicalRangePollOnly {
+      if historicalManager.historicalRangePollOnly {
         completeHistoricalSync(reason: "historical_range_poll_complete")
         return
       }
@@ -582,8 +582,8 @@ extension GooseBLEClient {
     case .sendHistoricalData:
       scheduleHistoricalIdleCompletion(reason: "historical_transfer_idle")
     case .historicalDataResult:
-      pendingHistoryEndAckPayload = nil
-      if historyCompleteReceived {
+      historicalManager.pendingHistoryEndAckPayload = nil
+      if historicalManager.historyCompleteReceived {
         completeHistoricalSync(reason: "history_complete")
       } else {
         scheduleHistoricalIdleCompletion(reason: "history_end_ack_idle")
@@ -593,15 +593,15 @@ extension GooseBLEClient {
 
   func handleHistoricalCommandPending(_ pending: PendingHistoricalCommand) {
     if pending.kind == .getDataRange {
-      historicalRangePendingResponses &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
-      updateHistoricalRangeDebugStatus("pending seq=\(pending.sequence) count=\(historicalRangePendingResponses)")
+      historicalManager.historicalRangePendingResponses &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
+      updateHistoricalRangeDebugStatus("pending seq=\(pending.sequence) count=\(historicalManager.historicalRangePendingResponses)")
       scheduleHistoricalCommandTimeout(
         kind: pending.kind,
         sequence: pending.sequence,
-        timeout: historicalPendingResponseGrace
+        timeout: historicalManager.historicalPendingResponseGrace
       )
     }
-    historicalSyncStatus = "waiting"
+    historicalManager.setStatus("waiting")
     publishSyncToast(phase: .syncing, detail: "\(pending.kind.name) pending; waiting for final response")
     notifyHistoricalSyncProgress(
       status: "waiting",
@@ -613,7 +613,7 @@ extension GooseBLEClient {
       level: .debug,
       source: "ble.sync",
       title: "historical_sync.command.pending",
-      body: "\(pending.kind.name) seq=\(pending.sequence) returned PENDING (2); waiting for SUCCESS/FAILURE/UNSUPPORTED. range_pending=\(historicalRangePendingResponses) grace=\(Int(historicalPendingResponseGrace.rounded()))s"
+      body: "\(pending.kind.name) seq=\(pending.sequence) returned PENDING (2); waiting for SUCCESS/FAILURE/UNSUPPORTED. range_pending=\(historicalManager.historicalRangePendingResponses) grace=\(Int(historicalManager.historicalPendingResponseGrace.rounded()))s"
     )
   }
 
@@ -634,36 +634,36 @@ extension GooseBLEClient {
 
     switch kind {
     case .historyStart:
-      historyStartReceived = true
-      historyEndAckQueued = false
-      historyEndAckSentThisBurst = false
-      pendingHistoryEndAckPayload = nil
+      historicalManager.historyStartReceived = true
+      historicalManager.historyEndAckQueued = false
+      historicalManager.historyEndAckSentThisBurst = false
+      historicalManager.pendingHistoryEndAckPayload = nil
     case .historyEnd:
       flushPendingHistoricalFramesIfNeeded(force: true)
-      historyEndReceived = true
-      guard !historyEndAckSentThisBurst else {
+      historicalManager.historyEndReceived = true
+      guard !historicalManager.historyEndAckSentThisBurst else {
         record(
           level: .debug,
           source: "ble.sync",
           title: "historical_sync.result_ack.already_sent",
-          body: "history_end packets=\(historicalPacketsReceivedThisSync) payload=\(Data(payload).hexString)"
+          body: "history_end packets=\(historicalManager.historicalPacketsReceivedThisSync) payload=\(Data(payload).hexString)"
         )
         return
       }
       let ackPayload: [UInt8]
       if activeDeviceGeneration == .gen4 {
-        gen4HistoricalPageSeq &+= 1
-        ackPayload = gen4PageRequestPayload(seq: gen4HistoricalPageSeq)
+        historicalManager.gen4HistoricalPageSeq &+= 1
+        ackPayload = gen4PageRequestPayload(seq: historicalManager.gen4HistoricalPageSeq)
         record(
           level: .debug,
           source: "ble.sync",
           title: "historical_sync.gen4.page_end",
-          body: "next_seq=\(gen4HistoricalPageSeq) packets=\(historicalPacketsReceivedThisSync)"
+          body: "next_seq=\(historicalManager.gen4HistoricalPageSeq) packets=\(historicalManager.historicalPacketsReceivedThisSync)"
         )
       } else {
         guard let v5Payload = Self.historicalDataResultPayload(fromHistoryEndMetadataPayload: payload) else {
-          historyEndAckQueued = false
-          pendingHistoryEndAckPayload = nil
+          historicalManager.historyEndAckQueued = false
+          historicalManager.pendingHistoryEndAckPayload = nil
           record(
             level: .warn,
             source: "ble.sync",
@@ -674,97 +674,95 @@ extension GooseBLEClient {
         }
         ackPayload = v5Payload
       }
-      pendingHistoryEndAckPayload = ackPayload
-      historyEndAckQueued = true
+      historicalManager.pendingHistoryEndAckPayload = ackPayload
+      historicalManager.historyEndAckQueued = true
       record(
         level: .debug,
         source: "ble.sync",
         title: "historical_sync.result_ack.prepared",
-        body: "payload=\(Data(ackPayload).hexString) history_end_body=\(Data(payload.dropFirst(9)).hexString) packets=\(historicalPacketsReceivedThisSync) ack_enabled=\(historicalDataResultAckEnabled)"
+        body: "payload=\(Data(ackPayload).hexString) history_end_body=\(Data(payload.dropFirst(9)).hexString) packets=\(historicalManager.historicalPacketsReceivedThisSync) ack_enabled=\(historicalManager.historicalDataResultAckEnabled)"
       )
-      if pendingHistoricalCommand == nil {
+      if historicalManager.pendingHistoricalCommand == nil {
         _ = processQueuedHistoricalDataResultAck(reason: "history_end")
       }
     case .historyComplete:
-      historyCompleteReceived = true
-      guard !historyEndAckSentThisBurst else {
+      historicalManager.historyCompleteReceived = true
+      guard !historicalManager.historyEndAckSentThisBurst else {
         return
       }
-      guard pendingHistoryEndAckPayload != nil else {
+      guard historicalManager.pendingHistoryEndAckPayload != nil else {
         record(
           level: .warn,
           source: "ble.sync",
           title: "historical_sync.result_ack.missing_payload",
-          body: "history_complete packets=\(historicalPacketsReceivedThisSync) payload=\(Data(payload).hexString)"
+          body: "history_complete packets=\(historicalManager.historicalPacketsReceivedThisSync) payload=\(Data(payload).hexString)"
         )
         return
       }
-      historyEndAckQueued = true
-      if pendingHistoricalCommand == nil {
+      historicalManager.historyEndAckQueued = true
+      if historicalManager.pendingHistoricalCommand == nil {
         _ = processQueuedHistoricalDataResultAck(reason: "history_complete")
       }
     }
   }
 
   func completeHistoricalSync(reason: String) {
-    historicalCommandTimeoutWorkItem?.cancel()
-    historicalIdleWorkItem?.cancel()
-    historicalRangeRetryWorkItem?.cancel()
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    historicalManager.historicalIdleWorkItem?.cancel()
+    historicalManager.historicalRangeRetryWorkItem?.cancel()
     readySyncWorkItem?.cancel()
-    let sawHistoricalMetadata = historyStartReceived || historyEndReceived || historyCompleteReceived
-    pendingHistoricalCommand = nil
-    historyEndAckQueued = false
-    historyEndAckSentThisBurst = false
-    pendingHistoryEndAckPayload = nil
-    historyStartReceived = false
-    historyEndReceived = false
-    historyCompleteReceived = false
-    historicalRangePendingResponses = 0
-    historicalRangeRetryCount = 0
-    historicalTransferRequestAttemptCount = 0
-    historicalDataResultAckEnabled = true
+    let sawHistoricalMetadata = historicalManager.historyStartReceived || historicalManager.historyEndReceived || historicalManager.historyCompleteReceived
+    historicalManager.pendingHistoricalCommand = nil
+    historicalManager.historyEndAckQueued = false
+    historicalManager.historyEndAckSentThisBurst = false
+    historicalManager.pendingHistoryEndAckPayload = nil
+    historicalManager.historyStartReceived = false
+    historicalManager.historyEndReceived = false
+    historicalManager.historyCompleteReceived = false
+    historicalManager.historicalRangePendingResponses = 0
+    historicalManager.historicalRangeRetryCount = 0
+    historicalManager.historicalTransferRequestAttemptCount = 0
+    historicalManager.historicalDataResultAckEnabled = true
     let completedAt = Date()
-    let rangeOnly = historicalRangePollOnly
+    let rangeOnly = historicalManager.historicalRangePollOnly
     flushPendingHistoricalFramesIfNeeded(force: true)
-    isHistoricalSyncing = false
-    historicalRangePollOnly = false
+    historicalManager.completeSync(completedAt: completedAt)
+    historicalManager.historicalRangePollOnly = false
     publishHistoricalPacketCountIfNeeded(force: true, at: completedAt)
-    historicalSyncStatus = "synced"
     lastHistoricalSyncCompletedAt = completedAt
     lastSyncAt = completedAt
     let detail = rangeOnly
       ? "Historical range poll complete"
-      : sawHistoricalMetadata && historicalPacketsReceivedThisSync == 0
+      : sawHistoricalMetadata && historicalManager.historicalPacketsReceivedThisSync == 0
       ? "Historical metadata captured but no packet bodies received"
-      : historicalPacketsReceivedThisSync == 0
+      : historicalManager.historicalPacketsReceivedThisSync == 0
       ? "No missed packets found"
-      : "\(historicalPacketsReceivedThisSync) historical \(historicalPacketsReceivedThisSync == 1 ? "packet" : "packets") captured"
+      : "\(historicalManager.historicalPacketsReceivedThisSync) historical \(historicalManager.historicalPacketsReceivedThisSync == 1 ? "packet" : "packets") captured"
     publishSyncToast(phase: .synced, detail: detail, clearAfter: 2.2)
     notifyHistoricalSyncProgress(status: "synced", detail: detail, terminal: true, failed: false)
     record(source: "ble.sync", title: "historical_sync.completed", body: "reason=\(reason) \(detail)")
   }
 
   func failHistoricalSync(_ message: String) {
-    historicalCommandTimeoutWorkItem?.cancel()
-    historicalIdleWorkItem?.cancel()
-    historicalRangeRetryWorkItem?.cancel()
+    historicalManager.historicalCommandTimeoutWorkItem?.cancel()
+    historicalManager.historicalIdleWorkItem?.cancel()
+    historicalManager.historicalRangeRetryWorkItem?.cancel()
     readySyncWorkItem?.cancel()
-    pendingHistoricalCommand = nil
-    historyEndAckQueued = false
-    historyEndAckSentThisBurst = false
-    pendingHistoryEndAckPayload = nil
-    historyStartReceived = false
-    historyEndReceived = false
-    historyCompleteReceived = false
-    historicalRangePendingResponses = 0
-    historicalRangeRetryCount = 0
-    historicalTransferRequestAttemptCount = 0
-    historicalDataResultAckEnabled = true
+    historicalManager.pendingHistoricalCommand = nil
+    historicalManager.historyEndAckQueued = false
+    historicalManager.historyEndAckSentThisBurst = false
+    historicalManager.pendingHistoryEndAckPayload = nil
+    historicalManager.historyStartReceived = false
+    historicalManager.historyEndReceived = false
+    historicalManager.historyCompleteReceived = false
+    historicalManager.historicalRangePendingResponses = 0
+    historicalManager.historicalRangeRetryCount = 0
+    historicalManager.historicalTransferRequestAttemptCount = 0
+    historicalManager.historicalDataResultAckEnabled = true
     flushPendingHistoricalFramesIfNeeded(force: true)
-    isHistoricalSyncing = false
-    historicalRangePollOnly = false
+    historicalManager.failSync(status: "failed")
+    historicalManager.historicalRangePollOnly = false
     publishHistoricalPacketCountIfNeeded(force: true)
-    historicalSyncStatus = "failed"
     let failure = GooseSyncFailure(title: "Sync Failed", message: message, occurredAt: Date())
     lastSyncFailure = failure
     syncFailureSheet = failure
@@ -779,29 +777,29 @@ extension GooseBLEClient {
       && !failed
       && status == "syncing"
       && detail.hasPrefix("Received historical packet ")
-    let statusChanged = status != lastHistoricalSyncProgressCallbackStatus
-      || (!highVolumePacketProgress && detail != lastHistoricalSyncProgressCallbackDetail)
-    let elapsed = capturedAt.timeIntervalSince(lastHistoricalSyncProgressCallbackAt)
+    let statusChanged = status != historicalManager.lastHistoricalSyncProgressCallbackStatus
+      || (!highVolumePacketProgress && detail != historicalManager.lastHistoricalSyncProgressCallbackDetail)
+    let elapsed = capturedAt.timeIntervalSince(historicalManager.lastHistoricalSyncProgressCallbackAt)
     let shouldPublish = terminal
       || failed
       || statusChanged
       || elapsed >= Self.historicalProgressCallbackInterval
     guard shouldPublish else {
-      coalescedHistoricalSyncProgressCallbackCount &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
+      historicalManager.coalescedHistoricalSyncProgressCallbackCount &+= 1 // SYNC-02: wrapping add; long sync wraps instead of trapping
       return
     }
 
-    let coalescedCount = coalescedHistoricalSyncProgressCallbackCount
-    coalescedHistoricalSyncProgressCallbackCount = 0
-    lastHistoricalSyncProgressCallbackAt = capturedAt
-    lastHistoricalSyncProgressCallbackStatus = status
-    lastHistoricalSyncProgressCallbackDetail = detail
+    let coalescedCount = historicalManager.coalescedHistoricalSyncProgressCallbackCount
+    historicalManager.coalescedHistoricalSyncProgressCallbackCount = 0
+    historicalManager.lastHistoricalSyncProgressCallbackAt = capturedAt
+    historicalManager.lastHistoricalSyncProgressCallbackStatus = status
+    historicalManager.lastHistoricalSyncProgressCallbackDetail = detail
     if coalescedCount > 0 {
       record(
         level: .debug,
         source: "ble.sync",
         title: "historical_sync.progress.coalesced",
-        body: "count=\(coalescedCount) reason=callback_interval_\(Self.historicalProgressCallbackInterval)s packets=\(historicalPacketsReceivedThisSync) status=\(status)"
+        body: "count=\(coalescedCount) reason=callback_interval_\(Self.historicalProgressCallbackInterval)s packets=\(historicalManager.historicalPacketsReceivedThisSync) status=\(status)"
       )
     }
 
@@ -809,7 +807,7 @@ extension GooseBLEClient {
       GooseHistoricalSyncProgress(
         status: status,
         detail: detail,
-        packetCount: historicalPacketsReceivedThisSync,
+        packetCount: historicalManager.historicalPacketsReceivedThisSync,
         isTerminal: terminal,
         failed: failed,
         capturedAt: capturedAt
