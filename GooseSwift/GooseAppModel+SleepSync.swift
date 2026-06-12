@@ -172,6 +172,19 @@ extension GooseAppModel {
       // Refresh sleep displays and set success status.
       await store?.refreshSleepAfterBandSync(packetCount: 0)
       store?.bandSleepImportStatus = "Sincronizado da pulseira"
+      let notifDurationMinutes = Int(stageSummary.values.reduce(0, +))
+      let notifHRV: Double? = {
+        guard UserDefaults.standard.object(forKey: "goose.swift.liveHRVRMSSD") != nil else { return nil }
+        return UserDefaults.standard.double(forKey: "goose.swift.liveHRVRMSSD")
+      }()
+      let notifRecovery = Double(store?.snapshot(for: .recovery).value ?? "")
+      Task {
+        await NotificationScheduler.shared.scheduleSleepProcessed(
+          durationMinutes: notifDurationMinutes,
+          hrvMS: notifHRV,
+          recoveryPercent: notifRecovery
+        )
+      }
 
     } catch {
       store?.markBandSleepSyncFailed("Sleep sync error: \(error)")

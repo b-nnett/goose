@@ -40,6 +40,12 @@ extension GooseBLEClient {
     )
     lastBatteryLevelSample = (normalizedLevel, capturedAt)
     persistBatterySample(percent: normalizedLevel, capturedAt: capturedAt)
+    if normalizedLevel <= 20, !batteryLowNotificationFired {
+      batteryLowNotificationFired = true
+      Task {
+        await NotificationScheduler.shared.scheduleBatteryLow(percent: normalizedLevel)
+      }
+    }
     record(
       source: "ble.metadata",
       title: sourceTitle,

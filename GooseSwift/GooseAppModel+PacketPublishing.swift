@@ -777,6 +777,13 @@ extension GooseAppModel {
         if summary.activity.usesGPS && !activitySession.isActive {
           activityLocationTracker.stop()
         }
+        Task {
+          await NotificationScheduler.shared.scheduleWorkoutDetected(
+            activity: summary.activity.title,
+            durationSeconds: summary.elapsed,
+            strain: nil
+          )
+        }
         ble.record(
           source: "activity.detect",
           title: "candidate.finish",
