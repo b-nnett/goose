@@ -993,7 +993,7 @@ extension HealthDataStore {
   //    (approximated from published WHOOP descriptions of typical session values).
   // 5. Scale to 0–100 for the dial: score = (strain_0_21 / 21) * 100
   func hkStrainScore() -> Double? {
-    let todaySamples = heartRateSeriesStore.samples(forDayContaining: Date())
+    let todaySamples = heartRateSeriesStore.decimatedSamples(forDayContaining: Date())
       .sorted { $0.capturedAt < $1.capturedAt }
     guard todaySamples.count >= 3 else { return nil }
 
@@ -1126,7 +1126,7 @@ extension HealthDataStore {
 
     for daysBack in 1...7 {
       guard let day = cal.date(byAdding: .day, value: -daysBack, to: Date()) else { continue }
-      let samples = heartRateSeriesStore.samples(forDayContaining: day)
+      let samples = heartRateSeriesStore.decimatedSamples(forDayContaining: day)
         .sorted { $0.capturedAt < $1.capturedAt }
       guard samples.count >= 3 else { continue }
       var trimp = 0.0

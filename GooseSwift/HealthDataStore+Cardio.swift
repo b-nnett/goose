@@ -169,7 +169,7 @@ extension HealthDataStore {
     if zoneLoad > 0.25 {
       load = zoneLoad
     } else {
-      let sessionSamples = heartRateSeriesStore.samples(from: start, to: end)
+      let sessionSamples = heartRateSeriesStore.decimatedSamples(from: start, to: end)
       let averageHeartRate = Self.doubleValue(metrics["average_hr"]?["value"])
         ?? Self.averageHeartRate(in: sessionSamples)
       let sessionMaxHeartRate = Self.doubleValue(metrics["max_hr"]?["value"])

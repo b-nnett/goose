@@ -17,7 +17,7 @@ extension HealthDataStore {
       )
     }
 
-    let allSamples = heartRateSeriesStore.samples(forDayContaining: date, calendar: calendar)
+    let allSamples = heartRateSeriesStore.decimatedSamples(forDayContaining: date, calendar: calendar)
     guard allSamples.count >= 6 else {
       return emptyStressSummary(
         status: "No HR data",
