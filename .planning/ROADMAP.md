@@ -234,8 +234,8 @@ Plans:
 
 **Wave 1** *(parallel)*
 
-- [ ] 71-01-PLAN.md — FEAT-01: Coach VOW card (CoachVOWNudge enum + CoachVOWCard view in CoachView.swift)
-- [ ] 71-02-PLAN.md — DATA-04: HeartRateSeriesStore.decimatedSamples + migrate 4 HealthDataStore+* call sites
+- [x] 71-01-PLAN.md — FEAT-01: Coach VOW card (CoachVOWNudge enum + CoachVOWCard view in CoachView.swift)
+- [x] 71-02-PLAN.md — DATA-04: HeartRateSeriesStore.decimatedSamples + migrate 4 HealthDataStore+* call sites
 
 **Wave 2** *(parallel — no dependency on Wave 1)*
 
@@ -299,7 +299,7 @@ Plans:
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
-| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/4 | Not started | - |
+| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 2/4 | In Progress|  |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
 
@@ -338,7 +338,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 1/2 plans executed
+**Plans:** 2/4 plans executed
 Plans:
 **Wave 1**
 
