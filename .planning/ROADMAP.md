@@ -162,7 +162,17 @@ Plans:
   3. Invalid frames are counted in a debug counter visible in More > Debug and logged via OSLog without crashing
   4. All existing historical sync behaviour is preserved — no regression in sync correctness
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 68-01-PLAN.md — BLE5-03: extract GooseBLEHistoricalManager (final class, proxy computed vars preserve all call sites)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 68-02-PLAN.md — BLE5-04: GooseBLEDataValidator struct (structural invariants only) + invalidFrameCount in More > Debug
 
 ### Phase 69: Data Foundation
 
