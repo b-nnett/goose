@@ -3070,6 +3070,7 @@ fn body_summary_kind(summary: Option<&DataPacketBodySummary>) -> &'static str {
         Some(DataPacketBodySummary::RawMotionK10 { .. }) => "raw_motion_k10",
         Some(DataPacketBodySummary::RawMotionK21 { .. }) => "raw_motion_k21",
         Some(DataPacketBodySummary::V24History { .. }) => "v24_history",
+        Some(DataPacketBodySummary::R22Whoop5Hr { .. }) => "r22_whoop5_hr",
         None => "none",
     }
 }
@@ -3496,6 +3497,16 @@ fn upload_get_recent_decoded_streams_bridge(
                                     "y": y2 as f64,
                                     "z": z2 as f64,
                                 }));
+                            }
+                        }
+                        DataPacketBodySummary::R22Whoop5Hr {
+                            hr_bpm,
+                            ..
+                        } => {
+                            // R22 WHOOP 5.0 realtime packet: push HR into the same stream
+                            // as NormalHistory/V24 so the upload pipeline receives it.
+                            if let (Some(ts), Some(bpm)) = (ts_unix, *hr_bpm) {
+                                hr.push(json!({"ts": ts, "bpm": bpm as u8}));
                             }
                         }
                     }

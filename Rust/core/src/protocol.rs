@@ -19,6 +19,7 @@ pub const PACKET_TYPE_RELATIVE_PUFFIN_EVENTS: u8 = 53;
 pub const PACKET_TYPE_PUFFIN_EVENTS_FROM_STRAP: u8 = 54;
 pub const PACKET_TYPE_RELATIVE_BATTERY_PACK_CONSOLE_LOGS: u8 = 55;
 pub const PACKET_TYPE_PUFFIN_METADATA: u8 = 56;
+pub const PACKET_TYPE_R22_REALTIME_DATA: u8 = 0x10; // = 16 decimal; WHOOP 5.0 BLE handle 0x0022
 pub const COMMAND_GET_HELLO: u8 = 145;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -186,6 +187,13 @@ pub enum DataPacketBodySummary {
         gravity2_x: Option<f32>,
         gravity2_y: Option<f32>,
         gravity2_z: Option<f32>,
+        warnings: Vec<String>,
+    },
+    R22Whoop5Hr {
+        battery_pct: Option<u8>,
+        hr_milli_bpm: Option<u16>,
+        hr_bpm: Option<f32>,
+        extra: Option<[u8; 2]>,
         warnings: Vec<String>,
     },
 }
@@ -413,6 +421,7 @@ pub fn packet_type_name(packet_type: u8) -> Option<&'static str> {
         PACKET_TYPE_PUFFIN_EVENTS_FROM_STRAP => "PUFFIN_EVENTS_FROM_STRAP",
         PACKET_TYPE_RELATIVE_BATTERY_PACK_CONSOLE_LOGS => "RELATIVE_BATTERY_PACK_CONSOLE_LOGS",
         PACKET_TYPE_PUFFIN_METADATA => "PUFFIN_METADATA",
+        PACKET_TYPE_R22_REALTIME_DATA => "R22_REALTIME_DATA",
         _ => return None,
     })
 }
@@ -443,6 +452,7 @@ fn parse_payload(payload: &[u8]) -> Option<ParsedPayload> {
         | PACKET_TYPE_HISTORICAL_DATA
         | PACKET_TYPE_REALTIME_IMU_DATA_STREAM
         | PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM => Some(parse_data_packet_payload(payload)),
+        PACKET_TYPE_R22_REALTIME_DATA => Some(parse_r22_payload(payload)),
         _ => Some(ParsedPayload::Raw {
             data_offset: 1.min(payload.len()),
             data_hex: hex::encode(&payload[1.min(payload.len())..]),
@@ -459,6 +469,7 @@ fn is_partial_data_packet_type_allowed(packet_type: u8) -> bool {
             | PACKET_TYPE_HISTORICAL_DATA
             | PACKET_TYPE_REALTIME_IMU_DATA_STREAM
             | PACKET_TYPE_HISTORICAL_IMU_DATA_STREAM
+            | PACKET_TYPE_R22_REALTIME_DATA
     )
 }
 
@@ -608,6 +619,61 @@ fn parse_r17_body_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec
         }),
         warnings,
     )
+}
+
+fn parse_r22_payload(payload: &[u8]) -> ParsedPayload {
+    let mut warnings = Vec::new();
+    if payload.len() < 4 {
+        warnings.push("r22_payload_too_short".to_string());
+        return ParsedPayload::DataPacket {
+            packet_k: None,
+            domain: Some("r22_whoop5_hr".to_string()),
+            status_or_stream: None,
+            counter_or_page: None,
+            timestamp_seconds: None,
+            timestamp_subseconds: None,
+            hr_marker_offset: None,
+            hr_present_marker: None,
+            body_offset: payload.len(),
+            body_hex: hex::encode(payload),
+            body_summary: Some(DataPacketBodySummary::R22Whoop5Hr {
+                battery_pct: None,
+                hr_milli_bpm: None,
+                hr_bpm: None,
+                extra: None,
+                warnings: warnings.clone(),
+            }),
+            warnings,
+        };
+    }
+    let battery_pct = payload[1];
+    let hr_milli_bpm = u16::from_le_bytes([payload[2], payload[3]]);
+    let hr_bpm = hr_milli_bpm as f32 / 10.0;
+    let extra = if payload.len() >= 6 {
+        Some([payload[4], payload[5]])
+    } else {
+        None
+    };
+    ParsedPayload::DataPacket {
+        packet_k: None,
+        domain: Some("r22_whoop5_hr".to_string()),
+        status_or_stream: None,
+        counter_or_page: None,
+        timestamp_seconds: None,
+        timestamp_subseconds: None,
+        hr_marker_offset: None,
+        hr_present_marker: None,
+        body_offset: 1.min(payload.len()),
+        body_hex: hex::encode(&payload[1.min(payload.len())..]),
+        body_summary: Some(DataPacketBodySummary::R22Whoop5Hr {
+            battery_pct: Some(battery_pct),
+            hr_milli_bpm: Some(hr_milli_bpm),
+            hr_bpm: Some(hr_bpm),
+            extra,
+            warnings: warnings.clone(),
+        }),
+        warnings,
+    }
 }
 
 fn parse_k10_raw_motion_summary(payload: &[u8]) -> (Option<DataPacketBodySummary>, Vec<String>) {

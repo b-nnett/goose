@@ -2392,6 +2392,10 @@ fn export_sensor_samples(
                 // V24 biometric data is exported via dedicated v24 tables (Phase 27).
                 // Sensor sample export path does not handle V24 — skip gracefully.
             }
+            DataPacketBodySummary::R22Whoop5Hr { .. } => {
+                // R22 WHOOP 5.0 realtime data is surfaced via the upload pipeline.
+                // Sensor sample export path does not export R22 frames — skip gracefully.
+            }
         }
     }
     Ok(rows)
