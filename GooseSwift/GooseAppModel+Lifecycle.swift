@@ -136,6 +136,7 @@ extension GooseAppModel {
       connectedDeviceGeneration = nil
       captureFrameWriteQueue.activeDeviceID = nil
       captureFrameWriteQueue.currentDeviceUUID = nil
+      alarmIsArmed = false  // HAP-03: armed alarm is unreliable if strap disconnects
     }
 
     guard state == "ready" else {

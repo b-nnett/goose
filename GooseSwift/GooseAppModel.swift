@@ -31,6 +31,8 @@ final class GooseAppModel {
   private(set) var isNetworkReachable: Bool = true
   private(set) var hrSpikeCount: Int = 0
   var liveWorkoutStrain: Double = 0
+  var scheduledAlarmTime: Date? = nil    // HAP-03
+  var alarmIsArmed: Bool = false         // HAP-03
   var apnsDeviceToken: String? = nil
   var uploadErrorState: String? = nil
   var hasPendingUploadAfterReconnect: Bool = false
