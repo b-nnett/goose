@@ -7,6 +7,8 @@
 
 # Goose - Local Companion for WHOOP Devices
 
+> **Active fork of [b-nnett/goose](https://github.com/b-nnett/goose).** This fork extends the original with a self-hosted FastAPI + TimescaleDB server, automatic biometric upload from iOS, and an expanded health metrics pipeline. The upstream project appears inactive; development continues here.
+
 **Alpha proof of concept. This build is for developers to evaluate whether a project of this scope is viable. It is not ready to use as an app for tracking personal health data yet.**
 
 If you don't know what Xcode is, or how to build the Rust core, this build is not for you. Come back on 13 June 2026 for the first public beta on TestFlight.
