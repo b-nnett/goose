@@ -207,8 +207,14 @@ Plans:
   3. The Breathe session can be started and stopped by the user; stopping mid-session does not leave the BLE command characteristic in an undefined state
   4. No buzz is attempted when no WHOOP device is connected — the UI shows an appropriate disabled state
 
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 2 plans
+
+Plans:
+
+**Wave 1** *(parallel)*
+
+- [ ] 70-01-PLAN.md — HAP-01: GooseBLEClient+Haptics.swift with buzz(loops:) — fire-and-forget BLE cmd 0x13
+- [ ] 70-02-PLAN.md — HAP-02: BreatheView.swift + MoreRoute.breathe navigation wiring + MoreDataStore updates
 
 ### Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation
 
