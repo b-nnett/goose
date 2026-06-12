@@ -228,8 +228,19 @@ Plans:
   3. A local notification fires after a detected sleep cycle completes, after a workout session is detected, and when WHOOP battery drops below 20% — all using the existing `UNUserNotificationCenter` permission granted in onboarding
   4. The HR chart for a session longer than 60 minutes renders without visible lag; the in-memory sample count is reduced via stride/LTTB decimation while local extrema are preserved
 
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+
+Plans:
+
+**Wave 1** *(parallel)*
+
+- [ ] 71-01-PLAN.md — FEAT-01: Coach VOW card (CoachVOWNudge enum + CoachVOWCard view in CoachView.swift)
+- [ ] 71-02-PLAN.md — DATA-04: HeartRateSeriesStore.decimatedSamples + migrate 4 HealthDataStore+* call sites
+
+**Wave 2** *(parallel — no dependency on Wave 1)*
+
+- [ ] 71-03-PLAN.md — FEAT-02: IntervalTimerView + MetricExplorerView + MoreRoute wiring (5 files)
+- [ ] 71-04-PLAN.md — FEAT-03: NotificationScheduler actor + 3 scheduling sites (sleep / workout / battery)
 
 ### Phase 72: Screens on New Foundation + Service Layer
 
@@ -288,7 +299,7 @@ Plans:
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
-| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/TBD | Not started | - |
+| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/4 | Not started | - |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
 
