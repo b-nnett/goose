@@ -23,7 +23,7 @@
 
 - [ ] **FEAT-01**: Coach tab mostra nudges VOW (Voice of WHOOP) contextuais calculados localmente via bridge (sem servidor)
 - [ ] **FEAT-02**: Utilizador consegue aceder a Breathe UI, Interval Timer e Metric Explorer (NoopApp features; Breathe UI requer HAP-01)
-- [ ] **FEAT-03**: App envia notificação local após conclusão de ciclo de sono, detecção de workout e bateria WHOOP abaixo de 20% (usa getNotificationSettings — permissão já concedida em onboarding)
+- [x] **FEAT-03**: App envia notificação local após conclusão de ciclo de sono, detecção de workout e bateria WHOOP abaixo de 20% (usa getNotificationSettings — permissão já concedida em onboarding)
 
 ### DATA — Dados / Ecrãs
 

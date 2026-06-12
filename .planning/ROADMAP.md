@@ -120,7 +120,7 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 - [x] **Phase 68: BLE Manager Refactor + Data Validator** — GooseBLEHistoricalManager dedicated class + GooseBLEDataValidator Swift struct (completed 2026-06-12)
 - [x] **Phase 69: Data Foundation** — 4 new SQLite tables (schema v20) + realtime strain accumulator (completed 2026-06-12)
 - [ ] **Phase 70: Haptic Primitive + Breathe Screen** — buzz(loops:) cmd 0x13 + Breathe UI with paced haptic cues
-- [ ] **Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation** — contextual nudges, Interval Timer, Metric Explorer, iOS local notifications, HR chart performance
+- [x] **Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation** — contextual nudges, Interval Timer, Metric Explorer, iOS local notifications, HR chart performance (completed 2026-06-12)
 - [ ] **Phase 72: Screens on New Foundation + Service Layer** — Stress/ANS view, Trends dashboard, Manual Workout Entry, protocol-based service layer + mocks
 - [ ] **Phase 73: Smart Alarm + Wake-Window Engine** — HAP-03 single-shot alarm UI + HAP-04 RE-gated wake-window engine
 
@@ -239,8 +239,8 @@ Plans:
 
 **Wave 2** *(parallel — no dependency on Wave 1)*
 
-- [ ] 71-03-PLAN.md — FEAT-02: IntervalTimerView + MetricExplorerView + MoreRoute wiring (5 files)
-- [ ] 71-04-PLAN.md — FEAT-03: NotificationScheduler actor + 3 scheduling sites (sleep / workout / battery)
+- [x] 71-03-PLAN.md — FEAT-02: IntervalTimerView + MetricExplorerView + MoreRoute wiring (5 files)
+- [x] 71-04-PLAN.md — FEAT-03: NotificationScheduler actor + 3 scheduling sites (sleep / workout / battery)
 
 ### Phase 72: Screens on New Foundation + Service Layer
 
@@ -299,7 +299,7 @@ Plans:
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
 | 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 1/2 | In Progress|  |
-| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 2/4 | In Progress|  |
+| 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 4/4 | Complete   | 2026-06-12 |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
 | 73. Smart Alarm + Wake-Window Engine | v10.0 | 0/TBD | Not started | - |
 
@@ -338,7 +338,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 **Wave 1**
 
