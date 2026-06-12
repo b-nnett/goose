@@ -116,9 +116,9 @@ Known deferred: CAPSENSE-01 hardware gate (requires real WHOOP 5.x device for UU
 
 ### v10.0 Protocol Parity, Haptics & Feature Completeness
 
-- [ ] **Phase 67: WHOOP 5.0 Protocol Fixes** — R22 realtime packet parsing + v18 per-second historical decode (pure Rust, highest user impact)
+- [x] **Phase 67: WHOOP 5.0 Protocol Fixes** — R22 realtime packet parsing + v18 per-second historical decode (pure Rust, highest user impact) (completed 2026-06-12)
 - [x] **Phase 68: BLE Manager Refactor + Data Validator** — GooseBLEHistoricalManager dedicated class + GooseBLEDataValidator Swift struct (completed 2026-06-12)
-- [ ] **Phase 69: Data Foundation** — 4 new SQLite tables (schema v20) + realtime strain accumulator
+- [x] **Phase 69: Data Foundation** — 4 new SQLite tables (schema v20) + realtime strain accumulator (completed 2026-06-12)
 - [ ] **Phase 70: Haptic Primitive + Breathe Screen** — buzz(loops:) cmd 0x13 + Breathe UI with paced haptic cues
 - [ ] **Phase 71: Coach VOW + NoopApp Features + Notifications + HR Decimation** — contextual nudges, Interval Timer, Metric Explorer, iOS local notifications, HR chart performance
 - [ ] **Phase 72: Screens on New Foundation + Service Layer** — Stress/ANS view, Trends dashboard, Manual Workout Entry, protocol-based service layer + mocks
@@ -192,7 +192,7 @@ Plans:
 
 **Wave 1** *(parallel — Rust and Swift are independent)*
 
-- [ ] 69-01-PLAN.md — DATA-01: schema v20 migration (4 tables) + 4 bridge upsert methods + migration tests
+- [x] 69-01-PLAN.md — DATA-01: schema v20 migration (4 tables) + 4 bridge upsert methods + migration tests
 - [ ] 69-02-PLAN.md — DATA-02: GooseStrainAccumulator actor + GooseAppModel wiring (liveWorkoutStrain)
 
 ### Phase 70: Haptic Primitive + Breathe Screen
@@ -278,9 +278,9 @@ Plans:
 | 64. HR Data Sanitizer | v9.0 | 2/2 | Complete | 2026-06-11 |
 | 65. Generic BLE State Machine | v9.0 | 1/1 | Complete | 2026-06-11 |
 | 66. Cap Sense / On-Wrist Detection | v9.0 | 0/TBD | Not started | - |
-| 67. WHOOP 5.0 Protocol Fixes | v10.0 | 0/TBD | Not started | - |
+| 67. WHOOP 5.0 Protocol Fixes | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 68. BLE Manager Refactor + Data Validator | v10.0 | 2/2 | Complete    | 2026-06-12 |
-| 69. Data Foundation | v10.0 | 0/TBD | Not started | - |
+| 69. Data Foundation | v10.0 | 2/2 | Complete | 2026-06-12 |
 | 70. Haptic Primitive + Breathe Screen | v10.0 | 0/TBD | Not started | - |
 | 71. Coach VOW + NoopApp Features + Notifications + HR Decimation | v10.0 | 0/TBD | Not started | - |
 | 72. Screens on New Foundation + Service Layer | v10.0 | 0/TBD | Not started | - |
@@ -321,7 +321,7 @@ Promoted to Phase 18: Coach Multi-Provider.
 **Goal:** Align Goose's BLE sync architecture with the WHOOP app's band-first model, eliminating the need for continuous overnight BLE capture. The band stores data onboard; the app fetches it opportunistically on foreground and via silent push, exactly as WHOOP does.
 
 **Depends on:** Phase 59
-**Plans:** 2/2 plans complete
+**Plans:** 1/2 plans executed
 Plans:
 **Wave 1**
 

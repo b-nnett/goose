@@ -74,6 +74,7 @@ extension GooseAppModel {
       syncStatus: syncStatus,
       importedFrameCount: 0
     )
+    Task { await self.strainAccumulator.reset() }
     activityPersistenceStatus = syncStatus == "candidate" ? "Candidate \(activity.title)" : "Recording \(activity.title)"
 
     if ownsCaptureSession {
@@ -184,6 +185,8 @@ extension GooseAppModel {
     let ownsCaptureSession = activeActivityOwnsCaptureSession
     activeActivityPersistence = nil
     activeActivityOwnsCaptureSession = false
+    Task { await self.strainAccumulator.freeze() }
+    liveWorkoutStrain = 0
 
     let sessionID = persistence?.activitySessionID ?? "ios.activity.\(UUID().uuidString)"
     let captureSessionID = persistence?.captureSessionID

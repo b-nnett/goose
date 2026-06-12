@@ -30,6 +30,7 @@ final class GooseAppModel {
   var serverReachable: Bool? = nil
   private(set) var isNetworkReachable: Bool = true
   private(set) var hrSpikeCount: Int = 0
+  var liveWorkoutStrain: Double = 0
   var apnsDeviceToken: String? = nil
   var uploadErrorState: String? = nil
   var hasPendingUploadAfterReconnect: Bool = false
@@ -94,6 +95,7 @@ final class GooseAppModel {
   )
   let overnightSQLiteMirror = OvernightSQLiteMirrorQueue(databasePath: HealthDataStore.defaultDatabasePath())
   let passiveActivityDetectionPipeline = PassiveActivityDetectionPipeline()
+  let strainAccumulator = GooseStrainAccumulator()
   var activeActivityPersistence: ActiveActivityPersistence?
   var activeActivityOwnsCaptureSession = false
   var activityRequestedHighFrequencyHistorySync = false
@@ -305,8 +307,15 @@ final class GooseAppModel {
       }
     }
     ble.historicalDirectWriteDatabasePath = HealthDataStore.defaultDatabasePath()
-    ble.onLiveHeartRate = { bpm, source, capturedAt in
+    ble.onLiveHeartRate = { [weak self] bpm, source, capturedAt in
       heartRateSamplePipeline.recordHeartRateSample(bpm: bpm, source: source, capturedAt: capturedAt)
+      Task { [weak self] in
+        guard let self, self.activeActivityPersistence != nil else { return }
+        await self.strainAccumulator.ingest(bpm: bpm, date: capturedAt)
+        if let load = await self.strainAccumulator.pollIfReady(now: capturedAt) {
+          Task { @MainActor [weak self] in self?.liveWorkoutStrain = load }
+        }
+      }
     }
     ble.onHRVSample = { rmssdMS, rrIntervalCount, source, capturedAt in
       heartRateSamplePipeline.recordHRVSample(
