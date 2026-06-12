@@ -445,6 +445,7 @@ private struct CoachOverviewScreen: View {
   var healthStore: HealthDataStore
   @State private var showingJournal = false
   @State private var todayEntry: DailyJournalEntry? = DailyJournalStore.today()
+  @State private var vowDismissed = false
 
   var body: some View {
     ScrollView {
@@ -461,6 +462,12 @@ private struct CoachOverviewScreen: View {
 
         CoachJournalCard(entry: todayEntry) {
           showingJournal = true
+        }
+
+        if !vowDismissed, let nudge = CoachVOWNudge.resolve(healthStore: healthStore) {
+          CoachVOWCard(nudge: nudge) { vowDismissed = true }
+            .opacity(vowDismissed ? 0 : 1)
+            .animation(.easeOut(duration: 0.2), value: vowDismissed)
         }
 
         CoachRoutesSection(healthStore: healthStore)
@@ -881,6 +888,100 @@ struct DailyJournalSheet: View {
     )
     DailyJournalStore.save(entry)
     dismiss()
+  }
+}
+
+private enum CoachVOWNudge {
+  case criticalRecovery(Double)
+  case lowRecovery(Double)
+  case highStrain(Double)
+  case lowHRV(Double)
+
+  @MainActor
+  static func resolve(healthStore: HealthDataStore) -> CoachVOWNudge? {
+    let recoveryValue = healthStore.snapshot(for: .recovery).value
+    let strainValue = healthStore.snapshot(for: .strain).value
+    let hrv = HRVSeriesStore.shared.dailyEstimate()?.rmssdMS
+
+    if let r = Double(recoveryValue), r < 33 { return .criticalRecovery(r) }
+    if let r = Double(recoveryValue), r < 66 { return .lowRecovery(r) }
+    if let s = Double(strainValue), s > 18 { return .highStrain(s) }
+    if let h = hrv, h < 30 { return .lowHRV(h) }
+    return nil
+  }
+
+  var title: String {
+    switch self {
+    case .criticalRecovery: "Critical Recovery"
+    case .lowRecovery: "Low Recovery"
+    case .highStrain: "High Strain"
+    case .lowHRV: "Low HRV"
+    }
+  }
+
+  var body: String {
+    switch self {
+    case .criticalRecovery: "Recovery is critically low. Prioritise rest and avoid high-strain activity today."
+    case .lowRecovery: "Recovery is below 66%. Consider light training only."
+    case .highStrain: "Strain is high. Allow adequate recovery before the next session."
+    case .lowHRV: "HRV is low this week. Monitor stress and sleep quality."
+    }
+  }
+
+  var systemImage: String {
+    switch self {
+    case .criticalRecovery: "heart.slash"
+    case .lowRecovery: "heart"
+    case .highStrain: "figure.run"
+    case .lowHRV: "waveform.path.ecg"
+    }
+  }
+
+  var tint: Color {
+    switch self {
+    case .criticalRecovery: .red
+    case .lowRecovery: .orange
+    case .highStrain: .orange
+    case .lowHRV: .blue
+    }
+  }
+}
+
+private struct CoachVOWCard: View {
+  let nudge: CoachVOWNudge
+  let onDismiss: () -> Void
+
+  var body: some View {
+    HStack(spacing: 12) {
+      Image(systemName: nudge.systemImage)
+        .font(.system(size: 17, weight: .semibold))
+        .foregroundStyle(nudge.tint)
+        .frame(width: 36, height: 36)
+        .background(nudge.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+      VStack(alignment: .leading, spacing: 4) {
+        Text(nudge.title)
+          .font(.subheadline.weight(.semibold))
+        Text(nudge.body)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+      }
+
+      Spacer(minLength: 8)
+
+      Button(action: onDismiss) {
+        Image(systemName: "xmark")
+          .font(.caption2.weight(.semibold))
+          .foregroundStyle(.tertiary)
+      }
+      .accessibilityLabel("Dismiss nudge")
+    }
+    .padding(12)
+    .coachCardSurface(tint: nudge.tint)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(nudge.title). \(nudge.body). Double-tap to dismiss.")
+    .gesture(DragGesture().onEnded { if $0.translation.height > 30 { onDismiss() } })
   }
 }
 
