@@ -177,6 +177,7 @@
 		E100000000000000000000E /* GooseBLEHistoricalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000E /* GooseBLEHistoricalManager.swift */; };
 		E100000000000000000000F /* GooseBLEDataValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E200000000000000000000F /* GooseBLEDataValidator.swift */; };
 		E1000000000000000000010 /* GooseStrainAccumulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000010 /* GooseStrainAccumulator.swift */; };
+		E1000000000000000000014 /* GooseWakeWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000014 /* GooseWakeWindowManager.swift */; };
 		E1000000000000000000011 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000011 /* NotificationScheduler.swift */; };
 		E1000000000000000000012 /* IntervalTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000012 /* IntervalTimerView.swift */; };
 		E1000000000000000000013 /* MetricExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000013 /* MetricExplorerView.swift */; };
@@ -407,6 +408,7 @@
 		E200000000000000000000E /* GooseBLEHistoricalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEHistoricalManager.swift; sourceTree = "<group>"; };
 		E200000000000000000000F /* GooseBLEDataValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseBLEDataValidator.swift; sourceTree = "<group>"; };
 		E2000000000000000000010 /* GooseStrainAccumulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseStrainAccumulator.swift; sourceTree = "<group>"; };
+		E2000000000000000000014 /* GooseWakeWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GooseWakeWindowManager.swift; sourceTree = "<group>"; };
 		E2000000000000000000011 /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
 		E2000000000000000000012 /* IntervalTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntervalTimerView.swift; sourceTree = "<group>"; };
 		E2000000000000000000013 /* MetricExplorerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricExplorerView.swift; sourceTree = "<group>"; };
@@ -655,6 +657,7 @@
 				E200000000000000000000E /* GooseBLEHistoricalManager.swift */,
 				E200000000000000000000F /* GooseBLEDataValidator.swift */,
 				E2000000000000000000010 /* GooseStrainAccumulator.swift */,
+				E2000000000000000000014 /* GooseWakeWindowManager.swift */,
 				E2000000000000000000011 /* NotificationScheduler.swift */,
 				E2000000000000000000012 /* IntervalTimerView.swift */,
 				E2000000000000000000013 /* MetricExplorerView.swift */,
@@ -1032,6 +1035,7 @@
 				E100000000000000000000E /* GooseBLEHistoricalManager.swift in Sources */,
 				E100000000000000000000F /* GooseBLEDataValidator.swift in Sources */,
 				E1000000000000000000010 /* GooseStrainAccumulator.swift in Sources */,
+				E1000000000000000000014 /* GooseWakeWindowManager.swift in Sources */,
 				E1000000000000000000011 /* NotificationScheduler.swift in Sources */,
 				E1000000000000000000012 /* IntervalTimerView.swift in Sources */,
 				E1000000000000000000013 /* MetricExplorerView.swift in Sources */,
