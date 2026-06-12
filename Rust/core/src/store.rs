@@ -7036,6 +7036,42 @@ impl GooseStore {
         )?;
         Ok(rows > 0)
     }
+
+    pub fn query_metric_series_range(
+        &self,
+        metric_name: &str,
+        start_date: &str,
+        end_date: &str,
+        source: Option<&str>,
+    ) -> GooseResult<Vec<serde_json::Value>> {
+        let rows: Vec<serde_json::Value> = if let Some(src) = source {
+            let mut stmt = self.conn.prepare(
+                "SELECT date, value FROM metric_series \
+                 WHERE metric_name = ?1 AND source = ?2 \
+                   AND date >= ?3 AND date <= ?4 \
+                 ORDER BY date ASC",
+            )?;
+            stmt.query_map(params![metric_name, src, start_date, end_date], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
+            })?
+            .filter_map(|r| r.ok())
+            .map(|(date, value)| serde_json::json!({"date": date, "value": value}))
+            .collect()
+        } else {
+            let mut stmt = self.conn.prepare(
+                "SELECT date, value FROM metric_series \
+                 WHERE metric_name = ?1 AND date >= ?2 AND date <= ?3 \
+                 ORDER BY date ASC",
+            )?;
+            stmt.query_map(params![metric_name, start_date, end_date], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
+            })?
+            .filter_map(|r| r.ok())
+            .map(|(date, value)| serde_json::json!({"date": date, "value": value}))
+            .collect()
+        };
+        Ok(rows)
+    }
 }
 
 impl GooseStore {

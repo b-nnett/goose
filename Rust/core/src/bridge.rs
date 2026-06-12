@@ -242,6 +242,7 @@ pub const BRIDGE_METHODS: &[&str] = &[
     "historical_sync.physical_evidence_template",
     "historical_sync.validate_physical_evidence",
     "journal.upsert",
+    "metric_series.query_range",
     "metric_series.upsert",
     "metrics.activity_unavailable_daily_status",
     "metrics.built_in_definitions",
@@ -1609,6 +1610,16 @@ struct MetricSeriesUpsertArgs {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+struct MetricSeriesQueryRangeArgs {
+    database_path: String,
+    metric_name: String,
+    start_date: String,
+    end_date: String,
+    #[serde(default)]
+    source: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 struct ActivitySessionLookupArgs {
     database_path: String,
     session_id: String,
@@ -2616,6 +2627,10 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "apple_daily.upsert" => request_args::<AppleDailyUpsertArgs>(&request)
             .and_then(apple_daily_upsert_bridge)
+            .map(|value| bridge_ok(&request.request_id, value))
+            .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
+        "metric_series.query_range" => request_args::<MetricSeriesQueryRangeArgs>(&request)
+            .and_then(metric_series_query_range_bridge)
             .map(|value| bridge_ok(&request.request_id, value))
             .unwrap_or_else(|error| bridge_error(&request.request_id, "method_error", error)),
         "metric_series.upsert" => request_args::<MetricSeriesUpsertArgs>(&request)
@@ -7317,6 +7332,25 @@ fn metric_series_upsert_bridge(args: MetricSeriesUpsertArgs) -> GooseResult<serd
     }))
 }
 
+fn metric_series_query_range_bridge(
+    args: MetricSeriesQueryRangeArgs,
+) -> GooseResult<serde_json::Value> {
+    let store = open_bridge_store(&args.database_path)?;
+    let rows = store.query_metric_series_range(
+        &args.metric_name,
+        &args.start_date,
+        &args.end_date,
+        args.source.as_deref(),
+    )?;
+    Ok(json!({
+        "schema": "goose.metric-series-query-range-result.v1",
+        "metric_name": args.metric_name,
+        "start_date": args.start_date,
+        "end_date": args.end_date,
+        "rows": rows,
+    }))
+}
+
 fn activity_create_session_bridge(
     args: ActivitySessionUpsertArgs,
 ) -> GooseResult<serde_json::Value> {
@@ -10551,6 +10585,138 @@ mod tests {
         assert!(
             result["sleep_efficiency_fraction"].is_number(),
             "sleep_efficiency_fraction must be present in the output"
+        );
+    }
+
+    // ---- metric_series.query_range round-trip test -------------------------
+
+    #[test]
+    fn metric_series_query_range_round_trip() {
+        let (_dir, db_path) = make_temp_db();
+
+        // Seed a row via metric_series.upsert
+        let upsert_req = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-ms-upsert".to_string(),
+            method: "metric_series.upsert".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "source": "test",
+                "metric_name": "recovery",
+                "date": "2026-06-01",
+                "value": 72.5_f64,
+            }),
+        };
+        let upsert_resp = handle_bridge_request(upsert_req);
+        assert!(
+            upsert_resp.ok,
+            "metric_series.upsert should succeed: {:?}",
+            upsert_resp.error
+        );
+
+        // Query via metric_series.query_range
+        let query_req = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-ms-query".to_string(),
+            method: "metric_series.query_range".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "metric_name": "recovery",
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-07",
+            }),
+        };
+        let query_resp = handle_bridge_request(query_req);
+        assert!(
+            query_resp.ok,
+            "metric_series.query_range should succeed: {:?}",
+            query_resp.error
+        );
+        let result = query_resp.result.expect("result must be present");
+        let rows = result["rows"].as_array().expect("rows must be an array");
+        assert_eq!(rows.len(), 1, "one row must be returned for the seeded date");
+        assert_eq!(
+            rows[0]["date"].as_str(),
+            Some("2026-06-01"),
+            "row date must match"
+        );
+        let value = rows[0]["value"].as_f64().expect("value must be f64");
+        assert!(
+            (value - 72.5).abs() < 0.001,
+            "row value must match seeded 72.5, got {value}"
+        );
+    }
+
+    #[test]
+    fn metric_series_query_range_empty_when_no_rows() {
+        let (_dir, db_path) = make_temp_db();
+
+        let query_req = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-ms-query-empty".to_string(),
+            method: "metric_series.query_range".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "metric_name": "recovery",
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-07",
+            }),
+        };
+        let query_resp = handle_bridge_request(query_req);
+        assert!(
+            query_resp.ok,
+            "query_range on empty table should succeed: {:?}",
+            query_resp.error
+        );
+        let result = query_resp.result.expect("result must be present");
+        let rows = result["rows"].as_array().expect("rows must be an array");
+        assert!(rows.is_empty(), "rows must be empty when no data exists");
+    }
+
+    #[test]
+    fn metric_series_query_range_filters_by_source() {
+        let (_dir, db_path) = make_temp_db();
+
+        // Insert two rows with different sources
+        for (source, value) in [("whoop", 80.0_f64), ("manual", 60.0_f64)] {
+            let upsert_req = BridgeRequest {
+                schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+                request_id: format!("test-ms-upsert-{source}"),
+                method: "metric_series.upsert".to_string(),
+                args: json!({
+                    "database_path": db_path,
+                    "source": source,
+                    "metric_name": "hrv",
+                    "date": "2026-06-01",
+                    "value": value,
+                }),
+            };
+            let resp = handle_bridge_request(upsert_req);
+            assert!(resp.ok, "upsert for source={source} should succeed");
+        }
+
+        // Query with source filter — should return only whoop row
+        let query_req = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-ms-query-filtered".to_string(),
+            method: "metric_series.query_range".to_string(),
+            args: json!({
+                "database_path": db_path,
+                "metric_name": "hrv",
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-07",
+                "source": "whoop",
+            }),
+        };
+        let query_resp = handle_bridge_request(query_req);
+        assert!(query_resp.ok, "query_range with source filter should succeed");
+        let result = query_resp.result.expect("result must be present");
+        let rows = result["rows"].as_array().expect("rows must be an array");
+        assert_eq!(rows.len(), 1, "source filter must return only matching row");
+        let value = rows[0]["value"].as_f64().expect("value must be f64");
+        assert!(
+            (value - 80.0).abs() < 0.001,
+            "filtered row must be the whoop value (80.0), got {value}"
         );
     }
 }
