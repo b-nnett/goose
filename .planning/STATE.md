@@ -4,14 +4,14 @@ milestone: v10.0
 milestone_name: Protocol Parity, Haptics & Feature Completeness
 status: executing
 stopped_at: Completed 72-02-PLAN.md
-last_updated: "2026-06-12T16:52:13.057Z"
-last_activity: 2026-06-12 -- Phase 72 execution started
+last_updated: "2026-06-12T18:26:33.387Z"
+last_activity: 2026-06-12 -- Phase 73 execution started
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 13
-  percent: 71
+  completed_phases: 7
+  total_plans: 17
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-11)
 
 **Core value:** The user captures WHOOP data on iPhone and it is automatically persisted on their personal server — without depending on external infrastructure. Metrics align with WHOOP from the same raw data.
-**Current focus:** Phase 72 — Screens on New Foundation + Service Layer
+**Current focus:** Phase 73 — Smart Alarm + Wake-Window Engine
 
 ## Current Position
 
-Phase: 72 (Screens on New Foundation + Service Layer) — EXECUTING
-Plan: 2 of 3
+Phase: 73 (Smart Alarm + Wake-Window Engine) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-06-12 -- Phase 72 execution started
+Last activity: 2026-06-12 -- Phase 73 execution started
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ Items deferred from previous milestones:
 | Phase 71-coach-vow-noopapp-notifications-hr-decimation P02 | 5 min | 2 tasks | 4 files |
 | Phase 71-coach-vow-noopapp-notifications-hr-decimation P04 | 9min | 2 tasks | 6 files |
 | Phase 72 P02 | 17 min | 2 tasks | 10 files |
+| Phase 73 P01 | 5 min | 2 tasks | 3 files |
 
 ## Quick Tasks Completed
 
@@ -107,7 +108,7 @@ Items deferred from previous milestones:
 
 ## Session Continuity
 
-Last session: 2026-06-12T16:52:13.043Z
-Stopped at: Completed 72-02-PLAN.md
+Last session: 2026-06-12T18:24:14Z
+Stopped at: Completed 73-02-PLAN.md
 Resume file: None
-Next action: Execute 71-04-PLAN.md (NotificationScheduler + 3 notification sites)
+Next action: Phase 73 complete — HAP-04 stub done; functional implementation RE-gated pending BTSnoop + Ghidra
