@@ -175,6 +175,8 @@ struct CoachSleepRouteView: View {
             model.alarmIsArmed = false
             model.scheduledAlarmTime = nil
           } else {
+            guard model.ble.connectionState == "ready",
+                  model.ble.pendingAlarmCommand == nil else { return }
             model.ble.setWhoopAlarm(at: alarmTime)
             model.ble.buzz(loops: 2)
             model.alarmIsArmed = true
