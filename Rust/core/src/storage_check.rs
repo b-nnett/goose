@@ -1005,6 +1005,11 @@ fn required_columns() -> BTreeMap<&'static str, Vec<&'static str>> {
         ],
     );
 
+    columns.insert("journal",       vec!["id", "date", "source", "behaviors_json", "created_at"]);
+    columns.insert("workout",       vec!["id", "date", "source", "sport", "start_time", "end_time", "duration_s"]);
+    columns.insert("apple_daily",   vec!["id", "date", "source", "created_at"]);
+    columns.insert("metric_series", vec!["id", "source", "metric_name", "date", "value", "created_at"]);
+
     for table in known_tables() {
         debug_assert!(columns.contains_key(table));
     }
