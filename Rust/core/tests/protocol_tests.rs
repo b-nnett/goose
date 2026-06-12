@@ -1,8 +1,8 @@
 use goose_core::protocol::{
     COMMAND_GET_HELLO, DataPacketBodySummary, DeviceType, FrameAccumulator, I16SeriesSummary,
     PACKET_TYPE_COMMAND_RESPONSE, PACKET_TYPE_EVENT, PACKET_TYPE_HISTORICAL_DATA,
-    PACKET_TYPE_REALTIME_DATA, PACKET_TYPE_REALTIME_RAW_DATA, ParsedPayload,
-    build_v5_command_frame, build_v5_payload_frame, parse_frame, parse_frame_hex,
+    PACKET_TYPE_R22_REALTIME_DATA, PACKET_TYPE_REALTIME_DATA, PACKET_TYPE_REALTIME_RAW_DATA,
+    ParsedPayload, build_v5_command_frame, build_v5_payload_frame, parse_frame, parse_frame_hex,
 };
 
 const GET_HELLO_FRAME: &str = "aa0108000001e67123019101363e5c8d";
@@ -542,4 +542,106 @@ fn put_u16(bytes: &mut [u8], offset: usize, value: u16) {
 
 fn put_i16(bytes: &mut [u8], offset: usize, value: i16) {
     bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+}
+
+// R22 WHOOP 5.0 realtime packet tests (BLE5-01)
+
+#[test]
+fn r22_4byte_parses_battery_and_hr() {
+    // BTSnoop fixture: 10 50 31 05 — battery 80%, HR 132.9 BPM
+    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x31, 0x05];
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    assert_eq!(parsed.packet_type, Some(0x10));
+    assert_eq!(parsed.packet_type_name.as_deref(), Some("R22_REALTIME_DATA"));
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket { domain, body_summary, warnings, .. } => {
+            assert_eq!(domain.as_deref(), Some("r22_whoop5_hr"));
+            assert!(warnings.is_empty());
+            match body_summary.unwrap() {
+                DataPacketBodySummary::R22Whoop5Hr {
+                    battery_pct,
+                    hr_milli_bpm,
+                    hr_bpm,
+                    extra,
+                    warnings,
+                } => {
+                    assert_eq!(battery_pct, Some(0x50)); // 80%
+                    assert_eq!(hr_milli_bpm, Some(0x0531)); // 1329 milli-bpm
+                    assert!((hr_bpm.unwrap() - 132.9).abs() < 0.01);
+                    assert_eq!(extra, None);
+                    assert!(warnings.is_empty());
+                }
+                other => panic!("expected R22Whoop5Hr, got {other:?}"),
+            }
+        }
+        other => panic!("expected DataPacket, got {other:?}"),
+    }
+}
+
+#[test]
+fn r22_6byte_parses_battery_hr_and_extra_raw() {
+    // BTSnoop fixture: 10 48 40 06 7a 02 — battery 72%, HR 160.0 BPM, extra [0x7a, 0x02]
+    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x48, 0x40, 0x06, 0x7a, 0x02];
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket { body_summary, warnings, .. } => {
+            assert!(warnings.is_empty());
+            match body_summary.unwrap() {
+                DataPacketBodySummary::R22Whoop5Hr {
+                    battery_pct,
+                    hr_milli_bpm,
+                    hr_bpm,
+                    extra,
+                    warnings,
+                } => {
+                    assert_eq!(battery_pct, Some(0x48)); // 72%
+                    assert_eq!(hr_milli_bpm, Some(0x0640)); // 1600 milli-bpm
+                    assert!((hr_bpm.unwrap() - 160.0).abs() < 0.01);
+                    // extra bytes kept raw — no interpretation
+                    assert_eq!(extra, Some([0x7a, 0x02]));
+                    assert!(warnings.is_empty());
+                }
+                other => panic!("expected R22Whoop5Hr, got {other:?}"),
+            }
+        }
+        other => panic!("expected DataPacket, got {other:?}"),
+    }
+}
+
+#[test]
+fn r22_zero_hr_bytes_parse_as_zero_not_error() {
+    // build_v5_payload_frame always pads to 4-byte alignment, so a 3-byte payload
+    // [0x10, battery, hr_lo] is padded with one 0x00 byte → hr = u16::from_le_bytes([hr_lo, 0x00]).
+    // This verifies the parser handles low HR readings (e.g., resting BPM) without warnings.
+    let payload = [PACKET_TYPE_R22_REALTIME_DATA, 0x50, 0x14, 0x00]; // HR = 0x0014 = 20 milli-bpm = 2.0 BPM (edge case)
+    let frame = build_v5_payload_frame(&payload);
+    let parsed = parse_frame(DeviceType::Goose, &frame).unwrap();
+
+    match parsed.parsed_payload.unwrap() {
+        ParsedPayload::DataPacket { body_summary, warnings, .. } => {
+            assert!(warnings.is_empty(), "unexpected warnings: {warnings:?}");
+            match body_summary.unwrap() {
+                DataPacketBodySummary::R22Whoop5Hr {
+                    battery_pct,
+                    hr_milli_bpm,
+                    hr_bpm,
+                    extra,
+                    warnings,
+                } => {
+                    assert_eq!(battery_pct, Some(0x50)); // 80%
+                    assert_eq!(hr_milli_bpm, Some(0x0014)); // 20 milli-bpm
+                    assert!((hr_bpm.unwrap() - 2.0).abs() < 0.01);
+                    assert_eq!(extra, None);
+                    assert!(warnings.is_empty());
+                }
+                other => panic!("expected R22Whoop5Hr, got {other:?}"),
+            }
+        }
+        other => panic!("expected DataPacket, got {other:?}"),
+    }
 }
