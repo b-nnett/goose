@@ -163,6 +163,137 @@ use crate::{
 pub const BRIDGE_REQUEST_SCHEMA: &str = "goose.bridge.request.v1";
 pub const BRIDGE_RESPONSE_SCHEMA: &str = "goose.bridge.response.v1";
 pub const CAPTURE_ARRIVAL_PLAN_REPORT_SCHEMA: &str = "goose.capture-arrival-plan-report.v1";
+pub const BRIDGE_METHODS_LIST_SCHEMA: &str = "goose.bridge.methods-list.v1";
+
+/// Canonical list of every bridge RPC method understood by
+/// [`handle_bridge_request`].
+///
+/// The list is kept sorted and is verified against the dispatcher match arms
+/// by `tests::bridge_methods_constant_matches_dispatcher` so it cannot drift
+/// when new methods are added. Exposed via the `core.list_methods` RPC for
+/// discoverability by external clients (the Swift app, future Android port,
+/// debug tooling).
+pub const BRIDGE_METHODS: &[&str] = &[
+    "activity.apply_correction",
+    "activity.attach_interval",
+    "activity.attach_metric",
+    "activity.attach_metrics",
+    "activity.correction_plans",
+    "activity.create_session",
+    "activity.delete_session",
+    "activity.get_session",
+    "activity.list_intervals",
+    "activity.list_metrics",
+    "activity.list_sessions",
+    "activity.list_sessions_with_metrics",
+    "activity.metrics_for_session_in_window",
+    "activity.update_session",
+    "calibration.apply",
+    "calibration.evaluate_dataset",
+    "calibration.evaluate_stored_labels",
+    "calibration.import_labels",
+    "calibration.list_labels",
+    "capture.arrival_plan",
+    "capture.correlation_report",
+    "capture.finish_session",
+    "capture.import_frame_batch",
+    "capture.list_sessions",
+    "capture.observability_timeline",
+    "capture.sanitize",
+    "capture.start_session",
+    "capture.timeline",
+    "commands.capture_plan",
+    "commands.definitions",
+    "commands.direct_send_gate",
+    "commands.direct_send_preflight",
+    "commands.evidence_from_emulator_log",
+    "commands.evidence_template",
+    "commands.import_validation_records",
+    "commands.list_validation_records",
+    "commands.promote_local_frame_matches",
+    "commands.validate_evidence",
+    "core.list_methods",
+    "core.version",
+    "debug.finish_command",
+    "debug.record_event",
+    "debug.session_snapshot",
+    "debug.start_command",
+    "debug.start_session",
+    "diagnostics.perf_budget",
+    "diagnostics.property_suite",
+    "export.raw_timeframe",
+    "export.validate_bundle",
+    "health_sync.activity_dry_run",
+    "health_sync.dry_run",
+    "historical_sync.dry_run",
+    "historical_sync.physical_evidence_template",
+    "historical_sync.validate_physical_evidence",
+    "metrics.activity_unavailable_daily_status",
+    "metrics.built_in_definitions",
+    "metrics.daily_activity_metrics",
+    "metrics.daily_recovery_metrics",
+    "metrics.default_preferences",
+    "metrics.energy_capture_validation",
+    "metrics.energy_daily_rollup",
+    "metrics.energy_hourly_rollup",
+    "metrics.energy_unavailable_daily_status",
+    "metrics.goose_hrv_v0",
+    "metrics.goose_recovery_v0",
+    "metrics.goose_sleep_v0",
+    "metrics.goose_sleep_v1",
+    "metrics.goose_strain_v0",
+    "metrics.goose_stress_v0",
+    "metrics.heart_rate_features",
+    "metrics.hourly_activity_metrics",
+    "metrics.hrv_capture_validation",
+    "metrics.hrv_features",
+    "metrics.input_readiness",
+    "metrics.motion_features",
+    "metrics.oxygen_saturation_capture_validation",
+    "metrics.raw_motion_step_estimate",
+    "metrics.recovery_score_from_features",
+    "metrics.recovery_sensor_daily_rollup",
+    "metrics.recovery_sensor_discovery",
+    "metrics.recovery_unavailable_daily_status",
+    "metrics.reference_compare",
+    "metrics.reference_definitions",
+    "metrics.respiratory_rate_capture_validation",
+    "metrics.resting_hr_capture_validation",
+    "metrics.resting_hr_daily_rollup",
+    "metrics.resting_hr_features",
+    "metrics.sleep_score_from_features",
+    "metrics.step_capture_validation",
+    "metrics.step_counter_daily_rollup",
+    "metrics.step_counter_hourly_rollup",
+    "metrics.step_counter_ingest",
+    "metrics.step_packet_discovery",
+    "metrics.strain_score_from_features",
+    "metrics.stress_score_from_features",
+    "metrics.temperature_capture_validation",
+    "metrics.vital_event_features",
+    "metrics.window_features",
+    "openwhoop.reference_report",
+    "overnight.mirror_batch",
+    "overnight.mirror_counts",
+    "privacy.lint",
+    "protocol.parse_frame_hex",
+    "protocol.parse_frame_hex_batch",
+    "settings.apply_default_algorithm_preferences",
+    "settings.get_algorithm_preference",
+    "settings.list_algorithm_preferences",
+    "settings.set_algorithm_preference",
+    "sleep.add_correction_label",
+    "sleep.import_external_history",
+    "sleep.list_correction_labels",
+    "sleep.validate_stage_labels",
+    "sleep.validate_v1_evidence_folder",
+    "sleep.validate_v1_explanation_stability",
+    "sleep.validate_v1_release_gates",
+    "sleep.validate_window_labels",
+    "storage.check",
+    "timeline.from_decoded_frames",
+    "ui_coverage.audit",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeRequest {
@@ -1842,6 +1973,24 @@ pub fn core_version_payload() -> serde_json::Value {
     })
 }
 
+/// Payload returned by the `core.list_methods` bridge RPC.
+///
+/// Returns the canonical, alphabetically sorted list of every bridge method
+/// the current build understands, alongside the methods-list schema id and
+/// the count. Intended for client-side discovery: the iOS app, a future
+/// Android port, debug tooling, or anyone wiring a new front end can pull
+/// the live list at runtime instead of grepping the Rust source.
+///
+/// The list itself is the compile-time constant [`BRIDGE_METHODS`]; this
+/// function exists only to wrap it in the bridge response envelope.
+pub fn core_list_methods_payload() -> serde_json::Value {
+    json!({
+        "schema": BRIDGE_METHODS_LIST_SCHEMA,
+        "count": BRIDGE_METHODS.len(),
+        "methods": BRIDGE_METHODS,
+    })
+}
+
 pub fn openwhoop_reference_report_payload() -> serde_json::Value {
     let service_roles = whoop_generation_references()
         .iter()
@@ -1951,6 +2100,7 @@ fn handle_bridge_request_inner(request: BridgeRequest) -> BridgeResponse {
 
     match request.method.as_str() {
         "core.version" => bridge_ok(&request.request_id, core_version_payload()),
+        "core.list_methods" => bridge_ok(&request.request_id, core_list_methods_payload()),
         "openwhoop.reference_report" => {
             bridge_ok(&request.request_id, openwhoop_reference_report_payload())
         }
@@ -7733,6 +7883,115 @@ fn escape_json_string(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Guard against drift between [`BRIDGE_METHODS`] and the dispatcher.
+    ///
+    /// Scans the live source of `handle_bridge_request_inner` for every
+    /// `"method.name" =>` arm and asserts the extracted set equals
+    /// `BRIDGE_METHODS`. Anyone adding a new bridge method must register it
+    /// in the constant or this test fails — keeping `core.list_methods`
+    /// authoritative.
+    #[test]
+    fn bridge_methods_constant_matches_dispatcher() {
+        let src = include_str!("bridge.rs");
+        let start = src
+            .find("match request.method.as_str()")
+            .expect("dispatcher match not found");
+        // The dispatcher arm uses `method =>` as its catch-all. Stop scanning
+        // there so we don't pick up unrelated string literals later in the
+        // file (e.g. in tests).
+        let catchall = src[start..]
+            .find("method => bridge_error(")
+            .expect("dispatcher catch-all not found");
+        let block = &src[start..start + catchall];
+
+        let mut found: Vec<String> = Vec::new();
+        for line in block.lines() {
+            let trimmed = line.trim_start();
+            if !trimmed.starts_with('"') {
+                continue;
+            }
+            // Match `"some.method" =>` at line start.
+            let after_quote = &trimmed[1..];
+            let Some(end_quote) = after_quote.find('"') else {
+                continue;
+            };
+            let name = &after_quote[..end_quote];
+            let rest = after_quote[end_quote + 1..].trim_start();
+            if rest.starts_with("=>") {
+                found.push(name.to_string());
+            }
+        }
+        found.sort();
+        found.dedup();
+
+        assert!(
+            found.len() >= BRIDGE_METHODS.len(),
+            "Fewer methods extracted ({}) than registered ({}). \
+             The source extraction may no longer match all dispatcher arms.",
+            found.len(),
+            BRIDGE_METHODS.len()
+        );
+
+        let mut expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
+        expected.sort();
+
+        assert_eq!(
+            found, expected,
+            "BRIDGE_METHODS is out of sync with the dispatcher. \
+             Either add the new method to BRIDGE_METHODS (keep it sorted) \
+             or remove the stale entry."
+        );
+    }
+
+    /// Belt-and-braces: `BRIDGE_METHODS` is documented as sorted; verify it.
+    #[test]
+    fn bridge_methods_constant_is_sorted_and_unique() {
+        let mut sorted = BRIDGE_METHODS.to_vec();
+        sorted.sort();
+        assert_eq!(
+            BRIDGE_METHODS,
+            sorted.as_slice(),
+            "BRIDGE_METHODS must be sorted"
+        );
+        let mut deduped = sorted.clone();
+        deduped.dedup();
+        assert_eq!(sorted.len(), deduped.len(), "BRIDGE_METHODS must be unique");
+    }
+
+    /// The `core.list_methods` RPC must round-trip through the bridge envelope
+    /// and return the exact same list as the constant.
+    #[test]
+    fn core_list_methods_rpc_returns_full_method_set() {
+        let request = BridgeRequest {
+            schema: BRIDGE_REQUEST_SCHEMA.to_string(),
+            request_id: "test-list-methods".to_string(),
+            method: "core.list_methods".to_string(),
+            args: serde_json::Value::Null,
+        };
+        let response = handle_bridge_request(request);
+        assert!(
+            response.ok,
+            "core.list_methods should succeed: {:?}",
+            response.error
+        );
+        let result = response.result.expect("result payload");
+        assert_eq!(result["schema"], BRIDGE_METHODS_LIST_SCHEMA);
+        assert_eq!(
+            result["count"].as_u64().unwrap() as usize,
+            BRIDGE_METHODS.len()
+        );
+        let methods: Vec<String> = result["methods"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_string())
+            .collect();
+        let expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
+        assert_eq!(methods, expected);
+        // `core.list_methods` must itself appear in the list it advertises.
+        assert!(methods.iter().any(|m| m == "core.list_methods"));
+    }
 
     #[test]
     fn capture_arrival_next_focus_includes_recovery_sensor_capture_actions() {
