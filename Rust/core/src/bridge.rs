@@ -2522,6 +2522,11 @@ pub extern "C" fn goose_core_version_json() -> *mut c_char {
 /// A null `request_json` is handled defensively and returns a structured
 /// error response rather than dereferencing the pointer. Invalid UTF-8 in the
 /// input is likewise reported as a structured error.
+///
+/// This function may be called concurrently from multiple threads. Bridge
+/// dispatch does not share mutable in-process state or database connections;
+/// database-backed requests open their own [`GooseStore`]. Concurrent database
+/// operations may still return ordinary SQLite locking or contention errors.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -> *mut c_char {
     if request_json.is_null() {
@@ -2560,10 +2565,11 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
 ///   after this call returns.
 ///
 /// Passing a pointer that was not produced by the Goose core (for example,
-/// one allocated by `malloc(3)` on the host) is undefined behaviour, because
-/// the Rust allocator backing [`CString`] is not guaranteed to match the
-/// host's allocator. A null pointer is handled as a no-op. Calling this
-/// function twice on the same pointer is a double-free.
+/// one allocated by `malloc(3)` on the host) is undefined behaviour. This
+/// function releases `value` with [`CString::from_raw`], reclaiming the Rust
+/// allocation created by the `string_to_c_string` helper; do not pass a
+/// pointer allocated by any other means. A null pointer is handled as a no-op.
+/// Calling this function twice on the same pointer is a double-free.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_free_string(value: *mut c_char) {
     if value.is_null() {
