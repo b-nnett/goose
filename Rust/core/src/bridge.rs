@@ -7925,6 +7925,14 @@ mod tests {
         found.sort();
         found.dedup();
 
+        assert!(
+            found.len() >= BRIDGE_METHODS.len(),
+            "Fewer methods extracted ({}) than registered ({}). \
+             The source extraction may no longer match all dispatcher arms.",
+            found.len(),
+            BRIDGE_METHODS.len()
+        );
+
         let mut expected: Vec<String> = BRIDGE_METHODS.iter().map(|s| s.to_string()).collect();
         expected.sort();
 
