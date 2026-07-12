@@ -61,6 +61,25 @@ jobs:
       - name: cargo test --lib
         run: cargo test --lib --verbose
 
+  full-test:
+    name: cargo test (full, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: Rust/core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.RUST_TOOLCHAIN }}
+        run: |
+          rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal
+          rustup default ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Rust/core
+      - name: cargo test
+        run: cargo test --locked --verbose
+
   clippy:
     name: cargo clippy (advisory)
     runs-on: ubuntu-latest
