@@ -2501,6 +2501,32 @@ pub extern "C" fn goose_core_version_json() -> *mut c_char {
     json_to_c_string(core_version_payload())
 }
 
+/// Handle a JSON-encoded bridge request from the host platform.
+///
+/// Returns a newly-allocated, null-terminated UTF-8 C string containing a
+/// JSON-encoded response. The caller takes ownership of the returned pointer
+/// and **must** release it by passing it to [`goose_bridge_free_string`].
+/// Mixing this allocation with `free(3)` or any other deallocator is
+/// undefined behaviour.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+///
+/// - `request_json` is either null **or** a valid pointer to a
+///   null-terminated UTF-8 C string that remains valid (and unmodified by
+///   other threads) for the duration of this call.
+/// - The buffer referenced by `request_json` is not aliased by any mutable
+///   reference for the duration of this call.
+///
+/// A null `request_json` is handled defensively and returns a structured
+/// error response rather than dereferencing the pointer. Invalid UTF-8 in the
+/// input is likewise reported as a structured error.
+///
+/// This function may be called concurrently from multiple threads. Bridge
+/// dispatch does not share mutable in-process state or database connections;
+/// database-backed requests open their own [`GooseStore`]. Concurrent database
+/// operations may still return ordinary SQLite locking or contention errors.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -> *mut c_char {
     if request_json.is_null() {
@@ -2525,6 +2551,25 @@ pub unsafe extern "C" fn goose_bridge_handle_json(request_json: *const c_char) -
     string_to_c_string(handle_bridge_request_json(request))
 }
 
+/// Free a C string previously returned by any `goose_bridge_*` or
+/// `goose_core_*` function.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+///
+/// - `value` is either null **or** a pointer that was returned by a Goose
+///   bridge entry point (e.g. [`goose_bridge_handle_json`] or
+///   `goose_core_version_json`) and has not yet been freed.
+/// - The pointer is not aliased by any other live reference and is not used
+///   after this call returns.
+///
+/// Passing a pointer that was not produced by the Goose core (for example,
+/// one allocated by `malloc(3)` on the host) is undefined behaviour. This
+/// function releases `value` with [`CString::from_raw`], reclaiming the Rust
+/// allocation created by the `string_to_c_string` helper; do not pass a
+/// pointer allocated by any other means. A null pointer is handled as a no-op.
+/// Calling this function twice on the same pointer is a double-free.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn goose_bridge_free_string(value: *mut c_char) {
     if value.is_null() {
