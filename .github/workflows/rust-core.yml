@@ -1,0 +1,102 @@
+name: rust-core
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Rust/**'
+      - '.github/workflows/rust-core.yml'
+  pull_request:
+    paths:
+      - 'Rust/**'
+      - '.github/workflows/rust-core.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # MSRV pulled from Rust/core/Cargo.toml (`rust-version = "1.94"`).
+  # Keep this in sync if Cargo.toml is bumped.
+  RUST_TOOLCHAIN: "1.94"
+
+jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Rust/core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.RUST_TOOLCHAIN }} with rustfmt
+        run: |
+          rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal --component rustfmt
+          rustup default ${{ env.RUST_TOOLCHAIN }}
+      - run: cargo fmt --all -- --check
+
+  build-test:
+    name: build + test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    defaults:
+      run:
+        working-directory: Rust/core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.RUST_TOOLCHAIN }}
+        run: |
+          rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal
+          rustup default ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Rust/core
+      - name: cargo build --lib
+        run: cargo build --lib --verbose
+      - name: cargo test --lib
+        run: cargo test --lib --verbose
+
+  full-test:
+    name: cargo test (full, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: Rust/core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.RUST_TOOLCHAIN }}
+        run: |
+          rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal
+          rustup default ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Rust/core
+      - name: cargo test
+        run: cargo test --locked --verbose
+
+  clippy:
+    name: cargo clippy (advisory)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Rust/core
+    # Advisory only for now: the crate currently emits ~120 clippy warnings.
+    # This job surfaces them in the PR checks tab without blocking merges.
+    # Flip `continue-on-error` to `false` once the existing warnings are cleared.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ env.RUST_TOOLCHAIN }} with clippy
+        run: |
+          rustup toolchain install ${{ env.RUST_TOOLCHAIN }} --profile minimal --component clippy
+          rustup default ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: Rust/core
+      - run: cargo clippy --lib --no-deps -- -D warnings

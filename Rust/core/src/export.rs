@@ -6348,7 +6348,11 @@ fn validate_metric_json_fields(
         &format!("{row_name} provenance_json"),
         issues,
     );
-    validate_no_platform_metric_source_json(inputs_json, &format!("{row_name} inputs_json"), issues);
+    validate_no_platform_metric_source_json(
+        inputs_json,
+        &format!("{row_name} inputs_json"),
+        issues,
+    );
     validate_no_platform_metric_source_json(
         quality_flags_json,
         &format!("{row_name} quality_flags_json"),
